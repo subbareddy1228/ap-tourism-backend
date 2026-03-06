@@ -89,9 +89,14 @@ class LoginRequest(BaseModel):
     phone: str
     password: str
     device_id: Optional[str] = "default"   # for multi-device session tracking
+    access_token: str
 
     @field_validator("phone")
     def phone_valid(cls, v): return validate_phone(v)
+
+class LogoutRequest(BaseModel):
+    """POST /auth/logout and /auth/logout-all"""
+    access_token: str
 
 
 class OTPLoginRequest(BaseModel):

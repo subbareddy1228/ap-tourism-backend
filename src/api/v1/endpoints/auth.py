@@ -18,6 +18,7 @@ Routes:
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.database import get_db
@@ -28,12 +29,13 @@ from src.schemas.auth import (
     ResendOTPRequest, LoginRequest, OTPLoginRequest,
     RefreshTokenRequest, ForgotPasswordRequest,
     ResetPasswordRequest, ChangePasswordRequest,
-    TokenResponse, OTPSentResponse, UserResponse
+    TokenResponse, OTPSentResponse, UserResponse, LogoutRequest
 )
 from src.common.responses import APIResponse
 from src.services import auth_service
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
+bearer_scheme = HTTPBearer()
 
 
 # ── 1. Register ───────────────────────────────────────────────
@@ -221,26 +223,23 @@ async def refresh_token(
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
 
-
 # ── 8. Logout (Current Device) ────────────────────────────────
 @router.post(
     "/logout",
     response_model=APIResponse,
     summary="Logout from current device"
 )
-async def logout(
-    request: Request,
-    current_user: User = Depends(get_current_user)
-):
+async def logout(data: LogoutRequest):
     """
-    Logout from the current device.
-    Blacklists the current token and removes the session.
-
-    **Requires:** Bearer token in Authorization header.
+    Logout from current device.
+    Pass your access_token in the request body.
+    JTI will be blacklisted in Redis.
     """
-    token = request.headers.get("Authorization", "").replace("Bearer ", "")
-    result = await auth_service.logout(str(current_user.id), token)
-    return APIResponse.success(message=result["message"])
+    from src.core.security import decode_token
+    payload = decode_token(data.access_token)
+    user_id = payload.get("sub") if payload else None
+    result = await auth_service.logout(user_id, data.access_token)
+    return APIResponse.success(message=result["message"])   # ← return added
 
 
 # ── 9. Logout All Devices ─────────────────────────────────────
@@ -249,24 +248,23 @@ async def logout(
     response_model=APIResponse,
     summary="Logout from all devices"
 )
-async def logout_all(
-    request: Request,
-    current_user: User = Depends(get_current_user)
-):
+async def logout_all(data: LogoutRequest):
     """
     Logout from ALL devices simultaneously.
-    Removes all active sessions for this user.
-
-    **Requires:** Bearer token in Authorization header.
+    Pass your access_token in the request body.
+    All sessions will be removed from Redis.
     """
-    token = request.headers.get("Authorization", "").replace("Bearer ", "")
-    result = await auth_service.logout_all(str(current_user.id), token)
-    return APIResponse.success(message=result["message"])
+    from src.core.security import decode_token
+    payload = decode_token(data.access_token)
+    user_id = payload.get("sub") if payload else None
+    result = await auth_service.logout_all(user_id, data.access_token)
+    return APIResponse.success(message=result["message"])   # ← return added
 
 
 # ── 10. Forgot Password ───────────────────────────────────────
 @router.post(
     "/forgot-password",
+
     response_model=APIResponse,
     summary="Request password reset OTP"
 )
