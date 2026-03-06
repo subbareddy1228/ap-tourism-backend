@@ -1,0 +1,35 @@
+# ── Core Framework ────────────────────────────────────────────
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+pydantic==2.9.2
+pydantic-settings==2.5.2
+
+# ── Database ──────────────────────────────────────────────────
+sqlalchemy==2.0.35
+asyncpg==0.29.0          # async PostgreSQL driver
+alembic==1.13.3          # database migrations
+
+# ── Auth & Security ───────────────────────────────────────────
+python-jose[cryptography]==3.3.0   # JWT tokens
+passlib[bcrypt]==1.7.4             # password hashing
+
+# ── Redis ─────────────────────────────────────────────────────
+redis[asyncio]==5.1.1
+
+# ── SMS ───────────────────────────────────────────────────────
+twilio==9.3.3            # Twilio SMS
+httpx==0.27.2            # for MSG91 HTTP calls
+
+# ── File Upload ───────────────────────────────────────────────
+boto3==1.35.36           # AWS S3
+python-multipart==0.0.12 # file uploads in FastAPI
+
+# ── Async Tasks ───────────────────────────────────────────────
+celery[redis]==5.4.0
+flower==2.0.1            # Celery monitoring dashboard
+
+# ── Dev & Testing ─────────────────────────────────────────────
+pytest==8.3.3
+pytest-asyncio==0.24.0
+httpx==0.27.2            # test client
+pytest-cov==5.0.0        # coverage reports
