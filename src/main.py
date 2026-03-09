@@ -11,6 +11,10 @@ from src.core.config import settings
 from src.core.redis import init_redis, close_redis
 from src.api.v1.endpoints.auth import router as auth_router
 
+from src.core.logging import setup_logging
+
+setup_logging()
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
