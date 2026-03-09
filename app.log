@@ -28,3 +28,164 @@
 2026-03-09 14:14:17,958 | INFO | sqlalchemy.engine.Engine | [raw sql] ()
 2026-03-09 14:14:17,960 | INFO | sqlalchemy.engine.Engine | BEGIN (implicit)
 2026-03-09 14:14:17,963 | INFO | sqlalchemy.engine.Engine | ROLLBACK
+2026-03-09 15:41:12,504 | INFO | src.services.auth_service | Registration attempt phone=9876543210
+2026-03-09 15:41:12,682 | INFO | sqlalchemy.engine.Engine | select pg_catalog.version()
+2026-03-09 15:41:12,683 | INFO | sqlalchemy.engine.Engine | [raw sql] ()
+2026-03-09 15:41:12,687 | INFO | sqlalchemy.engine.Engine | select current_schema()
+2026-03-09 15:41:12,688 | INFO | sqlalchemy.engine.Engine | [raw sql] ()
+2026-03-09 15:41:12,691 | INFO | sqlalchemy.engine.Engine | show standard_conforming_strings
+2026-03-09 15:41:12,692 | INFO | sqlalchemy.engine.Engine | [raw sql] ()
+2026-03-09 15:41:12,695 | INFO | sqlalchemy.engine.Engine | BEGIN (implicit)
+2026-03-09 15:41:12,705 | INFO | sqlalchemy.engine.Engine | SELECT users.id, users.phone, users.email, users.full_name, users.password_hash, users.role, users.status, users.is_phone_verified, users.is_email_verified, users.created_at, users.updated_at, users.last_login, users.deleted_at 
+FROM users 
+WHERE users.phone = $1::VARCHAR OR users.email = $2::VARCHAR
+2026-03-09 15:41:12,706 | INFO | sqlalchemy.engine.Engine | [generated in 0.00096s] ('9876543210', 'user123@gmail.com')
+2026-03-09 15:41:12,738 | WARNING | passlib.handlers.bcrypt | (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2026-03-09 15:41:12,750 | INFO | sqlalchemy.engine.Engine | ROLLBACK
+2026-03-09 16:32:03,315 | INFO | src.services.auth_service | Registration attempt phone=9876543210
+2026-03-09 16:32:03,372 | INFO | sqlalchemy.engine.Engine | BEGIN (implicit)
+2026-03-09 16:32:03,378 | INFO | sqlalchemy.engine.Engine | SELECT users.id, users.phone, users.email, users.full_name, users.password_hash, users.role, users.status, users.is_phone_verified, users.is_email_verified, users.created_at, users.updated_at, users.last_login, users.deleted_at 
+FROM users 
+WHERE users.phone = $1::VARCHAR OR users.email = $2::VARCHAR
+2026-03-09 16:32:03,380 | INFO | sqlalchemy.engine.Engine | [cached since 3051s ago] ('9876543210', 'user123@gmail.com')
+2026-03-09 16:32:03,394 | WARNING | passlib.handlers.bcrypt | (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2026-03-09 16:32:03,417 | INFO | sqlalchemy.engine.Engine | ROLLBACK
+2026-03-09 16:33:24,310 | INFO | src.services.auth_service | Registration attempt phone=9876543210
+2026-03-09 16:33:24,314 | INFO | sqlalchemy.engine.Engine | BEGIN (implicit)
+2026-03-09 16:33:24,317 | INFO | sqlalchemy.engine.Engine | SELECT users.id, users.phone, users.email, users.full_name, users.password_hash, users.role, users.status, users.is_phone_verified, users.is_email_verified, users.created_at, users.updated_at, users.last_login, users.deleted_at 
+FROM users 
+WHERE users.phone = $1::VARCHAR OR users.email = $2::VARCHAR
+2026-03-09 16:33:24,320 | INFO | sqlalchemy.engine.Engine | [cached since 3132s ago] ('9876543210', 'user123@gmail.com')
+2026-03-09 16:33:24,328 | WARNING | passlib.handlers.bcrypt | (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2026-03-09 16:33:24,349 | INFO | sqlalchemy.engine.Engine | ROLLBACK
+2026-03-09 16:34:44,323 | INFO | src.services.auth_service | Registration attempt phone=9876543210
+2026-03-09 16:34:44,327 | INFO | sqlalchemy.engine.Engine | BEGIN (implicit)
+2026-03-09 16:34:44,328 | INFO | sqlalchemy.engine.Engine | SELECT users.id, users.phone, users.email, users.full_name, users.password_hash, users.role, users.status, users.is_phone_verified, users.is_email_verified, users.created_at, users.updated_at, users.last_login, users.deleted_at 
+FROM users 
+WHERE users.phone = $1::VARCHAR OR users.email = $2::VARCHAR
+2026-03-09 16:34:44,332 | INFO | sqlalchemy.engine.Engine | [cached since 3212s ago] ('9876543210', 'user123@gmail.com')
+2026-03-09 16:34:44,343 | WARNING | passlib.handlers.bcrypt | (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2026-03-09 16:34:44,367 | INFO | sqlalchemy.engine.Engine | ROLLBACK
+2026-03-09 16:42:13,541 | INFO | src.services.auth_service | Registration attempt phone=9876543210
+2026-03-09 16:42:13,646 | INFO | sqlalchemy.engine.Engine | select pg_catalog.version()
+2026-03-09 16:42:13,647 | INFO | sqlalchemy.engine.Engine | [raw sql] ()
+2026-03-09 16:42:13,651 | INFO | sqlalchemy.engine.Engine | select current_schema()
+2026-03-09 16:42:13,652 | INFO | sqlalchemy.engine.Engine | [raw sql] ()
+2026-03-09 16:42:13,655 | INFO | sqlalchemy.engine.Engine | show standard_conforming_strings
+2026-03-09 16:42:13,656 | INFO | sqlalchemy.engine.Engine | [raw sql] ()
+2026-03-09 16:42:13,658 | INFO | sqlalchemy.engine.Engine | BEGIN (implicit)
+2026-03-09 16:42:13,663 | INFO | sqlalchemy.engine.Engine | SELECT users.id, users.phone, users.email, users.full_name, users.password_hash, users.role, users.status, users.is_phone_verified, users.is_email_verified, users.created_at, users.updated_at, users.last_login, users.deleted_at 
+FROM users 
+WHERE users.phone = $1::VARCHAR OR users.email = $2::VARCHAR
+2026-03-09 16:42:13,664 | INFO | sqlalchemy.engine.Engine | [generated in 0.00068s] ('9876543210', 'user123@gmail.com')
+2026-03-09 16:42:13,691 | WARNING | passlib.handlers.bcrypt | (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2026-03-09 16:42:13,699 | INFO | sqlalchemy.engine.Engine | ROLLBACK
+2026-03-09 16:46:28,508 | INFO | src.services.auth_service | Registration attempt phone=9876543210
+2026-03-09 16:46:28,644 | INFO | sqlalchemy.engine.Engine | select pg_catalog.version()
+2026-03-09 16:46:28,645 | INFO | sqlalchemy.engine.Engine | [raw sql] ()
+2026-03-09 16:46:28,647 | INFO | sqlalchemy.engine.Engine | select current_schema()
+2026-03-09 16:46:28,648 | INFO | sqlalchemy.engine.Engine | [raw sql] ()
+2026-03-09 16:46:28,650 | INFO | sqlalchemy.engine.Engine | show standard_conforming_strings
+2026-03-09 16:46:28,650 | INFO | sqlalchemy.engine.Engine | [raw sql] ()
+2026-03-09 16:46:28,653 | INFO | sqlalchemy.engine.Engine | BEGIN (implicit)
+2026-03-09 16:46:28,659 | INFO | sqlalchemy.engine.Engine | SELECT users.id, users.phone, users.email, users.full_name, users.password_hash, users.role, users.status, users.is_phone_verified, users.is_email_verified, users.created_at, users.updated_at, users.last_login, users.deleted_at 
+FROM users 
+WHERE users.phone = $1::VARCHAR OR users.email = $2::VARCHAR
+2026-03-09 16:46:28,659 | INFO | sqlalchemy.engine.Engine | [generated in 0.00075s] ('9876543210', 'user123@gmail.com')
+2026-03-09 16:46:28,685 | WARNING | passlib.handlers.bcrypt | (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2026-03-09 16:46:28,695 | INFO | sqlalchemy.engine.Engine | ROLLBACK
+2026-03-09 16:52:39,529 | INFO | src.services.auth_service | Registration attempt phone=9876543210
+2026-03-09 16:52:39,670 | INFO | sqlalchemy.engine.Engine | select pg_catalog.version()
+2026-03-09 16:52:39,671 | INFO | sqlalchemy.engine.Engine | [raw sql] ()
+2026-03-09 16:52:39,675 | INFO | sqlalchemy.engine.Engine | select current_schema()
+2026-03-09 16:52:39,676 | INFO | sqlalchemy.engine.Engine | [raw sql] ()
+2026-03-09 16:52:39,680 | INFO | sqlalchemy.engine.Engine | show standard_conforming_strings
+2026-03-09 16:52:39,681 | INFO | sqlalchemy.engine.Engine | [raw sql] ()
+2026-03-09 16:52:39,683 | INFO | sqlalchemy.engine.Engine | BEGIN (implicit)
+2026-03-09 16:52:39,695 | INFO | sqlalchemy.engine.Engine | SELECT users.id, users.phone, users.email, users.full_name, users.password_hash, users.role, users.status, users.is_phone_verified, users.is_email_verified, users.created_at, users.updated_at, users.last_login, users.deleted_at 
+FROM users 
+WHERE users.phone = $1::VARCHAR OR users.email = $2::VARCHAR
+2026-03-09 16:52:39,696 | INFO | sqlalchemy.engine.Engine | [generated in 0.00133s] ('9876543210', 'user123@gmail.com')
+2026-03-09 16:52:39,728 | WARNING | passlib.handlers.bcrypt | (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2026-03-09 16:52:39,740 | INFO | sqlalchemy.engine.Engine | ROLLBACK
+2026-03-09 17:03:16,114 | INFO | src.services.auth_service | Registration attempt phone=9876543210
+2026-03-09 17:03:16,292 | INFO | sqlalchemy.engine.Engine | select pg_catalog.version()
+2026-03-09 17:03:16,293 | INFO | sqlalchemy.engine.Engine | [raw sql] ()
+2026-03-09 17:03:16,296 | INFO | sqlalchemy.engine.Engine | select current_schema()
+2026-03-09 17:03:16,297 | INFO | sqlalchemy.engine.Engine | [raw sql] ()
+2026-03-09 17:03:16,300 | INFO | sqlalchemy.engine.Engine | show standard_conforming_strings
+2026-03-09 17:03:16,301 | INFO | sqlalchemy.engine.Engine | [raw sql] ()
+2026-03-09 17:03:16,304 | INFO | sqlalchemy.engine.Engine | BEGIN (implicit)
+2026-03-09 17:03:16,310 | INFO | sqlalchemy.engine.Engine | SELECT users.id, users.phone, users.email, users.full_name, users.password_hash, users.role, users.status, users.is_phone_verified, users.is_email_verified, users.created_at, users.updated_at, users.last_login, users.deleted_at 
+FROM users 
+WHERE users.phone = $1::VARCHAR OR users.email = $2::VARCHAR
+2026-03-09 17:03:16,311 | INFO | sqlalchemy.engine.Engine | [generated in 0.00094s] ('9876543210', 'user123@gmail.com')
+2026-03-09 17:03:16,342 | WARNING | passlib.handlers.bcrypt | (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2026-03-09 17:03:16,353 | INFO | sqlalchemy.engine.Engine | ROLLBACK
+2026-03-09 17:15:29,330 | INFO | src.services.auth_service | Registration attempt phone=9876543210
+2026-03-09 17:15:29,607 | INFO | sqlalchemy.engine.Engine | select pg_catalog.version()
+2026-03-09 17:15:29,608 | INFO | sqlalchemy.engine.Engine | [raw sql] ()
+2026-03-09 17:15:29,614 | INFO | sqlalchemy.engine.Engine | select current_schema()
+2026-03-09 17:15:29,618 | INFO | sqlalchemy.engine.Engine | [raw sql] ()
+2026-03-09 17:15:29,625 | INFO | sqlalchemy.engine.Engine | show standard_conforming_strings
+2026-03-09 17:15:29,627 | INFO | sqlalchemy.engine.Engine | [raw sql] ()
+2026-03-09 17:15:29,631 | INFO | sqlalchemy.engine.Engine | BEGIN (implicit)
+2026-03-09 17:15:29,647 | INFO | sqlalchemy.engine.Engine | SELECT users.id, users.phone, users.email, users.full_name, users.password_hash, users.role, users.status, users.is_phone_verified, users.is_email_verified, users.created_at, users.updated_at, users.last_login, users.deleted_at 
+FROM users 
+WHERE users.phone = $1::VARCHAR OR users.email = $2::VARCHAR
+2026-03-09 17:15:29,650 | INFO | sqlalchemy.engine.Engine | [generated in 0.00280s] ('9876543210', 'user123@gmail.com')
+2026-03-09 17:15:30,263 | INFO | sqlalchemy.engine.Engine | INSERT INTO users (id, phone, email, full_name, password_hash, role, status, is_phone_verified, is_email_verified, created_at, updated_at, last_login, deleted_at) VALUES ($1::UUID, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::userrole, $7::userstatus, $8::BOOLEAN, $9::BOOLEAN, $10::TIMESTAMP WITHOUT TIME ZONE, $11::TIMESTAMP WITHOUT TIME ZONE, $12::TIMESTAMP WITHOUT TIME ZONE, $13::TIMESTAMP WITHOUT TIME ZONE)
+2026-03-09 17:15:30,264 | INFO | sqlalchemy.engine.Engine | [generated in 0.00175s] (UUID('fcde448f-f07a-46e1-8be4-d3d6bf521edd'), '9876543210', 'user123@gmail.com', 'User', '$2b$12$P9obbin2j1w6.JkokufAcuESqjgpqSwBIrnl3S3kdWGZUBOmeMPkO', 'TRAVELER', 'ACTIVE', False, False, datetime.datetime(2026, 3, 9, 11, 45, 30, 262957), datetime.datetime(2026, 3, 9, 11, 45, 30, 262964), None, None)
+2026-03-09 17:15:30,277 | INFO | sqlalchemy.engine.Engine | COMMIT
+2026-03-09 17:15:30,290 | INFO | sqlalchemy.engine.Engine | BEGIN (implicit)
+2026-03-09 17:15:30,295 | INFO | sqlalchemy.engine.Engine | SELECT users.id, users.phone, users.email, users.full_name, users.password_hash, users.role, users.status, users.is_phone_verified, users.is_email_verified, users.created_at, users.updated_at, users.last_login, users.deleted_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-03-09 17:15:30,296 | INFO | sqlalchemy.engine.Engine | [generated in 0.00135s] (UUID('fcde448f-f07a-46e1-8be4-d3d6bf521edd'),)
+2026-03-09 17:15:32,351 | INFO | src.services.auth_service | OTP for 9876543210 is 312764
+2026-03-09 17:15:32,353 | INFO | src.services.auth_service | User registered successfully user_id=fcde448f-f07a-46e1-8be4-d3d6bf521edd
+2026-03-09 17:15:32,355 | INFO | sqlalchemy.engine.Engine | COMMIT
+2026-03-09 17:32:49,012 | INFO | src.services.auth_service | OTP verification attempt phone=9876543215
+2026-03-09 17:32:49,034 | WARNING | src.services.auth_service | Expired OTP phone=9876543215
+2026-03-09 17:33:40,689 | INFO | src.services.auth_service | Sending OTP phone=9876543210 purpose=register
+2026-03-09 17:33:40,694 | INFO | src.services.auth_service | OTP for 9876543210 is 401986

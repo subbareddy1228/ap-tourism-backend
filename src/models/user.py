@@ -42,13 +42,13 @@ class User(Base):
     deleted_at  = Column(DateTime, nullable=True)   # soft delete
 
     # ── Relationships ─────────────────────────────────────────
-    profile     = relationship("UserProfile",    back_populates="user", uselist=False)
-    addresses   = relationship("Address",        back_populates="user")
-    family      = relationship("FamilyMember",   back_populates="user")
-    bookings    = relationship("Booking",        back_populates="user")
-    reviews     = relationship("Review",         back_populates="user")
-    wallet      = relationship("Wallet",         back_populates="user", uselist=False)
-    notifications = relationship("Notification", back_populates="user")
+    # profile     = relationship("UserProfile",    back_populates="user", uselist=False)
+    # addresses   = relationship("Address",        back_populates="user")
+    # family      = relationship("FamilyMember",   back_populates="user")
+    # bookings    = relationship("Booking",        back_populates="user")
+    # reviews     = relationship("Review",         back_populates="user")
+    # wallet      = relationship("Wallet",         back_populates="user", uselist=False)
+    # notifications = relationship("Notification", back_populates="user")
 
     def __repr__(self):
         return f"<User {self.phone} ({self.role})>"

@@ -41,8 +41,8 @@ def generate_otp(length: int = 6) -> str:
 
 
 async def send_sms_otp(phone: str, otp: str) -> None:
+    logger.info(f"OTP for {phone} is {otp}")  # prints OTP in terminal
     await send_sms(phone, otp)
-
 
 # ═════════════════ REGISTER ═════════════════
 
@@ -70,6 +70,7 @@ async def register_user(data: RegisterRequest, db: AsyncSession) -> dict:
         password_hash=hash_password(data.password),
         is_phone_verified=False,
     )
+
 
     db.add(user)
     await db.commit()
