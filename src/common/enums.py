@@ -1,27 +1,15 @@
-import enum
+from enum import Enum
 
-class UserRole(str, enum.Enum):
+
+class UserRole(str, Enum):
+    ADMIN = "admin"
     TRAVELER = "traveler"
-    GUIDE    = "guide"
-    DRIVER   = "driver"
-    PARTNER  = "partner"
-    ADMIN    = "admin"
+    PARTNER = "partner"
+    GUIDE = "guide"
+    DRIVER = "driver"
 
 
-class KYCStatus(str, enum.Enum):
-    PENDING  = "pending"
-    VERIFIED = "verified"
-    REJECTED = "rejected"
-
-
-class Gender(str, enum.Enum):
-    MALE   = "male"
-    FEMALE = "female"
-    OTHER  = "other"
-
-
-class OTPPurpose(str, enum.Enum):
-    # ERD: otp_logs.purpose = login|register|reset
-    LOGIN    = "login"
-    REGISTER = "register"
-    RESET    = "reset"
+class UserStatus(str, Enum):
+    ACTIVE = "active"
+    INACTIVE = "inactive"
+    SUSPENDED = "suspended"
