@@ -28,3 +28,332 @@
 2026-03-09 14:14:17,958 | INFO | sqlalchemy.engine.Engine | [raw sql] ()
 2026-03-09 14:14:17,960 | INFO | sqlalchemy.engine.Engine | BEGIN (implicit)
 2026-03-09 14:14:17,963 | INFO | sqlalchemy.engine.Engine | ROLLBACK
+2026-03-09 15:41:12,504 | INFO | src.services.auth_service | Registration attempt phone=9876543210
+2026-03-09 15:41:12,682 | INFO | sqlalchemy.engine.Engine | select pg_catalog.version()
+2026-03-09 15:41:12,683 | INFO | sqlalchemy.engine.Engine | [raw sql] ()
+2026-03-09 15:41:12,687 | INFO | sqlalchemy.engine.Engine | select current_schema()
+2026-03-09 15:41:12,688 | INFO | sqlalchemy.engine.Engine | [raw sql] ()
+2026-03-09 15:41:12,691 | INFO | sqlalchemy.engine.Engine | show standard_conforming_strings
+2026-03-09 15:41:12,692 | INFO | sqlalchemy.engine.Engine | [raw sql] ()
+2026-03-09 15:41:12,695 | INFO | sqlalchemy.engine.Engine | BEGIN (implicit)
+2026-03-09 15:41:12,705 | INFO | sqlalchemy.engine.Engine | SELECT users.id, users.phone, users.email, users.full_name, users.password_hash, users.role, users.status, users.is_phone_verified, users.is_email_verified, users.created_at, users.updated_at, users.last_login, users.deleted_at 
+FROM users 
+WHERE users.phone = $1::VARCHAR OR users.email = $2::VARCHAR
+2026-03-09 15:41:12,706 | INFO | sqlalchemy.engine.Engine | [generated in 0.00096s] ('9876543210', 'user123@gmail.com')
+2026-03-09 15:41:12,738 | WARNING | passlib.handlers.bcrypt | (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2026-03-09 15:41:12,750 | INFO | sqlalchemy.engine.Engine | ROLLBACK
+2026-03-09 16:32:03,315 | INFO | src.services.auth_service | Registration attempt phone=9876543210
+2026-03-09 16:32:03,372 | INFO | sqlalchemy.engine.Engine | BEGIN (implicit)
+2026-03-09 16:32:03,378 | INFO | sqlalchemy.engine.Engine | SELECT users.id, users.phone, users.email, users.full_name, users.password_hash, users.role, users.status, users.is_phone_verified, users.is_email_verified, users.created_at, users.updated_at, users.last_login, users.deleted_at 
+FROM users 
+WHERE users.phone = $1::VARCHAR OR users.email = $2::VARCHAR
+2026-03-09 16:32:03,380 | INFO | sqlalchemy.engine.Engine | [cached since 3051s ago] ('9876543210', 'user123@gmail.com')
+2026-03-09 16:32:03,394 | WARNING | passlib.handlers.bcrypt | (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2026-03-09 16:32:03,417 | INFO | sqlalchemy.engine.Engine | ROLLBACK
+2026-03-09 16:33:24,310 | INFO | src.services.auth_service | Registration attempt phone=9876543210
+2026-03-09 16:33:24,314 | INFO | sqlalchemy.engine.Engine | BEGIN (implicit)
+2026-03-09 16:33:24,317 | INFO | sqlalchemy.engine.Engine | SELECT users.id, users.phone, users.email, users.full_name, users.password_hash, users.role, users.status, users.is_phone_verified, users.is_email_verified, users.created_at, users.updated_at, users.last_login, users.deleted_at 
+FROM users 
+WHERE users.phone = $1::VARCHAR OR users.email = $2::VARCHAR
+2026-03-09 16:33:24,320 | INFO | sqlalchemy.engine.Engine | [cached since 3132s ago] ('9876543210', 'user123@gmail.com')
+2026-03-09 16:33:24,328 | WARNING | passlib.handlers.bcrypt | (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2026-03-09 16:33:24,349 | INFO | sqlalchemy.engine.Engine | ROLLBACK
+2026-03-09 16:34:44,323 | INFO | src.services.auth_service | Registration attempt phone=9876543210
+2026-03-09 16:34:44,327 | INFO | sqlalchemy.engine.Engine | BEGIN (implicit)
+2026-03-09 16:34:44,328 | INFO | sqlalchemy.engine.Engine | SELECT users.id, users.phone, users.email, users.full_name, users.password_hash, users.role, users.status, users.is_phone_verified, users.is_email_verified, users.created_at, users.updated_at, users.last_login, users.deleted_at 
+FROM users 
+WHERE users.phone = $1::VARCHAR OR users.email = $2::VARCHAR
+2026-03-09 16:34:44,332 | INFO | sqlalchemy.engine.Engine | [cached since 3212s ago] ('9876543210', 'user123@gmail.com')
+2026-03-09 16:34:44,343 | WARNING | passlib.handlers.bcrypt | (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2026-03-09 16:34:44,367 | INFO | sqlalchemy.engine.Engine | ROLLBACK
+2026-03-09 16:42:13,541 | INFO | src.services.auth_service | Registration attempt phone=9876543210
+2026-03-09 16:42:13,646 | INFO | sqlalchemy.engine.Engine | select pg_catalog.version()
+2026-03-09 16:42:13,647 | INFO | sqlalchemy.engine.Engine | [raw sql] ()
+2026-03-09 16:42:13,651 | INFO | sqlalchemy.engine.Engine | select current_schema()
+2026-03-09 16:42:13,652 | INFO | sqlalchemy.engine.Engine | [raw sql] ()
+2026-03-09 16:42:13,655 | INFO | sqlalchemy.engine.Engine | show standard_conforming_strings
+2026-03-09 16:42:13,656 | INFO | sqlalchemy.engine.Engine | [raw sql] ()
+2026-03-09 16:42:13,658 | INFO | sqlalchemy.engine.Engine | BEGIN (implicit)
+2026-03-09 16:42:13,663 | INFO | sqlalchemy.engine.Engine | SELECT users.id, users.phone, users.email, users.full_name, users.password_hash, users.role, users.status, users.is_phone_verified, users.is_email_verified, users.created_at, users.updated_at, users.last_login, users.deleted_at 
+FROM users 
+WHERE users.phone = $1::VARCHAR OR users.email = $2::VARCHAR
+2026-03-09 16:42:13,664 | INFO | sqlalchemy.engine.Engine | [generated in 0.00068s] ('9876543210', 'user123@gmail.com')
+2026-03-09 16:42:13,691 | WARNING | passlib.handlers.bcrypt | (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2026-03-09 16:42:13,699 | INFO | sqlalchemy.engine.Engine | ROLLBACK
+2026-03-09 16:46:28,508 | INFO | src.services.auth_service | Registration attempt phone=9876543210
+2026-03-09 16:46:28,644 | INFO | sqlalchemy.engine.Engine | select pg_catalog.version()
+2026-03-09 16:46:28,645 | INFO | sqlalchemy.engine.Engine | [raw sql] ()
+2026-03-09 16:46:28,647 | INFO | sqlalchemy.engine.Engine | select current_schema()
+2026-03-09 16:46:28,648 | INFO | sqlalchemy.engine.Engine | [raw sql] ()
+2026-03-09 16:46:28,650 | INFO | sqlalchemy.engine.Engine | show standard_conforming_strings
+2026-03-09 16:46:28,650 | INFO | sqlalchemy.engine.Engine | [raw sql] ()
+2026-03-09 16:46:28,653 | INFO | sqlalchemy.engine.Engine | BEGIN (implicit)
+2026-03-09 16:46:28,659 | INFO | sqlalchemy.engine.Engine | SELECT users.id, users.phone, users.email, users.full_name, users.password_hash, users.role, users.status, users.is_phone_verified, users.is_email_verified, users.created_at, users.updated_at, users.last_login, users.deleted_at 
+FROM users 
+WHERE users.phone = $1::VARCHAR OR users.email = $2::VARCHAR
+2026-03-09 16:46:28,659 | INFO | sqlalchemy.engine.Engine | [generated in 0.00075s] ('9876543210', 'user123@gmail.com')
+2026-03-09 16:46:28,685 | WARNING | passlib.handlers.bcrypt | (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2026-03-09 16:46:28,695 | INFO | sqlalchemy.engine.Engine | ROLLBACK
+2026-03-09 16:52:39,529 | INFO | src.services.auth_service | Registration attempt phone=9876543210
+2026-03-09 16:52:39,670 | INFO | sqlalchemy.engine.Engine | select pg_catalog.version()
+2026-03-09 16:52:39,671 | INFO | sqlalchemy.engine.Engine | [raw sql] ()
+2026-03-09 16:52:39,675 | INFO | sqlalchemy.engine.Engine | select current_schema()
+2026-03-09 16:52:39,676 | INFO | sqlalchemy.engine.Engine | [raw sql] ()
+2026-03-09 16:52:39,680 | INFO | sqlalchemy.engine.Engine | show standard_conforming_strings
+2026-03-09 16:52:39,681 | INFO | sqlalchemy.engine.Engine | [raw sql] ()
+2026-03-09 16:52:39,683 | INFO | sqlalchemy.engine.Engine | BEGIN (implicit)
+2026-03-09 16:52:39,695 | INFO | sqlalchemy.engine.Engine | SELECT users.id, users.phone, users.email, users.full_name, users.password_hash, users.role, users.status, users.is_phone_verified, users.is_email_verified, users.created_at, users.updated_at, users.last_login, users.deleted_at 
+FROM users 
+WHERE users.phone = $1::VARCHAR OR users.email = $2::VARCHAR
+2026-03-09 16:52:39,696 | INFO | sqlalchemy.engine.Engine | [generated in 0.00133s] ('9876543210', 'user123@gmail.com')
+2026-03-09 16:52:39,728 | WARNING | passlib.handlers.bcrypt | (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2026-03-09 16:52:39,740 | INFO | sqlalchemy.engine.Engine | ROLLBACK
+2026-03-09 17:03:16,114 | INFO | src.services.auth_service | Registration attempt phone=9876543210
+2026-03-09 17:03:16,292 | INFO | sqlalchemy.engine.Engine | select pg_catalog.version()
+2026-03-09 17:03:16,293 | INFO | sqlalchemy.engine.Engine | [raw sql] ()
+2026-03-09 17:03:16,296 | INFO | sqlalchemy.engine.Engine | select current_schema()
+2026-03-09 17:03:16,297 | INFO | sqlalchemy.engine.Engine | [raw sql] ()
+2026-03-09 17:03:16,300 | INFO | sqlalchemy.engine.Engine | show standard_conforming_strings
+2026-03-09 17:03:16,301 | INFO | sqlalchemy.engine.Engine | [raw sql] ()
+2026-03-09 17:03:16,304 | INFO | sqlalchemy.engine.Engine | BEGIN (implicit)
+2026-03-09 17:03:16,310 | INFO | sqlalchemy.engine.Engine | SELECT users.id, users.phone, users.email, users.full_name, users.password_hash, users.role, users.status, users.is_phone_verified, users.is_email_verified, users.created_at, users.updated_at, users.last_login, users.deleted_at 
+FROM users 
+WHERE users.phone = $1::VARCHAR OR users.email = $2::VARCHAR
+2026-03-09 17:03:16,311 | INFO | sqlalchemy.engine.Engine | [generated in 0.00094s] ('9876543210', 'user123@gmail.com')
+2026-03-09 17:03:16,342 | WARNING | passlib.handlers.bcrypt | (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2026-03-09 17:03:16,353 | INFO | sqlalchemy.engine.Engine | ROLLBACK
+2026-03-09 17:15:29,330 | INFO | src.services.auth_service | Registration attempt phone=9876543210
+2026-03-09 17:15:29,607 | INFO | sqlalchemy.engine.Engine | select pg_catalog.version()
+2026-03-09 17:15:29,608 | INFO | sqlalchemy.engine.Engine | [raw sql] ()
+2026-03-09 17:15:29,614 | INFO | sqlalchemy.engine.Engine | select current_schema()
+2026-03-09 17:15:29,618 | INFO | sqlalchemy.engine.Engine | [raw sql] ()
+2026-03-09 17:15:29,625 | INFO | sqlalchemy.engine.Engine | show standard_conforming_strings
+2026-03-09 17:15:29,627 | INFO | sqlalchemy.engine.Engine | [raw sql] ()
+2026-03-09 17:15:29,631 | INFO | sqlalchemy.engine.Engine | BEGIN (implicit)
+2026-03-09 17:15:29,647 | INFO | sqlalchemy.engine.Engine | SELECT users.id, users.phone, users.email, users.full_name, users.password_hash, users.role, users.status, users.is_phone_verified, users.is_email_verified, users.created_at, users.updated_at, users.last_login, users.deleted_at 
+FROM users 
+WHERE users.phone = $1::VARCHAR OR users.email = $2::VARCHAR
+2026-03-09 17:15:29,650 | INFO | sqlalchemy.engine.Engine | [generated in 0.00280s] ('9876543210', 'user123@gmail.com')
+2026-03-09 17:15:30,263 | INFO | sqlalchemy.engine.Engine | INSERT INTO users (id, phone, email, full_name, password_hash, role, status, is_phone_verified, is_email_verified, created_at, updated_at, last_login, deleted_at) VALUES ($1::UUID, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::userrole, $7::userstatus, $8::BOOLEAN, $9::BOOLEAN, $10::TIMESTAMP WITHOUT TIME ZONE, $11::TIMESTAMP WITHOUT TIME ZONE, $12::TIMESTAMP WITHOUT TIME ZONE, $13::TIMESTAMP WITHOUT TIME ZONE)
+2026-03-09 17:15:30,264 | INFO | sqlalchemy.engine.Engine | [generated in 0.00175s] (UUID('fcde448f-f07a-46e1-8be4-d3d6bf521edd'), '9876543210', 'user123@gmail.com', 'User', '$2b$12$P9obbin2j1w6.JkokufAcuESqjgpqSwBIrnl3S3kdWGZUBOmeMPkO', 'TRAVELER', 'ACTIVE', False, False, datetime.datetime(2026, 3, 9, 11, 45, 30, 262957), datetime.datetime(2026, 3, 9, 11, 45, 30, 262964), None, None)
+2026-03-09 17:15:30,277 | INFO | sqlalchemy.engine.Engine | COMMIT
+2026-03-09 17:15:30,290 | INFO | sqlalchemy.engine.Engine | BEGIN (implicit)
+2026-03-09 17:15:30,295 | INFO | sqlalchemy.engine.Engine | SELECT users.id, users.phone, users.email, users.full_name, users.password_hash, users.role, users.status, users.is_phone_verified, users.is_email_verified, users.created_at, users.updated_at, users.last_login, users.deleted_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-03-09 17:15:30,296 | INFO | sqlalchemy.engine.Engine | [generated in 0.00135s] (UUID('fcde448f-f07a-46e1-8be4-d3d6bf521edd'),)
+2026-03-09 17:15:32,351 | INFO | src.services.auth_service | OTP for 9876543210 is 312764
+2026-03-09 17:15:32,353 | INFO | src.services.auth_service | User registered successfully user_id=fcde448f-f07a-46e1-8be4-d3d6bf521edd
+2026-03-09 17:15:32,355 | INFO | sqlalchemy.engine.Engine | COMMIT
+2026-03-09 17:32:49,012 | INFO | src.services.auth_service | OTP verification attempt phone=9876543215
+2026-03-09 17:32:49,034 | WARNING | src.services.auth_service | Expired OTP phone=9876543215
+2026-03-09 17:33:40,689 | INFO | src.services.auth_service | Sending OTP phone=9876543210 purpose=register
+2026-03-09 17:33:40,694 | INFO | src.services.auth_service | OTP for 9876543210 is 401986
+2026-03-09 18:01:47,516 | INFO | src.services.auth_service | Registration attempt phone=8888888881
+2026-03-09 18:01:47,618 | INFO | sqlalchemy.engine.Engine | select pg_catalog.version()
+2026-03-09 18:01:47,619 | INFO | sqlalchemy.engine.Engine | [raw sql] ()
+2026-03-09 18:01:47,622 | INFO | sqlalchemy.engine.Engine | select current_schema()
+2026-03-09 18:01:47,623 | INFO | sqlalchemy.engine.Engine | [raw sql] ()
+2026-03-09 18:01:47,625 | INFO | sqlalchemy.engine.Engine | show standard_conforming_strings
+2026-03-09 18:01:47,626 | INFO | sqlalchemy.engine.Engine | [raw sql] ()
+2026-03-09 18:01:47,629 | INFO | sqlalchemy.engine.Engine | BEGIN (implicit)
+2026-03-09 18:01:47,633 | INFO | sqlalchemy.engine.Engine | SELECT users.id, users.phone, users.email, users.full_name, users.password_hash, users.role, users.status, users.is_phone_verified, users.is_email_verified, users.created_at, users.updated_at, users.last_login, users.deleted_at 
+FROM users 
+WHERE users.phone = $1::VARCHAR OR users.email = $2::VARCHAR
+2026-03-09 18:01:47,634 | INFO | sqlalchemy.engine.Engine | [generated in 0.00096s] ('8888888881', 'ravi@gmail.com')
+2026-03-09 18:01:47,943 | INFO | sqlalchemy.engine.Engine | INSERT INTO users (id, phone, email, full_name, password_hash, role, status, is_phone_verified, is_email_verified, created_at, updated_at, last_login, deleted_at) VALUES ($1::UUID, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::userrole, $7::userstatus, $8::BOOLEAN, $9::BOOLEAN, $10::TIMESTAMP WITHOUT TIME ZONE, $11::TIMESTAMP WITHOUT TIME ZONE, $12::TIMESTAMP WITHOUT TIME ZONE, $13::TIMESTAMP WITHOUT TIME ZONE)
+2026-03-09 18:01:47,944 | INFO | sqlalchemy.engine.Engine | [generated in 0.00104s] (UUID('a14f5c4d-3302-4cc6-abfb-ed19918dd297'), '8888888881', 'ravi@gmail.com', 'Ravi Kumar', '$2b$12$C/M02dOABOhgoXJgBICpr.KmBYSSanvqisSh7/ImfKWfwRBThaavW', 'TRAVELER', 'ACTIVE', False, False, datetime.datetime(2026, 3, 9, 12, 31, 47, 943383), datetime.datetime(2026, 3, 9, 12, 31, 47, 943387), None, None)
+2026-03-09 18:01:47,946 | INFO | sqlalchemy.engine.Engine | COMMIT
+2026-03-09 18:01:47,950 | INFO | sqlalchemy.engine.Engine | BEGIN (implicit)
+2026-03-09 18:01:47,952 | INFO | sqlalchemy.engine.Engine | SELECT users.id, users.phone, users.email, users.full_name, users.password_hash, users.role, users.status, users.is_phone_verified, users.is_email_verified, users.created_at, users.updated_at, users.last_login, users.deleted_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-03-09 18:01:47,953 | INFO | sqlalchemy.engine.Engine | [generated in 0.00101s] (UUID('a14f5c4d-3302-4cc6-abfb-ed19918dd297'),)
+2026-03-09 18:01:50,010 | INFO | src.services.auth_service | OTP for 8888888881 is 043736
+2026-03-09 18:01:50,011 | INFO | src.services.auth_service | User registered successfully user_id=a14f5c4d-3302-4cc6-abfb-ed19918dd297
+2026-03-09 18:01:50,012 | INFO | sqlalchemy.engine.Engine | COMMIT
+2026-03-09 18:03:37,504 | INFO | src.services.auth_service | OTP verification attempt phone=8888888881
+2026-03-09 18:03:37,510 | INFO | sqlalchemy.engine.Engine | BEGIN (implicit)
+2026-03-09 18:03:37,512 | INFO | sqlalchemy.engine.Engine | SELECT users.id, users.phone, users.email, users.full_name, users.password_hash, users.role, users.status, users.is_phone_verified, users.is_email_verified, users.created_at, users.updated_at, users.last_login, users.deleted_at 
+FROM users 
+WHERE users.phone = $1::VARCHAR
+2026-03-09 18:03:37,513 | INFO | sqlalchemy.engine.Engine | [generated in 0.00117s] ('8888888881',)
+2026-03-09 18:03:37,522 | INFO | sqlalchemy.engine.Engine | UPDATE users SET is_phone_verified=$1::BOOLEAN, updated_at=$2::TIMESTAMP WITHOUT TIME ZONE, last_login=$3::TIMESTAMP WITHOUT TIME ZONE WHERE users.id = $4::UUID
+2026-03-09 18:03:37,524 | INFO | sqlalchemy.engine.Engine | [generated in 0.00227s] (True, datetime.datetime(2026, 3, 9, 12, 33, 37, 521998), datetime.datetime(2026, 3, 9, 12, 33, 37, 518556), UUID('a14f5c4d-3302-4cc6-abfb-ed19918dd297'))
+2026-03-09 18:03:37,528 | INFO | sqlalchemy.engine.Engine | COMMIT
+2026-03-09 18:03:37,530 | INFO | sqlalchemy.engine.Engine | BEGIN (implicit)
+2026-03-09 18:03:37,532 | INFO | sqlalchemy.engine.Engine | SELECT users.id, users.phone, users.email, users.full_name, users.password_hash, users.role, users.status, users.is_phone_verified, users.is_email_verified, users.created_at, users.updated_at, users.last_login, users.deleted_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-03-09 18:03:37,533 | INFO | sqlalchemy.engine.Engine | [cached since 109.6s ago] (UUID('a14f5c4d-3302-4cc6-abfb-ed19918dd297'),)
+2026-03-09 18:03:37,561 | INFO | src.services.auth_service | OTP login success user_id=a14f5c4d-3302-4cc6-abfb-ed19918dd297
+2026-03-09 18:03:37,563 | INFO | sqlalchemy.engine.Engine | ROLLBACK
+2026-03-09 18:12:50,997 | INFO | src.services.auth_service | Registration attempt phone=9999999991
+2026-03-09 18:12:51,093 | INFO | sqlalchemy.engine.Engine | select pg_catalog.version()
+2026-03-09 18:12:51,094 | INFO | sqlalchemy.engine.Engine | [raw sql] ()
+2026-03-09 18:12:51,097 | INFO | sqlalchemy.engine.Engine | select current_schema()
+2026-03-09 18:12:51,098 | INFO | sqlalchemy.engine.Engine | [raw sql] ()
+2026-03-09 18:12:51,100 | INFO | sqlalchemy.engine.Engine | show standard_conforming_strings
+2026-03-09 18:12:51,101 | INFO | sqlalchemy.engine.Engine | [raw sql] ()
+2026-03-09 18:12:51,103 | INFO | sqlalchemy.engine.Engine | BEGIN (implicit)
+2026-03-09 18:12:51,108 | INFO | sqlalchemy.engine.Engine | SELECT users.id, users.phone, users.email, users.full_name, users.password_hash, users.role, users.status, users.is_phone_verified, users.is_email_verified, users.created_at, users.updated_at, users.last_login, users.deleted_at 
+FROM users 
+WHERE users.phone = $1::VARCHAR OR users.email = $2::VARCHAR
+2026-03-09 18:12:51,109 | INFO | sqlalchemy.engine.Engine | [generated in 0.00097s] ('9999999991', 'test2@gmail.com')
+2026-03-09 18:12:51,418 | INFO | sqlalchemy.engine.Engine | INSERT INTO users (id, phone, email, full_name, password_hash, role, status, is_phone_verified, is_email_verified, created_at, updated_at, last_login, deleted_at) VALUES ($1::UUID, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::userrole, $7::userstatus, $8::BOOLEAN, $9::BOOLEAN, $10::TIMESTAMP WITHOUT TIME ZONE, $11::TIMESTAMP WITHOUT TIME ZONE, $12::TIMESTAMP WITHOUT TIME ZONE, $13::TIMESTAMP WITHOUT TIME ZONE)
+2026-03-09 18:12:51,419 | INFO | sqlalchemy.engine.Engine | [generated in 0.00113s] (UUID('f34fb373-b368-47df-8e14-ef7586d9dbfb'), '9999999991', 'test2@gmail.com', 'Test User Two', '$2b$12$TN2//1ZS4Zr8sHI21GFVh.WKRBugz5qjphZN2RxQp9VcaBFBl5JF6', 'TRAVELER', 'ACTIVE', False, False, datetime.datetime(2026, 3, 9, 12, 42, 51, 418272), datetime.datetime(2026, 3, 9, 12, 42, 51, 418276), None, None)
+2026-03-09 18:12:51,422 | INFO | sqlalchemy.engine.Engine | COMMIT
+2026-03-09 18:12:51,428 | INFO | sqlalchemy.engine.Engine | BEGIN (implicit)
+2026-03-09 18:12:51,431 | INFO | sqlalchemy.engine.Engine | SELECT users.id, users.phone, users.email, users.full_name, users.password_hash, users.role, users.status, users.is_phone_verified, users.is_email_verified, users.created_at, users.updated_at, users.last_login, users.deleted_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-03-09 18:12:51,432 | INFO | sqlalchemy.engine.Engine | [generated in 0.00122s] (UUID('f34fb373-b368-47df-8e14-ef7586d9dbfb'),)
+2026-03-09 18:12:53,461 | INFO | src.services.auth_service | OTP for 9999999991 is 353315
+2026-03-09 18:12:53,463 | INFO | src.services.auth_service | User registered successfully user_id=f34fb373-b368-47df-8e14-ef7586d9dbfb
+2026-03-09 18:12:53,465 | INFO | sqlalchemy.engine.Engine | COMMIT
+2026-03-09 18:14:08,331 | INFO | src.services.auth_service | OTP verification attempt phone=9999999991
+2026-03-09 18:14:08,334 | INFO | sqlalchemy.engine.Engine | BEGIN (implicit)
+2026-03-09 18:14:08,337 | INFO | sqlalchemy.engine.Engine | SELECT users.id, users.phone, users.email, users.full_name, users.password_hash, users.role, users.status, users.is_phone_verified, users.is_email_verified, users.created_at, users.updated_at, users.last_login, users.deleted_at 
+FROM users 
+WHERE users.phone = $1::VARCHAR
+2026-03-09 18:14:08,338 | INFO | sqlalchemy.engine.Engine | [generated in 0.00104s] ('9999999991',)
+2026-03-09 18:14:08,345 | INFO | sqlalchemy.engine.Engine | UPDATE users SET is_phone_verified=$1::BOOLEAN, updated_at=$2::TIMESTAMP WITHOUT TIME ZONE, last_login=$3::TIMESTAMP WITHOUT TIME ZONE WHERE users.id = $4::UUID
+2026-03-09 18:14:08,347 | INFO | sqlalchemy.engine.Engine | [generated in 0.00212s] (True, datetime.datetime(2026, 3, 9, 12, 44, 8, 345358), datetime.datetime(2026, 3, 9, 12, 44, 8, 341738), UUID('f34fb373-b368-47df-8e14-ef7586d9dbfb'))
+2026-03-09 18:14:08,351 | INFO | sqlalchemy.engine.Engine | COMMIT
+2026-03-09 18:14:08,354 | INFO | sqlalchemy.engine.Engine | BEGIN (implicit)
+2026-03-09 18:14:08,356 | INFO | sqlalchemy.engine.Engine | SELECT users.id, users.phone, users.email, users.full_name, users.password_hash, users.role, users.status, users.is_phone_verified, users.is_email_verified, users.created_at, users.updated_at, users.last_login, users.deleted_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-03-09 18:14:08,358 | INFO | sqlalchemy.engine.Engine | [cached since 76.93s ago] (UUID('f34fb373-b368-47df-8e14-ef7586d9dbfb'),)
+2026-03-09 18:14:08,373 | INFO | src.services.auth_service | OTP login success user_id=f34fb373-b368-47df-8e14-ef7586d9dbfb
+2026-03-09 18:14:08,375 | INFO | sqlalchemy.engine.Engine | ROLLBACK
+2026-03-10 09:30:32,632 | INFO | src.services.auth_service | Registration attempt phone=9381772845
+2026-03-10 09:30:33,046 | INFO | sqlalchemy.engine.Engine | select pg_catalog.version()
+2026-03-10 09:30:33,048 | INFO | sqlalchemy.engine.Engine | [raw sql] ()
+2026-03-10 09:30:33,059 | INFO | sqlalchemy.engine.Engine | select current_schema()
+2026-03-10 09:30:33,062 | INFO | sqlalchemy.engine.Engine | [raw sql] ()
+2026-03-10 09:30:33,071 | INFO | sqlalchemy.engine.Engine | show standard_conforming_strings
+2026-03-10 09:30:33,085 | INFO | sqlalchemy.engine.Engine | [raw sql] ()
+2026-03-10 09:30:33,108 | INFO | sqlalchemy.engine.Engine | BEGIN (implicit)
+2026-03-10 09:30:33,171 | INFO | sqlalchemy.engine.Engine | SELECT users.id, users.phone, users.email, users.full_name, users.password_hash, users.role, users.status, users.is_phone_verified, users.is_email_verified, users.created_at, users.updated_at, users.last_login, users.deleted_at 
+FROM users 
+WHERE users.phone = $1::VARCHAR OR users.email = $2::VARCHAR
+2026-03-10 09:30:33,198 | INFO | sqlalchemy.engine.Engine | [generated in 0.02726s] ('9381772845', 'hari@gmail.com')
+2026-03-10 09:30:33,951 | INFO | sqlalchemy.engine.Engine | INSERT INTO users (id, phone, email, full_name, password_hash, role, status, is_phone_verified, is_email_verified, created_at, updated_at, last_login, deleted_at) VALUES ($1::UUID, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::userrole, $7::userstatus, $8::BOOLEAN, $9::BOOLEAN, $10::TIMESTAMP WITHOUT TIME ZONE, $11::TIMESTAMP WITHOUT TIME ZONE, $12::TIMESTAMP WITHOUT TIME ZONE, $13::TIMESTAMP WITHOUT TIME ZONE)
+2026-03-10 09:30:33,953 | INFO | sqlalchemy.engine.Engine | [generated in 0.00262s] (UUID('a96241c1-508d-4eca-87ae-c55aa1f18814'), '9381772845', 'hari@gmail.com', 'Shree Hari', '$2b$12$emo9.WZbfxkXvkIgwMcbBeKl7GPmDQdwJOZU87wnIk6Nf3VcX1VJy', 'TRAVELER', 'ACTIVE', False, False, datetime.datetime(2026, 3, 10, 4, 0, 33, 951463), datetime.datetime(2026, 3, 10, 4, 0, 33, 951474), None, None)
+2026-03-10 09:30:33,981 | INFO | sqlalchemy.engine.Engine | COMMIT
+2026-03-10 09:30:34,003 | INFO | sqlalchemy.engine.Engine | BEGIN (implicit)
+2026-03-10 09:30:34,008 | INFO | sqlalchemy.engine.Engine | SELECT users.id, users.phone, users.email, users.full_name, users.password_hash, users.role, users.status, users.is_phone_verified, users.is_email_verified, users.created_at, users.updated_at, users.last_login, users.deleted_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-03-10 09:30:34,009 | INFO | sqlalchemy.engine.Engine | [generated in 0.00143s] (UUID('a96241c1-508d-4eca-87ae-c55aa1f18814'),)
+2026-03-10 09:30:36,127 | INFO | src.services.auth_service | OTP for 9381772845 is 519388
+2026-03-10 09:30:36,132 | INFO | src.services.auth_service | User registered successfully user_id=a96241c1-508d-4eca-87ae-c55aa1f18814
+2026-03-10 09:30:36,136 | INFO | sqlalchemy.engine.Engine | COMMIT
+2026-03-10 09:32:10,897 | INFO | src.services.auth_service | OTP verification attempt phone=9381772845
+2026-03-10 09:32:10,917 | INFO | sqlalchemy.engine.Engine | BEGIN (implicit)
+2026-03-10 09:32:10,932 | INFO | sqlalchemy.engine.Engine | SELECT users.id, users.phone, users.email, users.full_name, users.password_hash, users.role, users.status, users.is_phone_verified, users.is_email_verified, users.created_at, users.updated_at, users.last_login, users.deleted_at 
+FROM users 
+WHERE users.phone = $1::VARCHAR
+2026-03-10 09:32:10,934 | INFO | sqlalchemy.engine.Engine | [generated in 0.00204s] ('9381772845',)
+2026-03-10 09:32:10,942 | INFO | sqlalchemy.engine.Engine | UPDATE users SET is_phone_verified=$1::BOOLEAN, updated_at=$2::TIMESTAMP WITHOUT TIME ZONE, last_login=$3::TIMESTAMP WITHOUT TIME ZONE WHERE users.id = $4::UUID
+2026-03-10 09:32:10,944 | INFO | sqlalchemy.engine.Engine | [generated in 0.00131s] (True, datetime.datetime(2026, 3, 10, 4, 2, 10, 942759), datetime.datetime(2026, 3, 10, 4, 2, 10, 938688), UUID('a96241c1-508d-4eca-87ae-c55aa1f18814'))
+2026-03-10 09:32:10,950 | INFO | sqlalchemy.engine.Engine | COMMIT
+2026-03-10 09:32:10,955 | INFO | sqlalchemy.engine.Engine | BEGIN (implicit)
+2026-03-10 09:32:10,958 | INFO | sqlalchemy.engine.Engine | SELECT users.id, users.phone, users.email, users.full_name, users.password_hash, users.role, users.status, users.is_phone_verified, users.is_email_verified, users.created_at, users.updated_at, users.last_login, users.deleted_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-03-10 09:32:10,960 | INFO | sqlalchemy.engine.Engine | [cached since 96.95s ago] (UUID('a96241c1-508d-4eca-87ae-c55aa1f18814'),)
+2026-03-10 09:32:11,170 | INFO | src.services.auth_service | OTP login success user_id=a96241c1-508d-4eca-87ae-c55aa1f18814
+2026-03-10 09:32:11,175 | INFO | sqlalchemy.engine.Engine | COMMIT
+2026-03-10 09:52:05,932 | INFO | src.services.auth_service | Registration attempt phone=7777777778
+2026-03-10 09:52:06,243 | INFO | sqlalchemy.engine.Engine | select pg_catalog.version()
+2026-03-10 09:52:06,244 | INFO | sqlalchemy.engine.Engine | [raw sql] ()
+2026-03-10 09:52:06,251 | INFO | sqlalchemy.engine.Engine | select current_schema()
+2026-03-10 09:52:06,253 | INFO | sqlalchemy.engine.Engine | [raw sql] ()
+2026-03-10 09:52:06,258 | INFO | sqlalchemy.engine.Engine | show standard_conforming_strings
+2026-03-10 09:52:06,259 | INFO | sqlalchemy.engine.Engine | [raw sql] ()
+2026-03-10 09:52:06,264 | INFO | sqlalchemy.engine.Engine | BEGIN (implicit)
+2026-03-10 09:52:06,283 | INFO | sqlalchemy.engine.Engine | SELECT users.id, users.phone, users.email, users.full_name, users.password_hash, users.role, users.status, users.is_phone_verified, users.is_email_verified, users.created_at, users.updated_at, users.last_login, users.deleted_at 
+FROM users 
+WHERE users.phone = $1::VARCHAR OR users.email = $2::VARCHAR
+2026-03-10 09:52:06,286 | INFO | sqlalchemy.engine.Engine | [generated in 0.00339s] ('7777777778', 'raki@gmail.com')
+2026-03-10 09:52:06,987 | INFO | sqlalchemy.engine.Engine | INSERT INTO users (id, phone, email, full_name, password_hash, role, status, is_phone_verified, is_email_verified, created_at, updated_at, last_login, deleted_at) VALUES ($1::UUID, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::userrole, $7::userstatus, $8::BOOLEAN, $9::BOOLEAN, $10::TIMESTAMP WITHOUT TIME ZONE, $11::TIMESTAMP WITHOUT TIME ZONE, $12::TIMESTAMP WITHOUT TIME ZONE, $13::TIMESTAMP WITHOUT TIME ZONE)
+2026-03-10 09:52:06,989 | INFO | sqlalchemy.engine.Engine | [generated in 0.00233s] (UUID('afb01da2-89ef-4779-8d2c-35915ded70a7'), '7777777778', 'raki@gmail.com', 'Raki Kumar', '$2b$12$Qcj94EjJ3bOoQ2BwZ/jPdOtwu/jrlZUcPjjdNaFDeEB8UtDPLS2Fy', 'TRAVELER', 'ACTIVE', False, False, datetime.datetime(2026, 3, 10, 4, 22, 6, 987168), datetime.datetime(2026, 3, 10, 4, 22, 6, 987182), None, None)
+2026-03-10 09:52:06,993 | INFO | sqlalchemy.engine.Engine | COMMIT
+2026-03-10 09:52:07,021 | INFO | sqlalchemy.engine.Engine | BEGIN (implicit)
+2026-03-10 09:52:07,025 | INFO | sqlalchemy.engine.Engine | SELECT users.id, users.phone, users.email, users.full_name, users.password_hash, users.role, users.status, users.is_phone_verified, users.is_email_verified, users.created_at, users.updated_at, users.last_login, users.deleted_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-03-10 09:52:07,026 | INFO | sqlalchemy.engine.Engine | [generated in 0.00133s] (UUID('afb01da2-89ef-4779-8d2c-35915ded70a7'),)
+2026-03-10 09:52:09,080 | INFO | src.services.auth_service | OTP for 7777777778 is 653161
+2026-03-10 09:52:09,082 | INFO | src.services.auth_service | User registered successfully user_id=afb01da2-89ef-4779-8d2c-35915ded70a7
+2026-03-10 09:52:09,085 | INFO | sqlalchemy.engine.Engine | COMMIT
+2026-03-10 09:53:08,984 | INFO | src.services.auth_service | OTP verification attempt phone=7777777778
+2026-03-10 09:53:09,002 | INFO | sqlalchemy.engine.Engine | BEGIN (implicit)
+2026-03-10 09:53:09,010 | INFO | sqlalchemy.engine.Engine | SELECT users.id, users.phone, users.email, users.full_name, users.password_hash, users.role, users.status, users.is_phone_verified, users.is_email_verified, users.created_at, users.updated_at, users.last_login, users.deleted_at 
+FROM users 
+WHERE users.phone = $1::VARCHAR
+2026-03-10 09:53:09,011 | INFO | sqlalchemy.engine.Engine | [generated in 0.00163s] ('7777777778',)
+2026-03-10 09:53:09,022 | INFO | sqlalchemy.engine.Engine | UPDATE users SET is_phone_verified=$1::BOOLEAN, updated_at=$2::TIMESTAMP WITHOUT TIME ZONE, last_login=$3::TIMESTAMP WITHOUT TIME ZONE WHERE users.id = $4::UUID
+2026-03-10 09:53:09,023 | INFO | sqlalchemy.engine.Engine | [generated in 0.00154s] (True, datetime.datetime(2026, 3, 10, 4, 23, 9, 22635), datetime.datetime(2026, 3, 10, 4, 23, 9, 17534), UUID('afb01da2-89ef-4779-8d2c-35915ded70a7'))
+2026-03-10 09:53:09,028 | INFO | sqlalchemy.engine.Engine | COMMIT
+2026-03-10 09:53:09,052 | INFO | sqlalchemy.engine.Engine | BEGIN (implicit)
+2026-03-10 09:53:09,055 | INFO | sqlalchemy.engine.Engine | SELECT users.id, users.phone, users.email, users.full_name, users.password_hash, users.role, users.status, users.is_phone_verified, users.is_email_verified, users.created_at, users.updated_at, users.last_login, users.deleted_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-03-10 09:53:09,056 | INFO | sqlalchemy.engine.Engine | [cached since 62.02s ago] (UUID('afb01da2-89ef-4779-8d2c-35915ded70a7'),)
+2026-03-10 09:53:09,077 | INFO | src.services.auth_service | OTP login success user_id=afb01da2-89ef-4779-8d2c-35915ded70a7
+2026-03-10 09:53:09,080 | INFO | sqlalchemy.engine.Engine | COMMIT
+2026-03-10 09:54:04,293 | INFO | src.services.auth_service | Login attempt identifier=7777777778
+2026-03-10 09:54:04,297 | INFO | sqlalchemy.engine.Engine | BEGIN (implicit)
+2026-03-10 09:54:04,300 | INFO | sqlalchemy.engine.Engine | SELECT users.id, users.phone, users.email, users.full_name, users.password_hash, users.role, users.status, users.is_phone_verified, users.is_email_verified, users.created_at, users.updated_at, users.last_login, users.deleted_at 
+FROM users 
+WHERE users.phone = $1::VARCHAR OR users.email = $2::VARCHAR
+2026-03-10 09:54:04,301 | INFO | sqlalchemy.engine.Engine | [cached since 118s ago] ('7777777778', '7777777778')
+2026-03-10 09:54:04,911 | INFO | sqlalchemy.engine.Engine | UPDATE users SET updated_at=$1::TIMESTAMP WITHOUT TIME ZONE, last_login=$2::TIMESTAMP WITHOUT TIME ZONE WHERE users.id = $3::UUID
+2026-03-10 09:54:04,913 | INFO | sqlalchemy.engine.Engine | [generated in 0.00131s] (datetime.datetime(2026, 3, 10, 4, 24, 4, 911784), datetime.datetime(2026, 3, 10, 4, 24, 4, 909722), UUID('afb01da2-89ef-4779-8d2c-35915ded70a7'))
+2026-03-10 09:54:04,917 | INFO | sqlalchemy.engine.Engine | COMMIT
+2026-03-10 09:54:04,921 | INFO | src.services.auth_service | Login success user_id=afb01da2-89ef-4779-8d2c-35915ded70a7
+2026-03-10 09:55:34,337 | INFO | src.services.auth_service | Logout attempt user_id=afb01da2-89ef-4779-8d2c-35915ded70a7 device_id=default
+2026-03-10 09:55:34,340 | INFO | src.services.auth_service | Logout success user_id=afb01da2-89ef-4779-8d2c-35915ded70a7
