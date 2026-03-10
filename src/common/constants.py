@@ -1,0 +1,14 @@
+# Cache TTLs (seconds)
+SLOT_LOCK_TTL_SECONDS = 900       # 15 minutes
+DARSHAN_SLOT_CACHE_TTL = 120      # 2 minutes
+FEATURED_CACHE_TTL = 3600         # 1 hour
+POPULAR_CACHE_TTL = 1800          # 30 minutes
+TEMPLE_DETAIL_CACHE_TTL = 900     # 15 minutes
+
+# Pagination
+DEFAULT_PAGE_SIZE = 20
+MAX_PAGE_SIZE = 100
+
+# Limits
+MAX_DEVOTEES_PER_BOOKING = 10
+DEFAULT_RADIUS_KM = 50.0
