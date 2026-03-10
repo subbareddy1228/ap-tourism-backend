@@ -9,6 +9,7 @@ from src.database import Base
 class DiscountType(str, PyEnum):
     PERCENTAGE = "PERCENTAGE"
     FLAT       = "FLAT"
+    
 
 class CouponApplicableTo(str, PyEnum):
     ALL     = "ALL"
