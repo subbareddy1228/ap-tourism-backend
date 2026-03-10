@@ -18,7 +18,7 @@ from src.schemas.user import (
     FamilyMemberCreate, FamilyMemberUpdate,
     SaveItemRequest, UpdatePhoneRequest, UpdateEmailRequest,
 )
-from src.integrations.aws_s3 import upload_file_to_s3, delete_file_from_s3
+from src.integrations.aws_s3 import upload_avatar, delete_avatar
 from src.core.redis import get_redis
 import re
 
