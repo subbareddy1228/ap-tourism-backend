@@ -20,6 +20,7 @@ from src.core.database import Base
 
 # Import every model so Alembic sees them in Base.metadata
 from src.models.user import User          # noqa: F401
+from src.models.user_profile import UserProfile, Address, FamilyMember, UserSession
 # Add more models here as you create them:
 # from src.models.hotel import Hotel      # noqa: F401
 # from src.models.booking import Booking  # noqa: F401

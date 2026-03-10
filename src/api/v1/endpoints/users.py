@@ -1,110 +1,77 @@
-
 """
 api/v1/endpoints/users.py
-M2 — User APIs  |  25 endpoints  |  /api/v1/users
+All 18 User API endpoints — /api/v1/user
 
-Self-Service (15):
-  GET    /users/me                              → Get my profile
-  PUT    /users/me/profile                      → Update profile
-  POST   /users/me/avatar                       → Upload avatar
-  DELETE /users/me/avatar                       → Remove avatar
-  POST   /users/me/change-phone                 → Change phone (OTP)
-  POST   /users/me/verify-email                 → Verify email (OTP)
-  DELETE /users/me/account                      → Delete own account
-  GET    /users/me/addresses                    → List addresses
-  POST   /users/me/addresses                    → Add address
-  PUT    /users/me/addresses/{id}               → Update address
-  DELETE /users/me/addresses/{id}               → Delete address
-  PUT    /users/me/addresses/{id}/default       → Set default address
-  GET    /users/me/family                       → List family members
-  POST   /users/me/family                       → Add family member
-  PUT    /users/me/family/{id}                  → Update family member
-  DELETE /users/me/family/{id}                  → Delete family member
-  GET    /users/me/saved                        → Saved items (wishlist)
-  POST   /users/me/saved                        → Save an item
-  DELETE /users/me/saved/{item_id}              → Remove saved item
-  GET    /users/me/loyalty                      → Loyalty points & tier
-  PUT    /users/me/fcm-token                    → Update FCM push token
+Groups:
+  Profile       — GET/PUT /me, PATCH /me/avatar, DELETE /me
+  Addresses     — CRUD /me/addresses
+  Family        — CRUD /me/family-members
+  Verification  — POST /me/verify-phone
+  Preferences   — GET/PUT /me/preferences
+  Sessions      — GET /me/sessions, DELETE /me/sessions/{id}
 
-Admin (4):
-  GET    /users                                 → List all users (admin)
-  GET    /users/{user_id}                       → Get any user (admin)
-  PUT    /users/{user_id}                       → Update any user (admin)
-  DELETE /users/{user_id}                       → Delete any user (admin)
+Owner: Dev 2
+Auth: Uses get_current_user from Dev 1 (psubb) auth module
 """
 
-from uuid import UUID
-from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query, status
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.database import get_db
-from src.api.deps.auth import get_current_user, get_verified_user, get_admin_user
+from src.api.deps.auth import get_current_user, get_verified_user
 from src.models.user import User
 from src.schemas.user import (
-    ProfileUpdate, AddressCreate, AddressUpdate,
-    FamilyMemberCreate, FamilyMemberUpdate,
-    SaveItemRequest, UpdatePhoneRequest, UpdateEmailRequest,
-    UpdateFCMTokenRequest, AdminUpdateUserRequest,
-    ProfileResponse, AddressResponse, FamilyMemberResponse,
-    SavedItemResponse, LoyaltyResponse, AdminUserListResponse,
-    PaginatedResponse,
+    UpdateProfileRequest, ProfileResponse,
+    AddressRequest, AddressResponse,
+    FamilyMemberRequest, FamilyMemberResponse,
+    VerifyPhoneRequest,
+    PreferencesRequest, PreferencesResponse,
+    SessionResponse, AvatarResponse
 )
 from src.common.responses import APIResponse
 from src.services import user_service
 
-router = APIRouter(prefix="/users", tags=["Users"])
-
-# ── Avatar size / type guards ─────────────────────────────────
-MAX_AVATAR_SIZE_MB = 5
-ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp"}
+router = APIRouter(prefix="/user", tags=["Users"])
 
 
-# ═══════════════════════════════════════════════════════════════
-# SELF-SERVICE — PROFILE
-# ═══════════════════════════════════════════════════════════════
+# ══════════════════ PROFILE ══════════════════
 
 @router.get(
     "/me",
     response_model=APIResponse,
-    summary="Get my profile"
+    summary="Get full profile"
 )
-async def get_my_profile(
+async def get_profile(
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db)
 ):
     """
-    Returns full profile for the authenticated user.
-    Merges **users** + **user_profiles** tables.
-    Auto-creates a profile if first access.
+    Get complete profile of logged-in user.
+    Includes: wallet balance, kyc status, preferences, avatar.
     """
-    data = await user_service.get_my_profile(current_user, db)
-    return APIResponse.success(data=data)
+    result = await user_service.get_full_profile(current_user, db)
+    return APIResponse.success(message="Profile fetched successfully", data=result)
 
 
 @router.put(
-    "/me/profile",
+    "/me",
     response_model=APIResponse,
-    summary="Update my profile"
+    summary="Update profile"
 )
-async def update_my_profile(
-    payload: ProfileUpdate,
+async def update_profile(
+    data: UpdateProfileRequest,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db)
 ):
     """
-    Partial update — only send fields you want to change.
-    Updates **users** table (full_name, email) and **user_profiles** (everything else).
-    Also recalculates `is_profile_complete` automatically.
+    Update basic profile information.
+    Updatable fields: full_name, date_of_birth, gender, language.
     """
-    try:
-        data = await user_service.update_my_profile(current_user, payload, db)
-        return APIResponse.success(message="Profile updated successfully", data=data)
-    except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    result = await user_service.update_profile(data, current_user, db)
+    return APIResponse.success(message="Profile updated successfully", data=result)
 
 
-@router.post(
+@router.patch(
     "/me/avatar",
     response_model=APIResponse,
     summary="Upload profile avatar"
@@ -112,133 +79,73 @@ async def update_my_profile(
 async def upload_avatar(
     file: UploadFile = File(...),
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db)
 ):
     """
-    Upload a profile photo. Accepted formats: JPEG, PNG, WebP. Max size: 5 MB.
-    Returns the new `avatar_url` (S3 URL).
+    Upload profile photo to AWS S3.
+    - Allowed types: jpeg, png, webp
+    - Max size: 5MB
+    - Old avatar is automatically deleted from S3
     """
-    if file.content_type not in ALLOWED_IMAGE_TYPES:
-        raise HTTPException(status_code=400, detail="Only JPEG, PNG, or WebP images allowed")
-
-    content = await file.read()
-    if len(content) > MAX_AVATAR_SIZE_MB * 1024 * 1024:
-        raise HTTPException(status_code=400, detail=f"File too large. Max {MAX_AVATAR_SIZE_MB}MB")
-
-    data = await user_service.upload_avatar(current_user, content, file.content_type, db)
-    return APIResponse.success(message="Avatar uploaded", data=data)
+    result = await user_service.upload_user_avatar(file, current_user, db)
+    return APIResponse.success(message=result["message"], data=result)
 
 
 @router.delete(
-    "/me/avatar",
+    "/me",
     response_model=APIResponse,
-    summary="Remove profile avatar"
+    summary="Delete account (soft delete)"
 )
-async def delete_avatar(
+async def delete_account(
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    """Removes the avatar from S3 and clears avatar_url."""
-    data = await user_service.delete_avatar(current_user, db)
-    return APIResponse.success(message=data["message"])
-
-
-# ═══════════════════════════════════════════════════════════════
-# SELF-SERVICE — PHONE / EMAIL
-# ═══════════════════════════════════════════════════════════════
-
-@router.post(
-    "/me/change-phone",
-    response_model=APIResponse,
-    summary="Change phone number (OTP verified)"
-)
-async def change_phone(
-    payload: UpdatePhoneRequest,
-    current_user: User = Depends(get_verified_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db)
 ):
     """
-    Change the phone number tied to this account.
-    **Pre-requisite:** Call `/auth/send-otp` with `purpose=change_phone` for the new number.
-    Then submit the new_phone + OTP here.
+    Soft delete the account.
+    - Sets status to DELETED, records deleted_at timestamp
+    - Anonymizes personal data after 30 days
+    - Logs out all devices immediately
     """
-    try:
-        data = await user_service.change_phone(current_user, payload, db)
-        return APIResponse.success(message=data["message"], data=data)
-    except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    result = await user_service.delete_account(current_user, db)
+    return APIResponse.success(message=result["message"])
 
 
-@router.post(
-    "/me/verify-email",
-    response_model=APIResponse,
-    summary="Verify and save email address"
-)
-async def verify_email(
-    payload: UpdateEmailRequest,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    """
-    Verify email with OTP. Sets `is_email_verified=true`.
-    **Pre-requisite:** Send OTP to the email first (via `/auth/send-otp` or email flow).
-    """
-    try:
-        data = await user_service.verify_email(current_user, payload, db)
-        return APIResponse.success(message=data["message"])
-    except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
-
-
-@router.delete(
-    "/me/account",
-    response_model=APIResponse,
-    summary="Delete my account (soft delete)"
-)
-async def delete_my_account(
-    current_user: User = Depends(get_verified_user),
-    db: AsyncSession = Depends(get_db),
-):
-    """
-    Soft-deletes the authenticated user's account.
-    Sets `deleted_at` and `status=deleted`. Data is retained for 30 days.
-    """
-    await user_service.admin_delete_user(current_user.id, db)
-    return APIResponse.success(message="Account deleted successfully")
-
-
-# ═══════════════════════════════════════════════════════════════
-# SELF-SERVICE — ADDRESSES
-# ═══════════════════════════════════════════════════════════════
+# ══════════════════ ADDRESSES ══════════════════
 
 @router.get(
     "/me/addresses",
     response_model=APIResponse,
-    summary="List my saved addresses"
+    summary="List all addresses"
 )
-async def get_addresses(
+async def list_addresses(
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db)
 ):
-    addresses = await user_service.get_addresses(current_user, db)
-    return APIResponse.success(data=[AddressResponse.model_validate(a).model_dump() for a in addresses])
+    """List all saved addresses for the user."""
+    addresses = await user_service.list_addresses(current_user, db)
+    data = [AddressResponse.model_validate(a).model_dump() for a in addresses]
+    return APIResponse.success(message="Addresses fetched", data=data)
 
 
 @router.post(
     "/me/addresses",
     response_model=APIResponse,
     status_code=status.HTTP_201_CREATED,
-    summary="Add a new address"
+    summary="Add new address"
 )
 async def add_address(
-    payload: AddressCreate,
+    data: AddressRequest,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db)
 ):
-    """Adds a saved address. Max 10 addresses per user."""
-    address = await user_service.add_address(current_user, payload, db)
+    """
+    Add a new address.
+    Labels: home | work | other
+    If is_default=true, all other addresses are unset as default.
+    """
+    address = await user_service.add_address(data, current_user, db)
     return APIResponse.success(
-        message="Address added",
+        message="Address added successfully",
         data=AddressResponse.model_validate(address).model_dump()
     )
 
@@ -246,297 +153,214 @@ async def add_address(
 @router.put(
     "/me/addresses/{address_id}",
     response_model=APIResponse,
-    summary="Update an address"
+    summary="Update address"
 )
 async def update_address(
-    address_id: UUID,
-    payload: AddressUpdate,
+    address_id: str,
+    data: AddressRequest,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db)
 ):
-    try:
-        address = await user_service.update_address(current_user, address_id, payload, db)
-        return APIResponse.success(data=AddressResponse.model_validate(address).model_dump())
-    except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    """Update an existing address. Verifies ownership before updating."""
+    address = await user_service.update_address(address_id, data, current_user, db)
+    return APIResponse.success(
+        message="Address updated successfully",
+        data=AddressResponse.model_validate(address).model_dump()
+    )
 
 
 @router.delete(
     "/me/addresses/{address_id}",
     response_model=APIResponse,
-    summary="Delete an address"
+    summary="Delete address"
 )
 async def delete_address(
-    address_id: UUID,
+    address_id: str,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db)
 ):
-    try:
-        result = await user_service.delete_address(current_user, address_id, db)
-        return APIResponse.success(message=result["message"])
-    except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    """Delete an address. Verifies ownership before deleting."""
+    result = await user_service.delete_address(address_id, current_user, db)
+    return APIResponse.success(message=result["message"])
 
 
-@router.put(
-    "/me/addresses/{address_id}/default",
-    response_model=APIResponse,
-    summary="Set address as default"
-)
-async def set_default_address(
-    address_id: UUID,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    try:
-        address = await user_service.set_default_address(current_user, address_id, db)
-        return APIResponse.success(
-            message="Default address updated",
-            data=AddressResponse.model_validate(address).model_dump()
-        )
-    except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-
-
-# ═══════════════════════════════════════════════════════════════
-# SELF-SERVICE — FAMILY MEMBERS
-# ═══════════════════════════════════════════════════════════════
+# ══════════════════ FAMILY MEMBERS ══════════════════
 
 @router.get(
-    "/me/family",
+    "/me/family-members",
     response_model=APIResponse,
     summary="List family members"
 )
-async def get_family(
+async def list_family_members(
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db)
 ):
-    """Used during group bookings to pre-fill traveler details."""
-    members = await user_service.get_family(current_user, db)
-    return APIResponse.success(data=[FamilyMemberResponse.model_validate(m).model_dump() for m in members])
+    """List all family members linked to the account."""
+    members = await user_service.list_family_members(current_user, db)
+    data = [FamilyMemberResponse.model_validate(m).model_dump() for m in members]
+    return APIResponse.success(message="Family members fetched", data=data)
 
 
 @router.post(
-    "/me/family",
+    "/me/family-members",
     response_model=APIResponse,
     status_code=status.HTTP_201_CREATED,
-    summary="Add a family member"
+    summary="Add family member"
 )
 async def add_family_member(
-    payload: FamilyMemberCreate,
+    data: FamilyMemberRequest,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db)
 ):
-    try:
-        member = await user_service.add_family_member(current_user, payload, db)
-        return APIResponse.success(
-            message="Family member added",
-            data=FamilyMemberResponse.model_validate(member).model_dump()
-        )
-    except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    """
+    Add a family member.
+    Relations: spouse | child | parent | sibling | other
+    ID proof: aadhaar | passport | pan
+    """
+    member = await user_service.add_family_member(data, current_user, db)
+    return APIResponse.success(
+        message="Family member added",
+        data=FamilyMemberResponse.model_validate(member).model_dump()
+    )
 
 
 @router.put(
-    "/me/family/{member_id}",
+    "/me/family-members/{member_id}",
     response_model=APIResponse,
-    summary="Update a family member"
+    summary="Update family member"
 )
 async def update_family_member(
-    member_id: UUID,
-    payload: FamilyMemberUpdate,
+    member_id: str,
+    data: FamilyMemberRequest,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db)
 ):
-    try:
-        member = await user_service.update_family_member(current_user, member_id, payload, db)
-        return APIResponse.success(data=FamilyMemberResponse.model_validate(member).model_dump())
-    except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    """Update family member details."""
+    member = await user_service.update_family_member(member_id, data, current_user, db)
+    return APIResponse.success(
+        message="Family member updated",
+        data=FamilyMemberResponse.model_validate(member).model_dump()
+    )
 
 
 @router.delete(
-    "/me/family/{member_id}",
+    "/me/family-members/{member_id}",
     response_model=APIResponse,
-    summary="Remove a family member"
+    summary="Remove family member"
 )
 async def delete_family_member(
-    member_id: UUID,
+    member_id: str,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db)
 ):
-    try:
-        result = await user_service.delete_family_member(current_user, member_id, db)
-        return APIResponse.success(message=result["message"])
-    except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    """Remove a family member from the account."""
+    result = await user_service.delete_family_member(member_id, current_user, db)
+    return APIResponse.success(message=result["message"])
 
 
-# ═══════════════════════════════════════════════════════════════
-# SELF-SERVICE — SAVED ITEMS (WISHLIST)
-# ═══════════════════════════════════════════════════════════════
+# ══════════════════ VERIFICATION ══════════════════
 
-@router.get(
-    "/me/saved",
+@router.post(
+    "/me/verify-phone",
     response_model=APIResponse,
-    summary="Get saved/wishlisted items"
+    summary="Send phone verification OTP"
 )
-async def get_saved_items(
-    item_type: Optional[str] = Query(None, description="Filter: temple | destination | package | hotel"),
-    page: int = Query(1, ge=1),
-    limit: int = Query(20, ge=1, le=100),
+async def verify_phone_send(
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
 ):
-    result = await user_service.get_saved_items(current_user, db, item_type, page, limit)
-    result["data"] = [SavedItemResponse.model_validate(i).model_dump() for i in result["data"]]
-    return APIResponse.success(data=result)
+    """
+    Send OTP to phone for verification.
+    Use POST /auth/verify-otp to complete verification.
+    """
+    result = await user_service.send_phone_verification_otp(current_user)
+    return APIResponse.success(message=result["message"], data=result)
 
 
 @router.post(
-    "/me/saved",
+    "/me/verify-phone/confirm",
     response_model=APIResponse,
-    status_code=status.HTTP_201_CREATED,
-    summary="Save/wishlist an item"
+    summary="Confirm phone verification OTP"
 )
-async def save_item(
-    payload: SaveItemRequest,
+async def verify_phone_confirm(
+    data: VerifyPhoneRequest,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db)
 ):
-    try:
-        item = await user_service.save_item(current_user, payload, db)
-        return APIResponse.success(
-            message="Item saved to wishlist",
-            data=SavedItemResponse.model_validate(item).model_dump()
-        )
-    except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+    """Verify the OTP sent to phone and mark phone as verified."""
+    result = await user_service.verify_phone_otp(data, current_user, db)
+    return APIResponse.success(message=result["message"])
 
 
-@router.delete(
-    "/me/saved/{item_id}",
-    response_model=APIResponse,
-    summary="Remove item from wishlist"
-)
-async def unsave_item(
-    item_id: UUID,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    try:
-        result = await user_service.unsave_item(current_user, item_id, db)
-        return APIResponse.success(message=result["message"])
-    except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-
-
-# ═══════════════════════════════════════════════════════════════
-# SELF-SERVICE — LOYALTY & FCM
-# ═══════════════════════════════════════════════════════════════
+# ══════════════════ PREFERENCES ══════════════════
 
 @router.get(
-    "/me/loyalty",
+    "/me/preferences",
     response_model=APIResponse,
-    summary="Get loyalty points and tier"
+    summary="Get travel preferences"
 )
-async def get_loyalty(
+async def get_preferences(
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db)
 ):
     """
-    Returns loyalty points, tier (bronze/silver/gold/platinum),
-    total trips, and total amount spent.
+    Get travel preferences.
+    Includes: dietary, language, accessibility, notification settings.
     """
-    data = await user_service.get_loyalty(current_user, db)
-    return APIResponse.success(data=data)
+    result = await user_service.get_preferences(current_user, db)
+    return APIResponse.success(message="Preferences fetched", data=result)
 
 
 @router.put(
-    "/me/fcm-token",
+    "/me/preferences",
     response_model=APIResponse,
-    summary="Update FCM push notification token"
+    summary="Update preferences"
 )
-async def update_fcm_token(
-    payload: UpdateFCMTokenRequest,
+async def update_preferences(
+    data: PreferencesRequest,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db)
 ):
-    """Called by the mobile app on every launch to keep the FCM token fresh."""
-    data = await user_service.update_fcm_token(current_user, payload.fcm_token, db)
-    return APIResponse.success(message=data["message"])
+    """
+    Update travel preferences.
+    Stored as JSONB in user_profiles table.
+    """
+    result = await user_service.update_preferences(data, current_user, db)
+    return APIResponse.success(message="Preferences updated", data=result)
 
 
-# ═══════════════════════════════════════════════════════════════
-# ADMIN — USER MANAGEMENT
-# ═══════════════════════════════════════════════════════════════
+# ══════════════════ SESSIONS ══════════════════
 
 @router.get(
-    "",
+    "/me/sessions",
     response_model=APIResponse,
-    summary="[Admin] List all users"
+    summary="List active sessions"
 )
-async def admin_list_users(
-    page: int = Query(1, ge=1),
-    limit: int = Query(20, ge=1, le=100),
-    role: Optional[str] = Query(None, description="traveler|guide|driver|partner|admin"),
-    status: Optional[str] = Query(None, description="active|suspended|deleted"),
-    search: Optional[str] = Query(None, description="Search by name, phone, or email"),
-    _admin: User = Depends(get_admin_user),
-    db: AsyncSession = Depends(get_db),
+async def list_sessions(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
 ):
-    result = await user_service.admin_list_users(db, page, limit, role, status, search)
-    result["data"] = [AdminUserListResponse.model_validate(u).model_dump() for u in result["data"]]
-    return APIResponse.success(data=result)
-
-
-@router.get(
-    "/{user_id}",
-    response_model=APIResponse,
-    summary="[Admin] Get any user's full profile"
-)
-async def admin_get_user(
-    user_id: UUID,
-    _admin: User = Depends(get_admin_user),
-    db: AsyncSession = Depends(get_db),
-):
-    try:
-        data = await user_service.admin_get_user(user_id, db)
-        return APIResponse.success(data=data)
-    except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-
-
-@router.put(
-    "/{user_id}",
-    response_model=APIResponse,
-    summary="[Admin] Update any user's role or status"
-)
-async def admin_update_user(
-    user_id: UUID,
-    payload: AdminUpdateUserRequest,
-    _admin: User = Depends(get_admin_user),
-    db: AsyncSession = Depends(get_db),
-):
-    try:
-        data = await user_service.admin_update_user(user_id, payload, db)
-        return APIResponse.success(message="User updated", data=data)
-    except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    """
+    List all active login sessions.
+    Shows device info, IP address, last active time.
+    """
+    sessions = await user_service.list_sessions(current_user, db)
+    data = [SessionResponse.model_validate(s).model_dump() for s in sessions]
+    return APIResponse.success(message="Sessions fetched", data=data)
 
 
 @router.delete(
-    "/{user_id}",
+    "/me/sessions/{session_id}",
     response_model=APIResponse,
-    summary="[Admin] Delete any user (soft delete)"
+    summary="Revoke a session"
 )
-async def admin_delete_user(
-    user_id: UUID,
-    _admin: User = Depends(get_admin_user),
-    db: AsyncSession = Depends(get_db),
+async def revoke_session(
+    session_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
 ):
-    try:
-        result = await user_service.admin_delete_user(user_id, db)
-        return APIResponse.success(message=result["message"])
-    except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    """
+    Revoke a specific session by ID.
+    Blacklists the JWT token in Redis immediately.
+    """
+    result = await user_service.revoke_session(session_id, current_user, db)
+    return APIResponse.success(message=result["message"])

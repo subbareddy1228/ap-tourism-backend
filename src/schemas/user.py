@@ -1,229 +1,55 @@
-
 """
 schemas/user.py
-Pydantic schemas for all User API endpoints (M2 — 25 endpoints).
-Follows same pattern as schemas/auth.py.
+Pydantic schemas for Users Module — all request/response bodies.
+Owner: Dev 2
 """
 
 import re
-from typing import Optional, List, Any, Dict
-from datetime import datetime
+from typing import Optional, List
+from datetime import date, datetime
+from pydantic import BaseModel, EmailStr, field_validator
 from uuid import UUID
-from pydantic import BaseModel, EmailStr, field_validator, model_validator
 
 
-# ── Shared Validators ─────────────────────────────────────────
+# ══════════════════ PROFILE SCHEMAS ══════════════════
 
-def validate_phone(phone: str) -> str:
-    phone = phone.strip().replace(" ", "").replace("-", "")
-    if phone.startswith("+91"):
-        phone = phone[3:]
-    if not re.match(r"^[6-9]\d{9}$", phone):
-        raise ValueError("Enter a valid 10-digit Indian mobile number")
-    return phone
-
-def validate_pincode(v: str) -> str:
-    if not re.match(r"^\d{6}$", v):
-        raise ValueError("Pincode must be 6 digits")
-    return v
-
-
-# ═══════════════════════════════════════════════════════════════
-# ADDRESS SCHEMAS
-# ═══════════════════════════════════════════════════════════════
-
-class AddressCreate(BaseModel):
-    """POST /users/me/addresses"""
-    label: str                          # home | work | other
-    address_line1: str
-    address_line2: Optional[str] = None
-    city: str
-    state: str
-    pincode: str
-    country: str = "India"
-    is_default: bool = False
-
-    @field_validator("label")
-    def label_valid(cls, v):
-        allowed = {"home", "work", "other"}
-        if v.lower() not in allowed:
-            raise ValueError(f"Label must be one of: {', '.join(allowed)}")
-        return v.lower()
-
-    @field_validator("pincode")
-    def pincode_valid(cls, v): return validate_pincode(v)
-
-
-class AddressUpdate(BaseModel):
-    """PUT /users/me/addresses/{address_id}"""
-    label: Optional[str] = None
-    address_line1: Optional[str] = None
-    address_line2: Optional[str] = None
-    city: Optional[str] = None
-    state: Optional[str] = None
-    pincode: Optional[str] = None
-    country: Optional[str] = None
-    is_default: Optional[bool] = None
-
-    @field_validator("pincode")
-    def pincode_valid(cls, v):
-        if v: return validate_pincode(v)
-        return v
-
-
-class AddressResponse(BaseModel):
-    id: UUID
-    label: str
-    address_line1: str
-    address_line2: Optional[str]
-    city: str
-    state: str
-    pincode: str
-    country: str
-    is_default: bool
-    created_at: datetime
-
-    class Config:
-        from_attributes = True
-
-
-# ═══════════════════════════════════════════════════════════════
-# FAMILY MEMBER SCHEMAS
-# ═══════════════════════════════════════════════════════════════
-
-class FamilyMemberCreate(BaseModel):
-    """POST /users/me/family"""
-    name: str
-    relation: str                       # spouse|child|parent|sibling|other
-    age: Optional[int] = None
-    gender: Optional[str] = None
-    is_senior: bool = False
-    special_needs: Optional[str] = None
-
-    @field_validator("relation")
-    def relation_valid(cls, v):
-        allowed = {"spouse", "child", "parent", "sibling", "other"}
-        if v.lower() not in allowed:
-            raise ValueError(f"Relation must be one of: {', '.join(allowed)}")
-        return v.lower()
-
-    @field_validator("age")
-    def age_valid(cls, v):
-        if v is not None and (v < 0 or v > 120):
-            raise ValueError("Age must be between 0 and 120")
-        return v
-
-
-class FamilyMemberUpdate(BaseModel):
-    """PUT /users/me/family/{member_id}"""
-    name: Optional[str] = None
-    relation: Optional[str] = None
-    age: Optional[int] = None
-    gender: Optional[str] = None
-    is_senior: Optional[bool] = None
-    special_needs: Optional[str] = None
-
-
-class FamilyMemberResponse(BaseModel):
-    id: UUID
-    name: str
-    relation: str
-    age: Optional[int]
-    gender: Optional[str]
-    is_senior: bool
-    special_needs: Optional[str]
-    created_at: datetime
-
-    class Config:
-        from_attributes = True
-
-
-# ═══════════════════════════════════════════════════════════════
-# PROFILE SCHEMAS
-# ═══════════════════════════════════════════════════════════════
-
-class ProfileUpdate(BaseModel):
-    """PUT /users/me/profile — partial update"""
-    full_name: Optional[str] = None
-    email: Optional[EmailStr] = None
-    gender: Optional[str] = None
-    date_of_birth: Optional[datetime] = None
-    language_pref: Optional[str] = None
-    bio: Optional[str] = None
-    dietary_preference: Optional[str] = None
-    special_needs: Optional[str] = None
-    travel_preferences: Optional[Dict[str, Any]] = None
-    emergency_contact_name: Optional[str] = None
-    emergency_contact_phone: Optional[str] = None
-    emergency_contact_relation: Optional[str] = None
+class UpdateProfileRequest(BaseModel):
+    """PUT /me — update basic profile info"""
+    full_name:     Optional[str]  = None
+    date_of_birth: Optional[date] = None
+    gender:        Optional[str]  = None   # male | female | other
+    language:      Optional[str]  = None   # en | te | hi
 
     @field_validator("gender")
+    @classmethod
     def gender_valid(cls, v):
-        if v:
-            allowed = {"male", "female", "other", "prefer_not_to_say"}
-            if v.lower() not in allowed:
-                raise ValueError(f"Gender must be one of: {', '.join(allowed)}")
-            return v.lower()
+        if v and v not in ["male", "female", "other"]:
+            raise ValueError("gender must be male, female, or other")
         return v
 
-    @field_validator("language_pref")
-    def lang_valid(cls, v):
-        if v:
-            allowed = {"en", "te", "hi"}
-            if v.lower() not in allowed:
-                raise ValueError(f"Language must be one of: {', '.join(allowed)}")
-            return v.lower()
-        return v
-
-    @field_validator("dietary_preference")
-    def diet_valid(cls, v):
-        if v:
-            allowed = {"vegetarian", "non_veg", "vegan", "jain"}
-            if v.lower() not in allowed:
-                raise ValueError(f"Dietary preference must be one of: {', '.join(allowed)}")
-            return v.lower()
-        return v
-
-    @field_validator("emergency_contact_phone")
-    def emergency_phone_valid(cls, v):
-        if v: return validate_phone(v)
+    @field_validator("language")
+    @classmethod
+    def language_valid(cls, v):
+        if v and v not in ["en", "te", "hi", "ta", "kn"]:
+            raise ValueError("Unsupported language code")
         return v
 
 
 class ProfileResponse(BaseModel):
-    """Full profile returned in GET /users/me"""
-    id: str
-    phone: str
-    email: Optional[str]
-    full_name: Optional[str]
-    role: str
-    status: str
+    """Response for GET /me"""
+    id:                str
+    phone:             str
+    email:             Optional[str]
+    full_name:         Optional[str]
+    role:              str
     is_phone_verified: bool
     is_email_verified: bool
-    is_profile_complete: bool
-
-    # Profile details
-    avatar_url: Optional[str] = None
-    gender: Optional[str] = None
-    date_of_birth: Optional[datetime] = None
-    language_pref: str = "en"
-    bio: Optional[str] = None
-    dietary_preference: Optional[str] = None
-    special_needs: Optional[str] = None
-    travel_preferences: Optional[Dict[str, Any]] = None
-
-    # Emergency contact
-    emergency_contact_name: Optional[str] = None
-    emergency_contact_phone: Optional[str] = None
-    emergency_contact_relation: Optional[str] = None
-
-    # Stats
-    loyalty_points: int = 0
-    total_trips: int = 0
-    total_spent: float = 0.0
-
-    created_at: datetime
-    last_login: Optional[datetime] = None
+    date_of_birth:     Optional[date]
+    gender:            Optional[str]
+    language:          Optional[str]
+    avatar_url:        Optional[str]
+    kyc_status:        Optional[str]
+    preferences:       Optional[dict]
 
     class Config:
         from_attributes = True
@@ -232,91 +58,167 @@ class ProfileResponse(BaseModel):
     @classmethod
     def convert_uuid(cls, v): return str(v)
 
-    @field_validator("role", "status", mode="before")
+    @field_validator("role", mode="before")
     @classmethod
-    def normalize_enum(cls, v):
-        return v.value if hasattr(v, "value") else str(v)
+    def normalize_role(cls, v):
+        if hasattr(v, "value"): return v.value
+        return str(v).lower()
 
 
-# ═══════════════════════════════════════════════════════════════
-# SAVED ITEMS SCHEMAS
-# ═══════════════════════════════════════════════════════════════
+# ══════════════════ AVATAR SCHEMAS ══════════════════
 
-class SaveItemRequest(BaseModel):
-    """POST /users/me/saved"""
-    item_id: UUID
-    item_type: str      # temple | destination | package | hotel
+class AvatarResponse(BaseModel):
+    """Response for PATCH /me/avatar"""
+    avatar_url: str
+    message:    str = "Avatar uploaded successfully"
 
-    @field_validator("item_type")
-    def type_valid(cls, v):
-        allowed = {"temple", "destination", "package", "hotel"}
-        if v.lower() not in allowed:
-            raise ValueError(f"item_type must be one of: {', '.join(allowed)}")
+
+# ══════════════════ ADDRESS SCHEMAS ══════════════════
+
+class AddressRequest(BaseModel):
+    """POST /me/addresses and PUT /me/addresses/{id}"""
+    label:         str
+    address_line1: str
+    address_line2: Optional[str] = None
+    city:          str
+    state:         str
+    pincode:       str
+    country:       Optional[str] = "India"
+    is_default:    Optional[bool] = False
+
+    @field_validator("pincode")
+    @classmethod
+    def pincode_valid(cls, v):
+        if not re.match(r"^\d{6}$", v):
+            raise ValueError("Pincode must be 6 digits")
+        return v
+
+    @field_validator("label")
+    @classmethod
+    def label_valid(cls, v):
+        if v.lower() not in ["home", "work", "other"]:
+            raise ValueError("Label must be home, work, or other")
         return v.lower()
 
 
-class SavedItemResponse(BaseModel):
-    id: UUID
-    item_id: UUID
-    item_type: str
-    saved_at: datetime
+class AddressResponse(BaseModel):
+    """Response for address endpoints"""
+    id:            str
+    user_id:       str
+    label:         str
+    address_line1: str
+    address_line2: Optional[str]
+    city:          str
+    state:         str
+    pincode:       str
+    country:       str
+    is_default:    bool
+    created_at:    datetime
+    updated_at:    Optional[datetime]
 
     class Config:
         from_attributes = True
 
+    @field_validator("id", "user_id", mode="before")
+    @classmethod
+    def convert_uuid(cls, v): return str(v)
 
-# ═══════════════════════════════════════════════════════════════
-# AVATAR / PHONE CHANGE SCHEMAS
-# ═══════════════════════════════════════════════════════════════
 
-class UpdatePhoneRequest(BaseModel):
-    """POST /users/me/change-phone"""
-    new_phone: str
+# ══════════════════ FAMILY MEMBER SCHEMAS ══════════════════
+
+class FamilyMemberRequest(BaseModel):
+    """POST /me/family-members and PUT /me/family-members/{id}"""
+    name:            str
+    relation:        str
+    date_of_birth:   Optional[date] = None
+    gender:          Optional[str]  = None
+    id_proof_type:   Optional[str]  = None
+    id_proof_number: Optional[str]  = None
+
+    @field_validator("relation")
+    @classmethod
+    def relation_valid(cls, v):
+        valid = ["spouse", "child", "parent", "sibling", "other"]
+        if v.lower() not in valid:
+            raise ValueError(f"relation must be one of: {', '.join(valid)}")
+        return v.lower()
+
+    @field_validator("id_proof_type")
+    @classmethod
+    def proof_type_valid(cls, v):
+        if v and v.lower() not in ["aadhaar", "passport", "pan"]:
+            raise ValueError("id_proof_type must be aadhaar, passport, or pan")
+        return v.lower() if v else v
+
+
+class FamilyMemberResponse(BaseModel):
+    """Response for family member endpoints"""
+    id:              str
+    user_id:         str
+    name:            str
+    relation:        str
+    date_of_birth:   Optional[date]
+    gender:          Optional[str]
+    id_proof_type:   Optional[str]
+    id_proof_number: Optional[str]
+    created_at:      datetime
+
+    class Config:
+        from_attributes = True
+
+    @field_validator("id", "user_id", mode="before")
+    @classmethod
+    def convert_uuid(cls, v): return str(v)
+
+
+# ══════════════════ VERIFICATION SCHEMAS ══════════════════
+
+class VerifyPhoneRequest(BaseModel):
+    """POST /me/verify-phone/confirm"""
     otp: str
 
-    @field_validator("new_phone")
-    def phone_valid(cls, v): return validate_phone(v)
-
     @field_validator("otp")
+    @classmethod
     def otp_valid(cls, v):
         if not v.isdigit() or len(v) != 6:
-            raise ValueError("OTP must be a 6-digit number")
+            raise ValueError("OTP must be 6 digits")
         return v
 
 
-class UpdateEmailRequest(BaseModel):
-    """POST /users/me/verify-email"""
-    email: EmailStr
-    otp: str
+# ══════════════════ PREFERENCES SCHEMAS ══════════════════
 
-    @field_validator("otp")
-    def otp_valid(cls, v):
-        if not v.isdigit() or len(v) != 6:
-            raise ValueError("OTP must be a 6-digit number")
-        return v
+class NotificationPreferences(BaseModel):
+    email: Optional[bool] = True
+    sms:   Optional[bool] = True
+    push:  Optional[bool] = True
 
 
-class UpdateFCMTokenRequest(BaseModel):
-    """PUT /users/me/fcm-token"""
-    fcm_token: str
+class PreferencesRequest(BaseModel):
+    """PUT /me/preferences"""
+    dietary:       Optional[str]                       = None
+    language:      Optional[str]                       = None
+    accessibility: Optional[str]                       = None
+    notifications: Optional[NotificationPreferences]   = None
 
 
-# ═══════════════════════════════════════════════════════════════
-# ADMIN USER SCHEMAS
-# ═══════════════════════════════════════════════════════════════
+class PreferencesResponse(BaseModel):
+    """Response for GET /me/preferences"""
+    dietary:       Optional[str]
+    language:      Optional[str]
+    accessibility: Optional[str]
+    notifications: Optional[dict]
 
-class AdminUserListResponse(BaseModel):
-    """GET /users (admin)"""
-    id: str
-    phone: str
-    email: Optional[str]
-    full_name: Optional[str]
-    role: str
-    status: str
-    is_phone_verified: bool
-    total_trips: int
-    loyalty_points: int
-    created_at: datetime
+
+# ══════════════════ SESSION SCHEMAS ══════════════════
+
+class SessionResponse(BaseModel):
+    """Response for GET /me/sessions"""
+    id:          str
+    device_info: Optional[str]
+    ip_address:  Optional[str]
+    last_active: datetime
+    created_at:  datetime
+    is_active:   bool
 
     class Config:
         from_attributes = True
@@ -324,56 +226,3 @@ class AdminUserListResponse(BaseModel):
     @field_validator("id", mode="before")
     @classmethod
     def convert_uuid(cls, v): return str(v)
-
-    @field_validator("role", "status", mode="before")
-    @classmethod
-    def normalize_enum(cls, v):
-        return v.value if hasattr(v, "value") else str(v)
-
-
-class AdminUpdateUserRequest(BaseModel):
-    """PUT /users/{user_id} (admin)"""
-    full_name: Optional[str] = None
-    role: Optional[str] = None
-    status: Optional[str] = None
-    email: Optional[EmailStr] = None
-
-    @field_validator("role")
-    def role_valid(cls, v):
-        if v:
-            allowed = {"traveler", "guide", "driver", "partner", "admin"}
-            if v.lower() not in allowed:
-                raise ValueError(f"Role must be one of: {', '.join(allowed)}")
-            return v.lower()
-        return v
-
-    @field_validator("status")
-    def status_valid(cls, v):
-        if v:
-            allowed = {"active", "suspended", "deleted"}
-            if v.lower() not in allowed:
-                raise ValueError(f"Status must be one of: {', '.join(allowed)}")
-            return v.lower()
-        return v
-
-
-# ═══════════════════════════════════════════════════════════════
-# BOOKING HISTORY / LOYALTY RESPONSE
-# ═══════════════════════════════════════════════════════════════
-
-class LoyaltyResponse(BaseModel):
-    loyalty_points: int
-    total_trips: int
-    total_spent: float
-    tier: str           # bronze | silver | gold | platinum
-
-    class Config:
-        from_attributes = True
-
-
-class PaginatedResponse(BaseModel):
-    data: List[Any]
-    total: int
-    page: int
-    pages: int
-    limit: int
