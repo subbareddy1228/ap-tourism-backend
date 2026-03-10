@@ -9,10 +9,12 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
+from src.common.responses import UserStatus
 from src.core.security import decode_token
 from src.core.redis import is_jti_blacklisted
 from src.core.database import get_db
 from src.models.user import User
+from src.common.enums import UserStatus
 
 bearer_scheme = HTTPBearer()
 
@@ -49,7 +51,7 @@ async def get_current_user(
     if not user:
         raise invalid
 
-    if user.status != "active":
+    if user.status != UserStatus.ACTIVE and user.status != "active":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account suspended.")
 
     return user

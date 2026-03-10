@@ -85,14 +85,15 @@ class ResendOTPRequest(BaseModel):
 
 class LoginRequest(BaseModel):
     """POST /auth/login — phone OR email + password"""
-    """POST /auth/login — password-based login"""
-    phone: str
-    password: str
-    device_id: Optional[str] = "default"   # for multi-device session tracking
-    access_token: str
+    phone_or_email: str    # accepts phone number or email
+    password:       str
+    device_id:      Optional[str] = "default"
 
-    @field_validator("phone")
-    def phone_valid(cls, v): return validate_phone(v)
+    @field_validator("phone_or_email")
+    def phone_or_email_valid(cls, v):
+        if "@" in v:
+            return v
+        return validate_phone(v)
 
 class LogoutRequest(BaseModel):
     """POST /auth/logout and /auth/logout-all"""

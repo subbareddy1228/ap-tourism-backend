@@ -14,7 +14,6 @@ from sqlalchemy.orm import relationship
 from src.models.base import Base
 from src.common.responses import UserRole, UserStatus
 
-
 class User(Base):
     __tablename__ = "users"
 
@@ -40,6 +39,7 @@ class User(Base):
     updated_at  = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     last_login  = Column(DateTime, nullable=True)
     deleted_at  = Column(DateTime, nullable=True)   # soft delete
+    last_password_change = Column(DateTime, nullable=True)
 
     # ── Relationships ─────────────────────────────────────────
     # profile     = relationship("UserProfile",    back_populates="user", uselist=False)
