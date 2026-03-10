@@ -150,16 +150,28 @@ class ChangePasswordRequest(BaseModel):
 
 class UserResponse(BaseModel):
     """Minimal user info returned in auth responses."""
-    id: str
-    phone: str
-    email: Optional[str]
-    full_name: Optional[str]
-    role: str
+    id:                str
+    phone:             str
+    email:             Optional[str]
+    full_name:         Optional[str]
+    role:              str
     is_phone_verified: bool
     is_email_verified: bool
 
     class Config:
         from_attributes = True
+
+    @field_validator("role", mode="before")
+    @classmethod
+    def normalize_role(cls, v):
+        if hasattr(v, "value"):
+            return v.value   # returns "traveler" from UserRole.TRAVELER
+        return str(v).lower()
+
+    @field_validator("id", mode="before")
+    @classmethod
+    def convert_uuid(cls, v):
+        return str(v)
 
 
 class TokenResponse(BaseModel):
