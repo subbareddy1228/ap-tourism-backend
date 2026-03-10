@@ -1,4 +1,3 @@
-
 """
 alembic/env.py
 Alembic migration environment.
@@ -21,7 +20,6 @@ from src.core.database import Base
 
 # Import every model so Alembic sees them in Base.metadata
 from src.models.user import User          # noqa: F401
-from src.models.wallet import Wallet, WalletTransaction, WithdrawalRequest  # noqa: F401
 # Add more models here as you create them:
 # from src.models.hotel import Hotel      # noqa: F401
 # from src.models.booking import Booking  # noqa: F401

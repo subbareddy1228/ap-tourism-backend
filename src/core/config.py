@@ -48,14 +48,9 @@ class Settings(BaseSettings):
     AWS_BUCKET_NAME: str = "ap-tourism-media"
     AWS_REGION: str = "ap-south-1"
 
-    # ── Razorpay ──────────────────────────────────────────────
-    RAZORPAY_KEY_ID:     str = ""
-    RAZORPAY_KEY_SECRET: str = ""
-
     class Config:
         env_file = ".env"
         case_sensitive = True
 
 
 settings = Settings()
-
