@@ -1,18 +1,3 @@
-"""
-api/v1/endpoints/users.py
-All 18 User API endpoints — /api/v1/user
-
-Groups:
-  Profile       — GET/PUT /me, PATCH /me/avatar, DELETE /me
-  Addresses     — CRUD /me/addresses
-  Family        — CRUD /me/family-members
-  Verification  — POST /me/verify-phone
-  Preferences   — GET/PUT /me/preferences
-  Sessions      — GET /me/sessions, DELETE /me/sessions/{id}
-
-Owner: Dev 2
-Auth: Uses get_current_user from Dev 1 (psubb) auth module
-"""
 
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Request
 from sqlalchemy.ext.asyncio import AsyncSession

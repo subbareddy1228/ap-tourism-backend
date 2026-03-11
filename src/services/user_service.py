@@ -200,9 +200,6 @@ async def add_address(
 
     # If is_default, unset all others
     if data.is_default:
-        await db.execute(
-            select(Address).where(Address.user_id == current_user.id)
-        )
         existing = (await db.execute(
             select(Address).where(Address.user_id == current_user.id)
         )).scalars().all()

@@ -3,6 +3,7 @@ core/config.py
 All environment variables and app settings loaded from .env
 """
 
+import asyncpg
 from pydantic_settings import BaseSettings
 from typing import List
 
@@ -21,7 +22,7 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
     # ── Database ──────────────────────────────────────────────
-    DATABASE_URL: str = "postgresql+asyncpg://user:password@localhost/ap_tourism"
+    DATABASE_URL: str = "postgresql+asyncpg://postgres:1225@localhost:5432/ap_tourism"
 
     # ── Redis ─────────────────────────────────────────────────
     REDIS_URL: str = "redis://localhost:6379/0"

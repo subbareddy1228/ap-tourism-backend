@@ -25,6 +25,9 @@ class UserProfile(Base):
     id         = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     user_id    = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
 
+    # ── Relationship ──────────────────────────────
+    user       = relationship("User", back_populates="profile")
+
     # ── Personal Info ─────────────────────────────
     date_of_birth  = Column(Date, nullable=True)
     gender         = Column(String(20), nullable=True)   # male | female | other
@@ -54,6 +57,9 @@ class Address(Base):
     id           = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     user_id      = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
 
+    # ── Relationship ──────────────────────────────
+    user         = relationship("User", back_populates="addresses")
+
     # ── Address Fields ────────────────────────────
     label        = Column(String(50), nullable=False)    # home | work | other
     address_line1 = Column(String(255), nullable=False)
@@ -80,6 +86,9 @@ class FamilyMember(Base):
     id             = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     user_id        = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
 
+    # ── Relationship ──────────────────────────────
+    user           = relationship("User", back_populates="family")
+
     # ── Member Info ───────────────────────────────
     name           = Column(String(100), nullable=False)
     relation       = Column(String(50), nullable=False)   # spouse | child | parent | sibling | other
@@ -105,6 +114,9 @@ class UserSession(Base):
 
     id           = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     user_id      = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+
+    # ── Relationship ──────────────────────────────
+    user         = relationship("User", back_populates="sessions")
 
     # ── Session Info ──────────────────────────────
     device_info  = Column(String(255), nullable=True)    # "iPhone 14 / iOS 17"
