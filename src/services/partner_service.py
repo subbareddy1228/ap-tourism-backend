@@ -13,13 +13,13 @@ from src.schemas.partner import (
 
 # ─── Registration ─────────────────────────────────────────────────────────────
 
-def register_partner(db: Session, user_id: int, data: PartnerRegisterSchema) -> Partner:
-    existing = db.query(Partner).filter(Partner.user_id == user_id).first()
+def register_partner(db: Session, data: PartnerRegisterSchema) -> Partner:
+    existing = db.query(Partner).first()
     if existing:
         raise HTTPException(status_code=409, detail="Partner profile already exists for this user")
 
     partner = Partner(
-        user_id=user_id,
+        #user_id=user_id,
         partner_type=data.partner_type,
         business_name=data.business_name,
         gstin=data.gstin,
