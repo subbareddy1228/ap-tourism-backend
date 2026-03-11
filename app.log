@@ -898,3 +898,106 @@ FROM user_profiles
 WHERE user_profiles.user_id = $1::UUID
 2026-03-11 16:38:47,661 | INFO | sqlalchemy.engine.Engine | [cached since 66.56s ago] ('badc725e-4d2f-4dcb-a39d-04d26fdb9ce1',)
 2026-03-11 16:38:47,666 | INFO | sqlalchemy.engine.Engine | COMMIT
+2026-03-11 17:48:52,041 | INFO | src.services.auth_service | Sending OTP phone=7793969902 purpose=login
+2026-03-11 17:48:54,087 | INFO | src.services.auth_service | OTP for 7793969902 is 702042
+2026-03-11 17:48:56,498 | INFO | twilio.http_client | -- BEGIN Twilio API Request --
+2026-03-11 17:48:56,498 | INFO | twilio.http_client | POST Request: https://api.twilio.com/2010-04-01/Accounts/AC1788055ac9231f959d10c1c5959cfa9c/Messages.json
+2026-03-11 17:48:56,499 | INFO | twilio.http_client | Headers:
+2026-03-11 17:48:56,499 | INFO | twilio.http_client | Content-Type : application/x-www-form-urlencoded
+2026-03-11 17:48:56,500 | INFO | twilio.http_client | Accept : application/json
+2026-03-11 17:48:56,501 | INFO | twilio.http_client | User-Agent : twilio-python/9.10.2 (Windows AMD64) Python/3.13.9
+2026-03-11 17:48:56,501 | INFO | twilio.http_client | X-Twilio-Client : python-9.10.2
+2026-03-11 17:48:56,502 | INFO | twilio.http_client | Accept-Charset : utf-8
+2026-03-11 17:48:56,502 | INFO | twilio.http_client | -- END Twilio API Request --
+2026-03-11 17:48:58,221 | INFO | twilio.http_client | Response Status Code: 201
+2026-03-11 17:48:58,221 | INFO | twilio.http_client | Response Headers: {'Content-Type': 'application/json;charset=utf-8', 'Content-Length': '881', 'Connection': 'keep-alive', 'Date': 'Wed, 11 Mar 2026 12:18:57 GMT', 'Twilio-Concurrent-Requests': '1', 'Twilio-Request-Id': 'RQ294013c86b925e112f87478820c07bf4', 'Twilio-Request-Duration': '0.160', 'X-Home-Region': 'us1', 'X-API-Domain': 'api.twilio.com', 'Strict-Transport-Security': 'max-age=31536000', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 de506e784fb66e6c03cd15488d4ecf44.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'HYD57-P5', 'X-Amz-Cf-Id': 'glF7OC6ujwfoVeDzInKPn_lRqprb1x3ZvsVTZXWoPSpVXMZ6ouYvbw==', 'X-Powered-By': 'AT-5000', 'X-Shenanigans': 'none', 'Vary': 'Origin'}
+2026-03-11 17:50:12,751 | INFO | src.services.auth_service | OTP verification attempt phone=7793969902
+2026-03-11 17:50:12,753 | WARNING | src.services.auth_service | Expired OTP phone=7793969902
+2026-03-11 17:51:01,235 | INFO | src.services.auth_service | Sending OTP phone=7793969902 purpose=login
+2026-03-11 17:51:01,236 | INFO | src.services.auth_service | OTP for 7793969902 is 828528
+2026-03-11 17:51:01,237 | INFO | twilio.http_client | -- BEGIN Twilio API Request --
+2026-03-11 17:51:01,238 | INFO | twilio.http_client | POST Request: https://api.twilio.com/2010-04-01/Accounts/AC1788055ac9231f959d10c1c5959cfa9c/Messages.json
+2026-03-11 17:51:01,238 | INFO | twilio.http_client | Headers:
+2026-03-11 17:51:01,239 | INFO | twilio.http_client | Content-Type : application/x-www-form-urlencoded
+2026-03-11 17:51:01,240 | INFO | twilio.http_client | Accept : application/json
+2026-03-11 17:51:01,240 | INFO | twilio.http_client | User-Agent : twilio-python/9.10.2 (Windows AMD64) Python/3.13.9
+2026-03-11 17:51:01,241 | INFO | twilio.http_client | X-Twilio-Client : python-9.10.2
+2026-03-11 17:51:01,241 | INFO | twilio.http_client | Accept-Charset : utf-8
+2026-03-11 17:51:01,242 | INFO | twilio.http_client | -- END Twilio API Request --
+2026-03-11 17:51:01,727 | INFO | twilio.http_client | Response Status Code: 201
+2026-03-11 17:51:01,728 | INFO | twilio.http_client | Response Headers: {'Content-Type': 'application/json;charset=utf-8', 'Content-Length': '881', 'Connection': 'keep-alive', 'Date': 'Wed, 11 Mar 2026 12:21:01 GMT', 'Twilio-Concurrent-Requests': '1', 'Twilio-Request-Id': 'RQ91916130108d5fee22ab99f09a35473b', 'Twilio-Request-Duration': '0.155', 'X-Home-Region': 'us1', 'X-API-Domain': 'api.twilio.com', 'Strict-Transport-Security': 'max-age=31536000', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 027bdfe1f92fea8be18babc336155f8a.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'HYD57-P5', 'X-Amz-Cf-Id': 'oKc9eLc3xTd26y2Dvq_g50lZ3YSYp-EeZY81N3Mj0R2kHR5MycmEDw==', 'X-Powered-By': 'AT-5000', 'X-Shenanigans': 'none', 'Vary': 'Origin'}
+2026-03-11 17:51:25,085 | INFO | src.services.auth_service | OTP verification attempt phone=7793969902
+2026-03-11 17:51:25,087 | WARNING | src.services.auth_service | Expired OTP phone=7793969902
+2026-03-11 17:57:38,563 | INFO | src.services.auth_service | Sending OTP phone=7793969902 purpose=login
+2026-03-11 17:57:40,612 | INFO | src.services.auth_service | OTP for 7793969902 is 654696
+2026-03-11 17:57:40,774 | INFO | twilio.http_client | -- BEGIN Twilio API Request --
+2026-03-11 17:57:40,775 | INFO | twilio.http_client | POST Request: https://api.twilio.com/2010-04-01/Accounts/AC1788055ac9231f959d10c1c5959cfa9c/Messages.json
+2026-03-11 17:57:40,775 | INFO | twilio.http_client | Headers:
+2026-03-11 17:57:40,776 | INFO | twilio.http_client | Content-Type : application/x-www-form-urlencoded
+2026-03-11 17:57:40,776 | INFO | twilio.http_client | Accept : application/json
+2026-03-11 17:57:40,777 | INFO | twilio.http_client | User-Agent : twilio-python/9.10.2 (Windows AMD64) Python/3.13.9
+2026-03-11 17:57:40,777 | INFO | twilio.http_client | X-Twilio-Client : python-9.10.2
+2026-03-11 17:57:40,777 | INFO | twilio.http_client | Accept-Charset : utf-8
+2026-03-11 17:57:40,778 | INFO | twilio.http_client | -- END Twilio API Request --
+2026-03-11 17:57:41,800 | INFO | twilio.http_client | Response Status Code: 201
+2026-03-11 17:57:41,801 | INFO | twilio.http_client | Response Headers: {'Content-Type': 'application/json;charset=utf-8', 'Content-Length': '881', 'Connection': 'keep-alive', 'Date': 'Wed, 11 Mar 2026 12:27:41 GMT', 'Twilio-Concurrent-Requests': '1', 'Twilio-Request-Id': 'RQ35c49c311b5b539e907a11432d89fc0a', 'Twilio-Request-Duration': '0.144', 'X-Home-Region': 'us1', 'X-API-Domain': 'api.twilio.com', 'Strict-Transport-Security': 'max-age=31536000', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 9f60508e240419eb9de40a3d88fa99a8.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'HYD57-P5', 'X-Amz-Cf-Id': 'awjyd5CbCNHVBu5-cAnuYNsfYoGHvtmshaXifUtvrfWEcle1btIuEA==', 'X-Powered-By': 'AT-5000', 'X-Shenanigans': 'none', 'Vary': 'Origin'}
+2026-03-11 17:58:11,490 | INFO | src.services.auth_service | OTP verification attempt phone=7793969902
+2026-03-11 17:58:11,493 | WARNING | src.services.auth_service | Expired OTP phone=7793969902
+2026-03-11 18:11:13,094 | INFO | src.services.auth_service | Sending OTP phone=7793969902 purpose=login
+2026-03-11 18:11:13,112 | INFO | src.services.auth_service | OTP for 7793969902 is 838360
+2026-03-11 18:11:13,277 | INFO | twilio.http_client | -- BEGIN Twilio API Request --
+2026-03-11 18:11:13,278 | INFO | twilio.http_client | POST Request: https://api.twilio.com/2010-04-01/Accounts/AC1788055ac9231f959d10c1c5959cfa9c/Messages.json
+2026-03-11 18:11:13,279 | INFO | twilio.http_client | Headers:
+2026-03-11 18:11:13,279 | INFO | twilio.http_client | Content-Type : application/x-www-form-urlencoded
+2026-03-11 18:11:13,280 | INFO | twilio.http_client | Accept : application/json
+2026-03-11 18:11:13,280 | INFO | twilio.http_client | User-Agent : twilio-python/9.10.2 (Windows AMD64) Python/3.13.9
+2026-03-11 18:11:13,281 | INFO | twilio.http_client | X-Twilio-Client : python-9.10.2
+2026-03-11 18:11:13,281 | INFO | twilio.http_client | Accept-Charset : utf-8
+2026-03-11 18:11:13,282 | INFO | twilio.http_client | -- END Twilio API Request --
+2026-03-11 18:11:13,810 | INFO | twilio.http_client | Response Status Code: 201
+2026-03-11 18:11:13,810 | INFO | twilio.http_client | Response Headers: {'Content-Type': 'application/json;charset=utf-8', 'Content-Length': '881', 'Connection': 'keep-alive', 'Date': 'Wed, 11 Mar 2026 12:41:13 GMT', 'Twilio-Concurrent-Requests': '1', 'Twilio-Request-Id': 'RQdcbf6989bbead0db8e83cea5e81275f9', 'Twilio-Request-Duration': '0.141', 'X-Home-Region': 'us1', 'X-API-Domain': 'api.twilio.com', 'Strict-Transport-Security': 'max-age=31536000', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 11481d636501e43803d63fd181d64a4c.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'HYD57-P5', 'X-Amz-Cf-Id': 'Fv8NesAsTlris4vI0IkftND0EavGLhSRFU2piskasO48GKeXQn5RUQ==', 'X-Powered-By': 'AT-5000', 'X-Shenanigans': 'none', 'Vary': 'Origin'}
+2026-03-11 18:11:52,904 | INFO | src.services.auth_service | OTP verification attempt phone=7793969902
+2026-03-11 18:11:52,906 | WARNING | src.services.auth_service | Expired OTP phone=7793969902
+2026-03-11 18:14:29,950 | INFO | src.services.auth_service | Sending OTP phone=7793969902 purpose=login
+2026-03-11 18:14:29,951 | INFO | src.services.auth_service | OTP for 7793969902 is 947711
+2026-03-11 18:14:29,951 | INFO | twilio.http_client | -- BEGIN Twilio API Request --
+2026-03-11 18:14:29,952 | INFO | twilio.http_client | POST Request: https://api.twilio.com/2010-04-01/Accounts/AC1788055ac9231f959d10c1c5959cfa9c/Messages.json
+2026-03-11 18:14:29,952 | INFO | twilio.http_client | Headers:
+2026-03-11 18:14:29,953 | INFO | twilio.http_client | Content-Type : application/x-www-form-urlencoded
+2026-03-11 18:14:29,953 | INFO | twilio.http_client | Accept : application/json
+2026-03-11 18:14:29,953 | INFO | twilio.http_client | User-Agent : twilio-python/9.10.2 (Windows AMD64) Python/3.13.9
+2026-03-11 18:14:29,953 | INFO | twilio.http_client | X-Twilio-Client : python-9.10.2
+2026-03-11 18:14:29,954 | INFO | twilio.http_client | Accept-Charset : utf-8
+2026-03-11 18:14:29,954 | INFO | twilio.http_client | -- END Twilio API Request --
+2026-03-11 18:14:30,851 | INFO | twilio.http_client | Response Status Code: 201
+2026-03-11 18:14:30,851 | INFO | twilio.http_client | Response Headers: {'Content-Type': 'application/json;charset=utf-8', 'Content-Length': '881', 'Connection': 'keep-alive', 'Date': 'Wed, 11 Mar 2026 12:44:30 GMT', 'Twilio-Concurrent-Requests': '1', 'Twilio-Request-Id': 'RQ8e35ada16be9d0c5279d348edae67501', 'Twilio-Request-Duration': '0.150', 'X-Home-Region': 'us1', 'X-API-Domain': 'api.twilio.com', 'Strict-Transport-Security': 'max-age=31536000', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 cc82dd1bfd04cdfb67f3a218e7a7aef2.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'HYD57-P5', 'X-Amz-Cf-Id': 'ym4yw5YvN-PaifNTkmaPss8bJSBMubQdnMXz-ngJ2VbIFd4QS40jDQ==', 'X-Powered-By': 'AT-5000', 'X-Shenanigans': 'none', 'Vary': 'Origin'}
+2026-03-11 18:14:59,225 | INFO | src.services.auth_service | OTP verification attempt phone=7793969902
+2026-03-11 18:17:58,342 | INFO | src.services.auth_service | Sending OTP phone=7793969902 purpose=login
+2026-03-11 18:17:58,360 | INFO | src.services.auth_service | OTP for 7793969902 is 124406
+2026-03-11 18:17:58,506 | INFO | twilio.http_client | -- BEGIN Twilio API Request --
+2026-03-11 18:17:58,507 | INFO | twilio.http_client | POST Request: https://api.twilio.com/2010-04-01/Accounts/AC1788055ac9231f959d10c1c5959cfa9c/Messages.json
+2026-03-11 18:17:58,507 | INFO | twilio.http_client | Headers:
+2026-03-11 18:17:58,508 | INFO | twilio.http_client | Content-Type : application/x-www-form-urlencoded
+2026-03-11 18:17:58,508 | INFO | twilio.http_client | Accept : application/json
+2026-03-11 18:17:58,509 | INFO | twilio.http_client | User-Agent : twilio-python/9.10.2 (Windows AMD64) Python/3.13.9
+2026-03-11 18:17:58,509 | INFO | twilio.http_client | X-Twilio-Client : python-9.10.2
+2026-03-11 18:17:58,510 | INFO | twilio.http_client | Accept-Charset : utf-8
+2026-03-11 18:17:58,510 | INFO | twilio.http_client | -- END Twilio API Request --
+2026-03-11 18:17:59,607 | INFO | twilio.http_client | Response Status Code: 201
+2026-03-11 18:17:59,608 | INFO | twilio.http_client | Response Headers: {'Content-Type': 'application/json;charset=utf-8', 'Content-Length': '881', 'Connection': 'keep-alive', 'Date': 'Wed, 11 Mar 2026 12:47:59 GMT', 'Twilio-Concurrent-Requests': '1', 'Twilio-Request-Id': 'RQeb06a099ee2aaf8e8ff40fdba01f18e7', 'Twilio-Request-Duration': '0.139', 'X-Home-Region': 'us1', 'X-API-Domain': 'api.twilio.com', 'Strict-Transport-Security': 'max-age=31536000', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 32c117f7244699700095c91ea3312a7c.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'HYD57-P5', 'X-Amz-Cf-Id': 'dHI1xss6hdrePn1cNouAyhvokBVfbUMDB5wmruv4fsZDZOFYB-4gbA==', 'X-Powered-By': 'AT-5000', 'X-Shenanigans': 'none', 'Vary': 'Origin'}
+2026-03-11 18:18:36,571 | INFO | src.services.auth_service | OTP verification attempt phone=7793969902
+2026-03-11 18:20:51,721 | INFO | src.services.auth_service | Sending OTP phone=7793969902 purpose=login
+2026-03-11 18:20:51,739 | INFO | src.services.auth_service | OTP for 7793969902 is 820774
+2026-03-11 18:20:51,898 | INFO | twilio.http_client | -- BEGIN Twilio API Request --
+2026-03-11 18:20:51,899 | INFO | twilio.http_client | POST Request: https://api.twilio.com/2010-04-01/Accounts/AC1788055ac9231f959d10c1c5959cfa9c/Messages.json
+2026-03-11 18:20:51,899 | INFO | twilio.http_client | Headers:
+2026-03-11 18:20:51,900 | INFO | twilio.http_client | Content-Type : application/x-www-form-urlencoded
+2026-03-11 18:20:51,900 | INFO | twilio.http_client | Accept : application/json
+2026-03-11 18:20:51,901 | INFO | twilio.http_client | User-Agent : twilio-python/9.10.2 (Windows AMD64) Python/3.13.9
+2026-03-11 18:20:51,901 | INFO | twilio.http_client | X-Twilio-Client : python-9.10.2
+2026-03-11 18:20:51,901 | INFO | twilio.http_client | Accept-Charset : utf-8
+2026-03-11 18:20:51,902 | INFO | twilio.http_client | -- END Twilio API Request --
+2026-03-11 18:20:52,712 | INFO | twilio.http_client | Response Status Code: 201
+2026-03-11 18:20:52,713 | INFO | twilio.http_client | Response Headers: {'Content-Type': 'application/json;charset=utf-8', 'Content-Length': '881', 'Connection': 'keep-alive', 'Date': 'Wed, 11 Mar 2026 12:50:52 GMT', 'Twilio-Concurrent-Requests': '1', 'Twilio-Request-Id': 'RQ312bed038fca52cb56efa92d8a9ba11b', 'Twilio-Request-Duration': '0.141', 'X-Home-Region': 'us1', 'X-API-Domain': 'api.twilio.com', 'Strict-Transport-Security': 'max-age=31536000', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 32c117f7244699700095c91ea3312a7c.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'HYD57-P5', 'X-Amz-Cf-Id': 'ZREPii329Hy2FIvl-yMlhoGG2x0y2ck8J5p8oX4OGnwx_irWfTganw==', 'X-Powered-By': 'AT-5000', 'X-Shenanigans': 'none', 'Vary': 'Origin'}
+2026-03-11 18:21:15,438 | INFO | src.services.auth_service | OTP verification attempt phone=7793969902
+2026-03-11 18:21:15,646 | INFO | src.services.auth_service | OTP login success user_id=518976d8-06b8-418f-b72e-e88edc3d8a5a

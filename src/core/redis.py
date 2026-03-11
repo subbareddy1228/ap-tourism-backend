@@ -35,10 +35,10 @@ async def close_redis():
 # ── OTP Storage ───────────────────────────────────────────────
 # Key: otp:{purpose}:{phone}  TTL: 5 min
 
-async def store_otp(phone: str, otp: str, purpose: str = "register") -> None:
+async def store_otp(phone: str, otp: str, purpose: str, expire: int = 300):
     """Store OTP with 5 min TTL. Key = otp:{purpose}:{phone}"""
     key = f"otp:{purpose}:{phone}"
-    await redis_client.setex(key, settings.OTP_EXPIRE_SECONDS, otp)
+    await redis_client.setex(key, expire, otp)
 
 
 async def get_otp(phone: str, purpose: str = "register") -> str | None:

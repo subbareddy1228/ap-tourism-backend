@@ -117,7 +117,7 @@ async def resend_otp(phone: str, purpose: str) -> dict:
         raise ValueError(f"Too many resend attempts. Try again in {round(ttl/60)} minute(s).")
 
     otp = generate_otp()
-    await store_otp(phone, otp, purpose=purpose)
+    await store_otp(phone, otp, purpose, expire=300)
     await increment_resend_count(phone)
     await send_sms_otp(phone, otp)
 
