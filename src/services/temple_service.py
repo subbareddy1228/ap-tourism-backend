@@ -147,3 +147,7 @@ class TempleService:
             self.redis.delete("temples:featured")
             self.redis.delete("temples:popular:10")
         return TempleDetail.model_validate(temple)
+    
+
+
+   
