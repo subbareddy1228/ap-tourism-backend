@@ -36,6 +36,7 @@ app = FastAPI(
     lifespan=lifespan,
     docs_url="/api/docs",
     redoc_url="/api/redoc",
+    swagger_ui_parameters={"persistAuthorization": True},
 )
 
 
@@ -84,10 +85,10 @@ def custom_openapi():
         }
     }
 
-    # Apply bearer auth globally
+    # Remove locks from all endpoints
     for path in openapi_schema["paths"].values():
         for method in path.values():
-            method.setdefault("security", [{"BearerAuth": []}])
+            method["security"] = []
 
     app.openapi_schema = openapi_schema
     return app.openapi_schema
