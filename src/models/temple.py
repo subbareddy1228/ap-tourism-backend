@@ -38,19 +38,22 @@ class Temple(Base):
     is_featured = Column(Boolean, default=False)
     booking_count = Column(Integer, default=0)
     dress_code = Column(Text)
-    timings = Column(JSON)           # {"monday": {"open": "06:00", "close": "20:00"}, ...}
-    images = Column(JSON, default=list)  # list of S3 URLs
+    timings = Column(JSON)
+    images = Column(JSON, default=list)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    # Relationships — use strings to avoid circular imports
-    darshan_types = relationship("DarshanTypeModel", back_populates="temple", cascade="all, delete-orphan")
-    darshan_slots = relationship("DarshanSlot", back_populates="temple", cascade="all, delete-orphan")
-    pooja_services = relationship("PoojaService", back_populates="temple", cascade="all, delete-orphan")
-    prasadam_items = relationship("PrasadamItem", back_populates="temple", cascade="all, delete-orphan")
+    # Relationships
     events = relationship("TempleEvent", back_populates="temple", cascade="all, delete-orphan")
     reviews = relationship("TempleReview", back_populates="temple", cascade="all, delete-orphan")
+    darshan_types = relationship("DarshanTypeModel", back_populates="temple", cascade="all, delete-orphan")
+    darshan_slots = relationship("DarshanSlot", back_populates="temple", cascade="all, delete-orphan")
+    darshan_bookings = relationship("DarshanBooking", back_populates="temple", cascade="all, delete-orphan")
+    pooja_services = relationship("PoojaService", back_populates="temple", cascade="all, delete-orphan")
+    pooja_bookings = relationship("PoojaBooking", back_populates="temple", cascade="all, delete-orphan")
+    prasadam_items = relationship("PrasadamItem", back_populates="temple", cascade="all, delete-orphan")
+    prasadam_orders = relationship("PrasadamOrder", back_populates="temple", cascade="all, delete-orphan")
 
 
 # ─────────────────────────────────────────────
@@ -81,11 +84,11 @@ class TempleReview(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     temple_id = Column(UUID(as_uuid=True), ForeignKey("temples.id", ondelete="CASCADE"), nullable=False)
     user_id = Column(UUID(as_uuid=True), nullable=False, index=True)
-    rating = Column(Float, nullable=False)          # 1.0 - 5.0
+    rating = Column(Float, nullable=False)
     title = Column(String(255))
     body = Column(Text)
     visit_date = Column(Date)
     is_verified = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
-    # temple = relationship("Temple", back_populates="reviews")
+    temple = relationship("Temple", back_populates="reviews")
