@@ -940,3 +940,6 @@ WHERE user_profiles.user_id = $1::UUID
 2026-03-12 14:13:05,846 | INFO | src.services.auth_service | Registration attempt phone=7793969902
 2026-03-12 14:13:07,558 | INFO | httpx | HTTP Request: POST https://api.twilio.com/2010-04-01/Accounts/AC1788055ac9231f959d10c1c5959cfa9c/Messages.json "HTTP/1.1 201 Created"
 2026-03-12 14:13:07,562 | INFO | src.integrations.twilio | Twilio OTP sent successfully to 7793969902
+2026-03-12 14:31:53,548 | INFO | src.services.auth_service | Registration attempt phone=7793969902
+2026-03-12 14:32:11,924 | INFO | httpx | HTTP Request: POST https://api.twilio.com/2010-04-01/Accounts/AC1788055ac9231f959d10c1c5959cfa9c/Messages.json "HTTP/1.1 201 Created"
+2026-03-12 14:32:11,927 | INFO | src.integrations.twilio | Twilio OTP sent successfully to 7793969902
