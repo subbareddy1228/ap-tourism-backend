@@ -43,7 +43,7 @@ def get_my_profile(
     #user=Depends(require_partner)
 ):
     """Partner profile with verification_status, commission_rate, total_earnings."""
-    result = partner_service.get_partner_profile(db)
+    result = partner_service.get_partner_profile(db, user_id=1)
     return success(PartnerResponseSchema.from_orm(result))
 
 
@@ -53,7 +53,7 @@ def update_my_profile(
     db: Session = Depends(get_db),
     #user=Depends(require_partner)
 ):
-    result = partner_service.update_partner_profile(db, data)
+    result = partner_service.update_partner_profile(db, 1,data)
     return success(PartnerResponseSchema.from_orm(result), "Profile updated")
 
 
@@ -63,7 +63,7 @@ def get_dashboard(
     #user=Depends(require_partner)
 ):
     """Dashboard stats: today's bookings, this month's earnings, pending payouts, active listings."""
-    result = partner_service.get_dashboard_stats(db)
+    result = partner_service.get_dashboard_stats(db, user_id=1)
     return success(result)
 
 
@@ -78,7 +78,7 @@ def list_bookings(
     #user=Depends(require_partner)
 ):
     """Bookings assigned to partner. Filter by status, date."""
-    result = partner_service.get_partner_bookings(db, status, page, limit)
+    result = partner_service.get_partner_bookings(db,1, status, page, limit)
     return success(result)
 
 
@@ -89,7 +89,7 @@ def get_booking_detail(
     #user=Depends(require_partner)
 ):
     """Specific booking detail with traveler details and special requirements."""
-    result = partner_service.get_partner_booking_detail(db, booking_id)
+    result = partner_service.get_partner_booking_detail(db, booking_id, 1)
     return success(result)
 
 
@@ -100,7 +100,7 @@ def accept_booking(
     #user=Depends(require_partner)
 ):
     """Accept booking assignment and notify traveler."""
-    result = partner_service.accept_booking(db, booking_id)
+    result = partner_service.accept_booking(db, booking_id, 1)
     return success(result, "Booking accepted")
 
 
@@ -112,7 +112,7 @@ def reject_booking(
     #user=Depends(require_partner)
 ):
     """Reject booking; admin reassigns. Reason required."""
-    result = partner_service.reject_booking(db, booking_id, data)
+    result = partner_service.reject_booking(db, 1, booking_id)
     return success(result, "Booking rejected")
 
 
@@ -124,18 +124,13 @@ def get_earnings(
     #user=Depends(require_partner)
 ):
     """Earnings summary: total_earned, this_month, pending_payout, commission_rate."""
-    result = partner_service.get_earnings_summary(db)
+    result = partner_service.get_earnings_summary(db,user_id=1)
     return success(result)
 
 
 @router.get("/me/earnings/report")
-def download_earnings_report(
-    db: Session = Depends(get_db),
-    #user=Depends(require_partner)
-):
-    """Download earnings report CSV/PDF with date filters."""
-    # TODO: generate and return CSV/PDF file using report generation utility
-    raise HTTPException(status_code=501, detail="Report generation coming soon")
+def download_earnings_report(db: Session = Depends(get_db)):
+    return {"success": True, "data": {"message": "Report available after LEV151 completes booking module"}}
 
 
 # ─── Payouts ──────────────────────────────────────────────────────────────────
@@ -148,7 +143,7 @@ def list_payouts(
     #user=Depends(require_partner)
 ):
     """Payout history: amount, bank_account, status (PENDING/TRANSFERRED), transfer_date."""
-    result = partner_service.get_payouts(db, page, limit)
+    result = partner_service.get_payouts(db, user_id=1, page=page, limit=limit)
     return success(result)
 
 
@@ -159,7 +154,8 @@ def get_payout(
     #user=Depends(require_partner)
 ):
     """Single payout detail."""
-    result = partner_service.get_payout_detail(db, payout_id)
+    result = partner_service.get_payout_detail(db, user_id=1, payout_id=payout_id)
+
     return success(result)
 
 
@@ -172,7 +168,7 @@ def update_bank_details(
     #user=Depends(require_partner)
 ):
     """Update bank details: account_number, IFSC, account_holder_name."""
-    result = partner_service.update_bank_details(db, data)
+    result = partner_service.update_bank_details(db, 1,data)
     return success(PartnerResponseSchema.from_orm(result), "Bank details updated")
 
 
@@ -184,7 +180,7 @@ def list_documents(
     #user=Depends(require_partner)
 ):
     """List uploaded KYC documents with verification status."""
-    result = partner_service.get_documents(db)
+    result = partner_service.get_documents(db, user_id=1)
     return success(result)
 
 
@@ -199,7 +195,7 @@ def upload_document(
     # TODO: upload file to S3 using s3_utils, get back the S3 URL
     # file_url = upload_to_s3(file, folder="partner-documents")
     file_url = f"https://s3.amazonaws.com/ap-tourism/partner-documents/{file.filename}"  # placeholder
-    result = partner_service.upload_document(db, document_type, file_url)
+    result = partner_service.upload_document(db,1, document_type, file_url)
     return success(result, "Document uploaded successfully")
 
 
@@ -210,7 +206,7 @@ def delete_document(
     #user=Depends(require_partner)
 ):
     """Delete document if not verified by admin."""
-    result = partner_service.delete_document(db, doc_id)
+    result = partner_service.delete_document(db, user_id=1,doc_id=1)
     return success(result)
 
 
@@ -223,7 +219,7 @@ def update_availability(
     #user=Depends(require_partner)
 ):
     """Set availability dates (mark unavailable dates)."""
-    result = partner_service.update_availability(db, data)
+    result = partner_service.update_availability(db,1, data)
     return success({"unavailable_dates": result.unavailable_dates}, "Availability updated")
 
 
@@ -234,7 +230,7 @@ def update_settings(
     #user=Depends(require_partner)
 ):
     """Update partner settings: auto-accept bookings, notification preferences."""
-    result = partner_service.update_settings(db, data)
+    result = partner_service.update_settings(db,1, data)
     return success(PartnerResponseSchema.from_orm(result), "Settings updated")
 
 
@@ -244,7 +240,7 @@ def get_analytics(
     #user=Depends(require_partner)
 ):
     """Partner analytics: booking trends, revenue chart, occupancy rate."""
-    result = partner_service.get_analytics(db)
+    result = partner_service.get_analytics(db,user_id=1)
     return success(result)
 
 
@@ -258,7 +254,7 @@ def get_notifications(
     #user=Depends(require_partner)
 ):
     """Partner notifications: booking requests, payment received, etc."""
-    result = partner_service.get_partner_notifications(db, page, limit)
+    result = partner_service.get_partner_notifications(db,1, page, limit)
     return success(result)
 
 
@@ -272,7 +268,7 @@ def get_reviews(
     #user=Depends(require_partner)
 ):
     """Reviews received from travelers sorted by date."""
-    result = partner_service.get_partner_reviews(db, page, limit)
+    result = partner_service.get_partner_reviews(db,1, page, limit)
     return success(result)
 
 
@@ -284,5 +280,5 @@ def reply_to_review(
     #user=Depends(require_partner)
 ):
     """Reply to a review. Stored as review_reply."""
-    result = partner_service.reply_to_review(db, review_id, data)
+    result = partner_service.reply_to_review(db,1, review_id, data)
     return success(result, "Reply posted")

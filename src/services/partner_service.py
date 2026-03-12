@@ -53,112 +53,69 @@ def update_partner_profile(db: Session, user_id: int, data: PartnerUpdateSchema)
     db.refresh(partner)
     return partner
 
+def get_partner_by_user_id(db: Session, user_id: int):
+    partner = db.query(Partner).filter(
+        Partner.user_id == user_id,
+        Partner.deleted_at == None
+    ).first()
+    if not partner:
+        raise HTTPException(status_code=404, detail="Partner not found")
+    return partner
 
 def get_dashboard_stats(db: Session, user_id: int) -> dict:
-    partner = get_partner_profile(db, user_id)
-    today = date.today()
-
-    # Import here to avoid circular imports
-    from src.models.booking import Booking
-    todays_bookings = db.query(Booking).filter(
-        Booking.partner_id == partner.id,
-        Booking.travel_date == today
-    ).count()
-
-    # This month earnings
-    from sqlalchemy import extract
-    from src.models.booking import Booking
-    this_month_earnings = db.query(Booking).filter(
-        Booking.partner_id == partner.id,
-        Booking.status == "COMPLETED",
-        extract("month", Booking.created_at) == today.month,
-        extract("year", Booking.created_at) == today.year
-    ).with_entities(db.func.sum(Booking.amount)).scalar() or 0.0
-
-    pending_payouts = db.query(PartnerPayout).filter(
-        PartnerPayout.partner_id == partner.id,
-        PartnerPayout.status == "PENDING"
-    ).with_entities(db.func.sum(PartnerPayout.amount)).scalar() or 0.0
+    partner = get_partner_by_user_id(db, user_id=1)
+    if not partner:
+        raise HTTPException(status_code=404, detail="Partner not found")
 
     return {
-        "todays_bookings": todays_bookings,
-        "this_month_earnings": this_month_earnings,
-        "pending_payouts": pending_payouts,
-        "active_listings": 0,  # Count from hotel/vehicle/guide tables based on partner type
+        "partner_id": partner.id,
+        "total_earnings": partner.total_earnings,
+        "wallet_balance": partner.wallet_balance,
+        "todays_bookings": 0,       # temp until LEV151 ready
+        "this_month_earnings": 0,   # temp until LEV151 ready
+        "pending_payouts": 0
     }
 
 
 # ─── Bookings ─────────────────────────────────────────────────────────────────
 
-def get_partner_bookings(db: Session, user_id: int, status: Optional[str], page: int, limit: int) -> list:
-    partner = get_partner_profile(db, user_id)
-    from src.models.booking import Booking
-    query = db.query(Booking).filter(Booking.partner_id == partner.id)
-    if status:
-        query = query.filter(Booking.status == status)
-    return query.offset((page - 1) * limit).limit(limit).all()
+def get_partner_bookings(db: Session, user_id: int, status: str = None, page: int = 1, limit: int = 20):
+    partner = get_partner_by_user_id(db, user_id)
+    # Booking model not ready yet (LEV151)
+    return {
+        "data": [],
+        "total": 0,
+        "page": page,
+        "pages": 0,
+        "message": "Bookings will be available when LEV151 completes booking module"
+    }
 
 
 def get_partner_booking_detail(db: Session, user_id: int, booking_id: int):
-    partner = get_partner_profile(db, user_id)
-    from src.models.booking import Booking
-    booking = db.query(Booking).filter(
-        Booking.id == booking_id,
-        Booking.partner_id == partner.id
-    ).first()
-    if not booking:
-        raise HTTPException(status_code=404, detail="Booking not found")
-    return booking
+    # Booking model not ready yet (LEV151 pending)
+    return {"message": "Booking detail will be available when LEV151 completes booking module"}
 
 
-def accept_booking(db: Session, user_id: int, booking_id: int):
-    booking = get_partner_booking_detail(db, user_id, booking_id)
-    if booking.status != "PENDING":
-        raise HTTPException(status_code=400, detail="Only PENDING bookings can be accepted")
-    booking.status = "CONFIRMED"
-    db.commit()
-    db.refresh(booking)
-    # TODO: trigger notification to traveler
-    return booking
+def accept_booking(db: Session, user_id: int, booking_id: int) -> dict:
+    # TODO: uncomment when LEV151 completes Booking model
+    return {"message": "Available after LEV151 completes booking module"}
 
 
-def reject_booking(db: Session, user_id: int, booking_id: int, data: BookingRejectSchema):
-    booking = get_partner_booking_detail(db, user_id, booking_id)
-    if booking.status != "PENDING":
-        raise HTTPException(status_code=400, detail="Only PENDING bookings can be rejected")
-    booking.status = "REJECTED"
-    booking.rejection_reason = data.reason
-    db.commit()
-    db.refresh(booking)
-    # TODO: trigger admin reassignment + notify traveler
-    return booking
+def reject_booking(db: Session, user_id: int, booking_id: int) -> dict:
+    # TODO: uncomment when LEV151 completes Booking model
+    return {"message": "Available after LEV151 completes booking module"}
 
 
 # ─── Earnings ─────────────────────────────────────────────────────────────────
 
-def get_earnings_summary(db: Session, user_id: int) -> dict:
-    partner = get_partner_profile(db, user_id)
-    today = date.today()
-    from sqlalchemy import extract
-    from src.models.booking import Booking
-
-    this_month = db.query(Booking).filter(
-        Booking.partner_id == partner.id,
-        Booking.status == "COMPLETED",
-        extract("month", Booking.created_at) == today.month,
-        extract("year", Booking.created_at) == today.year
-    ).with_entities(db.func.sum(Booking.amount)).scalar() or 0.0
-
-    pending_payout = db.query(PartnerPayout).filter(
-        PartnerPayout.partner_id == partner.id,
-        PartnerPayout.status == "PENDING"
-    ).with_entities(db.func.sum(PartnerPayout.amount)).scalar() or 0.0
-
+def get_earnings_summary(db: Session, user_id: int):
+    # from src.models.booking import Booking  # comment this line
+    partner = get_partner_by_user_id(db, user_id)
     return {
-        "total_earned": partner.total_earnings,
-        "this_month": this_month,
-        "pending_payout": pending_payout,
-        "commission_rate": partner.commission_rate,
+        "total_earnings": partner.total_earnings,
+        "wallet_balance": partner.wallet_balance,
+        "this_month": 0,
+        "last_month": 0
     }
 
 
@@ -267,17 +224,15 @@ def get_analytics(db: Session, user_id: int) -> dict:
 
 # ─── Notifications ────────────────────────────────────────────────────────────
 
-def get_partner_notifications(db: Session, user_id: int, page: int, limit: int) -> list:
-    partner = get_partner_profile(db, user_id)
-    from src.models.notification import Notification
-    return db.query(Notification).filter(
-        Notification.user_id == partner.user_id
-    ).order_by(Notification.created_at.desc()).offset((page - 1) * limit).limit(limit).all()
+def get_partner_notifications(db: Session, user_id: int, page: int = 1, limit: int = 20) -> dict:
+    # TODO: uncomment when Notification module is ready
+    # from src.models.notification import Notification
+    return {"data": [], "total": 0, "page": page, "pages": 0}
 
 
 # ─── Reviews ──────────────────────────────────────────────────────────────────
 
-def get_partner_reviews(db: Session, user_id: int, page: int, limit: int) -> list:
+def get_partner_reviews(db: Session, user_id: int, page: int = 1, limit: int = 20) -> list:
     partner = get_partner_profile(db, user_id)
     from src.models.review import Review
     return db.query(Review).filter(
@@ -286,14 +241,7 @@ def get_partner_reviews(db: Session, user_id: int, page: int, limit: int) -> lis
     ).order_by(Review.created_at.desc()).offset((page - 1) * limit).limit(limit).all()
 
 
-def reply_to_review(db: Session, user_id: int, review_id: int, data: ReviewReplySchema):
-    partner = get_partner_profile(db, user_id)
-    from src.models.review import Review
-    review = db.query(Review).filter(Review.id == review_id).first()
-    if not review:
-        raise HTTPException(status_code=404, detail="Review not found")
-    review.partner_reply = data.reply
-    review.replied_at = datetime.utcnow()
-    db.commit()
-    db.refresh(review)
-    return review
+def reply_to_review(db: Session, user_id: int, review_id: int, data) -> dict:
+    # TODO: uncomment when Review module is ready
+    # from src.models.review import Review
+    return {"message": "Available after Review module is ready"}
