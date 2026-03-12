@@ -17,11 +17,12 @@ passlib[bcrypt]==1.7.4             # password hashing
 redis[asyncio]==5.1.1
 
 # ── SMS ───────────────────────────────────────────────────────
-twilio==9.3.3            # Twilio SMS
+# twilio==9.3.3            # Twilio SMS
 httpx==0.27.2            # for MSG91 HTTP calls
 
 # ── File Upload ───────────────────────────────────────────────
-boto3==1.35.36           # AWS S3
+# boto3==1.35.36           # AWS S3
+aioboto3==13.1.0
 python-multipart==0.0.12 # file uploads in FastAPI
 
 # ── Async Tasks ───────────────────────────────────────────────

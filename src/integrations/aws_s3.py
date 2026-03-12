@@ -1,19 +1,28 @@
 """
 integrations/aws_s3.py
-AWS S3 file upload integration — used for avatar uploads.
+
+AWS S3 integration for avatar uploads.
+Async implementation using aioboto3 (FastAPI compatible).
 """
 
-import boto3
 import uuid
 import logging
+import aioboto3
 from botocore.exceptions import ClientError
 from src.core.config import settings
 
 logger = logging.getLogger(__name__)
 
+# Shared async session (reused across requests)
+_session = aioboto3.Session()
 
-def get_s3_client():
-    return boto3.client(
+# Allowed avatar file types
+ALLOWED_TYPES = {"image/jpeg", "image/jpg", "image/png", "image/webp"}
+
+
+def _s3_client():
+    """Return async S3 client."""
+    return _session.client(
         "s3",
         aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
         aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
@@ -21,41 +30,81 @@ def get_s3_client():
     )
 
 
-async def upload_avatar(file_bytes: bytes, content_type: str, user_id: str) -> str:
+async def upload_avatar(
+    file_bytes: bytes,
+    content_type: str,
+    user_id: str,
+) -> str:
     """
-    Upload avatar image to S3.
-    Returns the public URL of the uploaded file.
+    Upload avatar to AWS S3.
+
+    Returns public URL of uploaded image.
     """
-    ext = content_type.split("/")[-1]   # image/jpeg → jpeg
-    key = f"avatars/{user_id}/{uuid.uuid4()}.{ext}"
+
+    if not content_type or content_type not in ALLOWED_TYPES:
+        raise ValueError("Invalid avatar file type")
+
+    extension = content_type.split("/")[-1].replace("jpeg", "jpg")
+
+    key = f"avatars/{user_id}/{uuid.uuid4()}.{extension}"
 
     try:
-        s3 = get_s3_client()
-        s3.put_object(
-            Bucket=settings.AWS_S3_BUCKET,
-            Key=key,
-            Body=file_bytes,
-            ContentType=content_type,
+
+        async with _s3_client() as s3:
+
+            await s3.put_object(
+                Bucket=settings.AWS_S3_BUCKET,
+                Key=key,
+                Body=file_bytes,
+                ContentType=content_type,
+                ACL="public-read",  # makes image accessible publicly
+            )
+
+        url = (
+            f"https://{settings.AWS_S3_BUCKET}.s3."
+            f"{settings.AWS_REGION}.amazonaws.com/{key}"
         )
-        url = f"https://{settings.AWS_S3_BUCKET}.s3.{settings.AWS_REGION}.amazonaws.com/{key}"
-        logger.info("Avatar uploaded to S3 key=%s", key)
+
+        logger.info("Avatar uploaded successfully user=%s key=%s", user_id, key)
+
         return url
 
     except ClientError as e:
+
         logger.error("S3 upload failed: %s", str(e))
-        raise ValueError("Failed to upload avatar. Please try again.")
+
+        raise ValueError("Failed to upload avatar")
 
 
 async def delete_avatar(avatar_url: str) -> None:
-    """Delete old avatar from S3 when user uploads a new one."""
+    """
+    Delete avatar from S3.
+    Used when user uploads new avatar.
+    """
+
+    if not avatar_url:
+        return
+
     try:
-        # Extract key from URL
-        bucket_prefix = f"https://{settings.AWS_S3_BUCKET}.s3.{settings.AWS_REGION}.amazonaws.com/"
-        if avatar_url.startswith(bucket_prefix):
-            key = avatar_url.replace(bucket_prefix, "")
-            s3 = get_s3_client()
-            s3.delete_object(Bucket=settings.AWS_S3_BUCKET, Key=key)
-            logger.info("Old avatar deleted from S3 key=%s", key)
+
+        prefix = (
+            f"https://{settings.AWS_S3_BUCKET}.s3."
+            f"{settings.AWS_REGION}.amazonaws.com/"
+        )
+
+        if avatar_url.startswith(prefix):
+
+            key = avatar_url.replace(prefix, "")
+
+            async with _s3_client() as s3:
+
+                await s3.delete_object(
+                    Bucket=settings.AWS_S3_BUCKET,
+                    Key=key,
+                )
+
+            logger.info("Avatar deleted key=%s", key)
+
     except Exception as e:
-        logger.warning("Failed to delete old avatar: %s", str(e))
-        # Don't raise — deletion failure shouldn't block upload
+
+        logger.warning("Failed to delete avatar: %s", str(e))

@@ -898,3 +898,45 @@ FROM user_profiles
 WHERE user_profiles.user_id = $1::UUID
 2026-03-11 16:38:47,661 | INFO | sqlalchemy.engine.Engine | [cached since 66.56s ago] ('badc725e-4d2f-4dcb-a39d-04d26fdb9ce1',)
 2026-03-11 16:38:47,666 | INFO | sqlalchemy.engine.Engine | COMMIT
+2026-03-12 09:29:08,634 | INFO | src.services.auth_service | Registration attempt phone=6786786786
+2026-03-12 09:29:10,214 | INFO | twilio.http_client | -- BEGIN Twilio API Request --
+2026-03-12 09:29:10,215 | INFO | twilio.http_client | POST Request: https://api.twilio.com/2010-04-01/Accounts/AC1788055ac9231f959d10c1c5959cfa9c/Messages.json
+2026-03-12 09:29:10,216 | INFO | twilio.http_client | Headers:
+2026-03-12 09:29:10,217 | INFO | twilio.http_client | Content-Type : application/x-www-form-urlencoded
+2026-03-12 09:29:10,219 | INFO | twilio.http_client | Accept : application/json
+2026-03-12 09:29:10,220 | INFO | twilio.http_client | User-Agent : twilio-python/9.10.2 (Windows AMD64) Python/3.13.9
+2026-03-12 09:29:10,221 | INFO | twilio.http_client | X-Twilio-Client : python-9.10.2
+2026-03-12 09:29:10,223 | INFO | twilio.http_client | Accept-Charset : utf-8
+2026-03-12 09:29:10,224 | INFO | twilio.http_client | -- END Twilio API Request --
+2026-03-12 09:29:11,249 | INFO | twilio.http_client | Response Status Code: 400
+2026-03-12 09:29:11,250 | INFO | twilio.http_client | Response Headers: {'Content-Type': 'application/json', 'Content-Length': '332', 'Connection': 'keep-alive', 'Date': 'Thu, 12 Mar 2026 03:59:11 GMT', 'X-Twilio-Error-Code': '21608', 'Twilio-Concurrent-Requests': '1', 'Twilio-Request-Id': 'RQ1a775b58efd23466313bef1eb25b253f', 'Twilio-Request-Duration': '0.118', 'X-Home-Region': 'us1', 'X-API-Domain': 'api.twilio.com', 'Strict-Transport-Security': 'max-age=31536000', 'X-Cache': 'Error from cloudfront', 'Via': '1.1 07b2ebaefa1f453e7f166d6d0f8e8cec.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'HYD57-P5', 'X-Amz-Cf-Id': 'ECMbQ123VzReQSwFP6csGoloElLUERdMGR8kVqCku_URkxLFbiTjXw==', 'X-Powered-By': 'AT-5000', 'X-Shenanigans': 'none', 'Vary': 'Origin'}
+2026-03-12 09:29:58,208 | INFO | src.services.auth_service | Registration attempt phone=7793969902
+2026-03-12 09:34:29,286 | INFO | src.services.auth_service | Sending OTP phone=7793969902 purpose=register
+2026-03-12 09:34:29,289 | INFO | twilio.http_client | -- BEGIN Twilio API Request --
+2026-03-12 09:34:29,292 | INFO | twilio.http_client | POST Request: https://api.twilio.com/2010-04-01/Accounts/AC1788055ac9231f959d10c1c5959cfa9c/Messages.json
+2026-03-12 09:34:29,293 | INFO | twilio.http_client | Headers:
+2026-03-12 09:34:29,294 | INFO | twilio.http_client | Content-Type : application/x-www-form-urlencoded
+2026-03-12 09:34:29,296 | INFO | twilio.http_client | Accept : application/json
+2026-03-12 09:34:29,296 | INFO | twilio.http_client | User-Agent : twilio-python/9.10.2 (Windows AMD64) Python/3.13.9
+2026-03-12 09:34:29,298 | INFO | twilio.http_client | X-Twilio-Client : python-9.10.2
+2026-03-12 09:34:29,299 | INFO | twilio.http_client | Accept-Charset : utf-8
+2026-03-12 09:34:29,301 | INFO | twilio.http_client | -- END Twilio API Request --
+2026-03-12 09:34:30,205 | INFO | twilio.http_client | Response Status Code: 201
+2026-03-12 09:34:30,206 | INFO | twilio.http_client | Response Headers: {'Content-Type': 'application/json;charset=utf-8', 'Content-Length': '881', 'Connection': 'keep-alive', 'Date': 'Thu, 12 Mar 2026 04:04:30 GMT', 'Twilio-Concurrent-Requests': '1', 'Twilio-Request-Id': 'RQba258bdfb0fa17a47a247f9aec972988', 'Twilio-Request-Duration': '0.173', 'X-Home-Region': 'us1', 'X-API-Domain': 'api.twilio.com', 'Strict-Transport-Security': 'max-age=31536000', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 37ccb2ae4d093a9d3577800abb0b28bc.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'HYD57-P5', 'X-Amz-Cf-Id': 'oy7koFk9XviZmR25aehTbU7NyyVki3yvUicWcVqyb1Pz4NsUVGKolg==', 'X-Powered-By': 'AT-5000', 'X-Shenanigans': 'none', 'Vary': 'Origin'}
+2026-03-12 09:35:25,101 | INFO | src.services.auth_service | OTP verification attempt phone=7793969902
+2026-03-12 09:35:25,217 | INFO | src.services.auth_service | OTP login success user_id=518976d8-06b8-418f-b72e-e88edc3d8a5a
+2026-03-12 09:35:55,492 | INFO | src.services.user_service | Get profile user_id=badc725e-4d2f-4dcb-a39d-04d26fdb9ce1
+2026-03-12 09:37:39,457 | INFO | src.services.auth_service | Login attempt phone=7793969902
+2026-03-12 09:37:39,983 | INFO | src.services.auth_service | Login success user_id=518976d8-06b8-418f-b72e-e88edc3d8a5a
+2026-03-12 11:18:47,816 | INFO | src.services.auth_service | Registration attempt phone=7793969902
+2026-03-12 11:18:48,012 | WARNING | src.services.auth_service | Duplicate registration attempt phone=7793969902
+2026-03-12 11:25:38,816 | INFO | src.services.auth_service | Registration attempt phone=7793969902
+2026-03-12 12:03:32,201 | INFO | src.services.auth_service | Registration attempt phone=7793969902
+2026-03-12 12:03:32,354 | WARNING | src.services.auth_service | Duplicate registration attempt phone=7793969902
+2026-03-12 12:07:12,883 | INFO | src.services.auth_service | Registration attempt phone=7793969902
+2026-03-12 12:12:27,990 | INFO | src.services.auth_service | Registration attempt phone=7793969902
+2026-03-12 12:13:12,073 | INFO | src.services.auth_service | Registration attempt phone=7793969902
+2026-03-12 12:13:12,077 | WARNING | src.services.auth_service | Duplicate registration attempt phone=7793969902
+2026-03-12 14:13:05,846 | INFO | src.services.auth_service | Registration attempt phone=7793969902
+2026-03-12 14:13:07,558 | INFO | httpx | HTTP Request: POST https://api.twilio.com/2010-04-01/Accounts/AC1788055ac9231f959d10c1c5959cfa9c/Messages.json "HTTP/1.1 201 Created"
+2026-03-12 14:13:07,562 | INFO | src.integrations.twilio | Twilio OTP sent successfully to 7793969902

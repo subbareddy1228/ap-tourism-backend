@@ -12,7 +12,7 @@ from src.core.security import decode_token
 from src.core.redis import is_jti_blacklisted
 from src.core.database import get_db
 from src.models.user import User
-from src.common.responses import UserStatus
+from src.common.enums import UserStatus
 from src.schemas import user
 
 # IMPORTANT: auto_error=False prevents FastAPI from rejecting request automatically
@@ -26,10 +26,6 @@ async def get_current_user(
 
     # If no token provided, return first user from DB (DEV MODE only)
     if credentials is None:
-        result = await db.execute(select(User).limit(1))
-        user = result.scalar_one_or_none()
-        if user:
-            return user
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="No users in database"

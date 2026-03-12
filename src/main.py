@@ -14,6 +14,10 @@ from src.core.logging import setup_logging
 
 from src.api.v1.endpoints.auth import router as auth_router
 from src.api.v1.endpoints.users import router as users_router
+from src.core.exceptions import register_exception_handlers
+from src.core.redis import init_redis, close_redis
+
+
 
 
 setup_logging()
@@ -50,6 +54,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+register_exception_handlers(app)
+
 
 # ───────────────────────── Routers ─────────────────────────
 
@@ -62,6 +68,14 @@ app.include_router(users_router, prefix="/api/v1")
 @app.get("/api/v1/health", tags=["Health"])
 async def health():
     return {"status": "ok", "version": settings.APP_VERSION}
+
+@app.on_event("startup")
+async def startup():
+    await init_redis()
+
+@app.on_event("shutdown")
+async def shutdown():
+    await close_redis()
 
 
 # ───────────────────────── Swagger Bearer Fix ─────────────────────────
