@@ -1,108 +1,200 @@
 """
+
 api/deps/auth.py
+
 JWT authentication dependency
+
 """
-
+ 
 from fastapi import Depends, HTTPException, status
+
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from sqlalchemy import select
-
+ 
 from src.core.security import decode_token
+
 from src.core.redis import is_jti_blacklisted
+
 from src.core.database import get_db
+
 from src.models.user import User
+
 from src.common.enums import UserStatus
-from src.schemas import user
+ 
+# auto_error=False so we can return a clean 401 instead of FastAPI's default 403
 
-# IMPORTANT: auto_error=False prevents FastAPI from rejecting request automatically
 bearer_scheme = HTTPBearer(auto_error=False)
-
-
+ 
+ 
 async def get_current_user(
+
     db: AsyncSession = Depends(get_db),
+
     credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
+
 ) -> User:
+ 
+    # No token provided at all
 
-    # If no token provided, return first user from DB (DEV MODE only)
     if credentials is None:
+
         raise HTTPException(
+
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="No users in database"
+
+            detail="Authorization token is required"
+
         )
-
+ 
     token = credentials.credentials
-    payload = decode_token(token)
+ 
+    # Decode — returns None if signature is wrong, token is malformed, or expired
 
+    payload = decode_token(token)
+ 
     if payload is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
+
+        raise HTTPException(
+
+            status_code=status.HTTP_401_UNAUTHORIZED,
+
+            detail="Invalid or expired token"
+
+        )
+ 
+    # Must be an access token, not a refresh token
 
     if payload.get("type") != "access":
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token type")
 
+        raise HTTPException(
+
+            status_code=status.HTTP_401_UNAUTHORIZED,
+
+            detail="Invalid token type"
+
+        )
+ 
     user_id = payload.get("sub")
-    jti = payload.get("jti")
 
+    jti = payload.get("jti")
+ 
     if not user_id:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Malformed token")
+
+        raise HTTPException(
+
+            status_code=status.HTTP_401_UNAUTHORIZED,
+
+            detail="Malformed token"
+
+        )
+ 
+    # Check if this token has been blacklisted (logged out)
 
     if jti:
+
         try:
+
             if await is_jti_blacklisted(jti):
-                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token revoked")
+
+                raise HTTPException(
+
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+
+                    detail="Token has been revoked"
+
+                )
+
+        except HTTPException:
+
+            raise   # ← always re-raise 401, never swallow it
+
         except Exception:
-            pass
+
+            pass    # ← only Redis connection errors are silently ignored
+ 
+    # Fetch user from DB
 
     result = await db.execute(select(User).where(User.id == user_id))
+
     user = result.scalar_one_or_none()
-
+ 
     if user is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
 
+        raise HTTPException(
+
+            status_code=status.HTTP_401_UNAUTHORIZED,
+
+            detail="User not found"
+
+        )
+ 
     if user.status != UserStatus.ACTIVE:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account suspended")
 
+        raise HTTPException(
+
+            status_code=status.HTTP_403_FORBIDDEN,
+
+            detail="Account suspended"
+
+        )
+ 
     return user
-
-
+ 
+ 
 # ───────── ROLE BASED ACCESS ─────────
-
+ 
 def require_role(*roles: str):
-
+ 
     async def role_checker(current_user: User = Depends(get_current_user)):
-
+ 
         allowed_roles = [r.lower() for r in roles]
 
         role_value = current_user.role.value if hasattr(current_user.role, "value") else str(current_user.role)
+ 
         if role_value.lower() not in allowed_roles:
+
             raise HTTPException(
+
                 status_code=status.HTTP_403_FORBIDDEN,
+
                 detail="Access denied"
+
             )
-
+ 
         return current_user
-
+ 
     return role_checker
-
-
+ 
+ 
 async def get_admin_user(current_user: User = Depends(require_role("admin"))):
+
     return current_user
-
-
+ 
+ 
 async def get_partner_user(current_user: User = Depends(require_role("partner", "admin"))):
+
     return current_user
-
-
+ 
+ 
 async def get_guide_user(current_user: User = Depends(require_role("guide", "admin"))):
+
     return current_user
-
-
+ 
+ 
 async def get_verified_user(current_user: User = Depends(get_current_user)):
-
+ 
     if not current_user.is_phone_verified:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Phone verification required"
-        )
 
+        raise HTTPException(
+
+            status_code=status.HTTP_403_FORBIDDEN,
+
+            detail="Phone verification required"
+
+        )
+ 
     return current_user
+ 
