@@ -1,75 +1,68 @@
-import math, logging
-from typing import Optional
+import logging
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
+
 from src.database import get_db
-from src.api.deps import get_current_user
 from src.schemas.coupon import (
-    CouponApplyRequest, CouponApplyData,
-    CouponDetailData, CouponListData, CouponPublicData,
-    CouponValidateRequest, CouponValidateData,
-    MyCouponsData, ReferralData,
+    ValidateCouponRequest, ValidateCouponResponse,
+    ApplyCouponRequest, ApplyCouponResponse,
+    RemoveCouponRequest, RemoveCouponResponse,
+    MyCouponsResponse, ReferralResponse,
+    ActiveCouponsResponse, CouponOut,
 )
-from src.services.coupon_service import CouponService
+from src.services.coupon_service import (
+    validate_coupon, apply_coupon, remove_coupon,
+    get_my_coupons, get_referral_info,
+    get_active_coupons, get_by_code_public,
+)
 
-logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/coupon", tags=["Module 16 - Coupons"])
+logger = logging.getLogger(__name__)
 
-def ok(data, message=""):
-    return {"success": True, "data": data, "message": message}
 
-def err(message, code):
-    raise HTTPException(status_code=code, detail={"success": False, "error": message, "code": code})
+def _err(code: int, msg: str):
+    raise HTTPException(status_code=code, detail={"success": False, "error": msg})
 
-@router.get("/active")
-def list_active(page: int = Query(1, ge=1), limit: int = Query(20, ge=1, le=100), db: Session = Depends(get_db), user=Depends(get_current_user)):
-    total, items = CouponService.list_active(db, page, limit)
-    pages = math.ceil(total / limit) if total else 1
-    return ok(CouponListData(data=[CouponPublicData.from_orm(c) for c in items], total=total, page=page, pages=pages, limit=limit), "Active coupons fetched.")
 
-@router.get("/my-coupons")
-def my_coupons(db: Session = Depends(get_db), user=Depends(get_current_user)):
-    items = CouponService.my_coupons(db, user.id)
-    return ok(MyCouponsData(data=[CouponDetailData.from_orm(c) for c in items], total=len(items)), "Your coupons fetched.")
+@router.get("/", response_model=MyCouponsResponse, summary="List coupons available to user")
+def list_coupons(user_id: UUID = Query(...), db: Session = Depends(get_db)):
+    return get_my_coupons(db, user_id)
 
-@router.get("/referral")
-def get_referral(db: Session = Depends(get_db), user=Depends(get_current_user)):
-    result = CouponService.get_referral(db, user.id)
-    return ok(ReferralData(**result), "Referral coupon fetched.")
 
-@router.post("/validate")
-def validate_coupon(body: CouponValidateRequest, db: Session = Depends(get_db), user=Depends(get_current_user)):
-    result = CouponService.validate(db, user.id, body)
-    coupon_data = CouponPublicData.from_orm(result["coupon"]) if result["coupon"] else None
-    return ok(CouponValidateData(is_valid=result["is_valid"], discount_amount=result["discount_amount"], final_amount=result["final_amount"], error_reason=result["error_reason"], coupon=coupon_data), "Coupon validated.")
+@router.post("/validate", response_model=ValidateCouponResponse, summary="Validate a coupon code (without applying)")
+def validate(body: ValidateCouponRequest, db: Session = Depends(get_db)):
+    return validate_coupon(db, body)
 
-@router.post("/apply", status_code=status.HTTP_201_CREATED)
-def apply_coupon(body: CouponApplyRequest, db: Session = Depends(get_db), user=Depends(get_current_user)):
+
+@router.post("/apply", response_model=ApplyCouponResponse, summary="Apply coupon to a booking")
+def apply(body: ApplyCouponRequest, db: Session = Depends(get_db)):
+    return apply_coupon(db, body)
+
+
+@router.delete("/remove", summary="Remove coupon from a booking")
+def remove(body: RemoveCouponRequest, db: Session = Depends(get_db)):
+    return remove_coupon(db, body.user_id, body.booking_id)
+
+
+@router.get("/my-coupons", response_model=MyCouponsResponse, summary="User's available and used coupons with total savings")
+def my_coupons(user_id: UUID = Query(...), db: Session = Depends(get_db)):
+    return get_my_coupons(db, user_id)
+
+
+@router.get("/referral", response_model=ReferralResponse, summary="Get user's referral code and stats")
+def referral(user_id: UUID = Query(...), db: Session = Depends(get_db)):
+    return get_referral_info(db, user_id)
+
+
+@router.get("/active", response_model=ActiveCouponsResponse, summary="List all active public coupons (no auth)")
+def active_coupons(page: int = Query(1, ge=1), per_page: int = Query(10, ge=1, le=50), db: Session = Depends(get_db)):
+    return get_active_coupons(db, page, per_page)
+
+
+@router.get("/{code}", response_model=CouponOut, summary="Get public coupon details by code (no auth)")
+def coupon_by_code(code: str, db: Session = Depends(get_db)):
     try:
-        result = CouponService.apply(db, user.id, body)
+        return get_by_code_public(db, code)
     except ValueError as e:
-        err(str(e), 400)
-    return ok(CouponApplyData(applied_coupon_id=result["applied_coupon_id"], discount_amount=result["discount_amount"], final_amount=result["final_amount"]), f"Coupon applied!")
-
-@router.delete("/remove")
-def remove_coupon(applied_coupon_id: UUID = Query(...), db: Session = Depends(get_db), user=Depends(get_current_user)):
-    try:
-        CouponService.remove(db, user.id, applied_coupon_id)
-    except ValueError as e:
-        err(str(e), 404)
-    return ok(None, "Coupon removed from cart.")
-
-@router.get("/")
-def list_coupons(applicable_to: Optional[str] = Query(None), page: int = Query(1, ge=1), limit: int = Query(20, ge=1, le=100), db: Session = Depends(get_db), user=Depends(get_current_user)):
-    total, items = CouponService.list_public(db, applicable_to, page, limit)
-    pages = math.ceil(total / limit) if total else 1
-    return ok(CouponListData(data=[CouponPublicData.from_orm(c) for c in items], total=total, page=page, pages=pages, limit=limit), "Coupons fetched.")
-
-@router.get("/{code}")
-def get_coupon_by_code(code: str, db: Session = Depends(get_db), user=Depends(get_current_user)):
-    try:
-        coupon = CouponService.get_by_code(db, code)
-    except ValueError as e:
-        err(str(e), 404)
-    return ok(CouponDetailData.from_orm(coupon), "Coupon detail fetched.")
+        _err(404, str(e))

@@ -1,24 +1,40 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from src.database import create_tables
-from src.api.v1.endpoints.payments import router as payment_router
 from src.api.v1.endpoints.coupons import router as coupon_router
-app = FastAPI(title="AP Travel & Temple Tourism API", version="1.0.0")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    try:
+        from src.database import create_tables
+        import asyncio, inspect
+        if inspect.iscoroutinefunction(create_tables):
+            await create_tables()
+        else:
+            create_tables()
+        print("DB tables ready")
+    except Exception as e:
+        print(f"DB init skipped: {e}")
+    yield
+
+
+app = FastAPI(
+    title="AP Travel API — Module 16 Coupon",
+    description="Coupon APIs: validate, apply, remove, referral, admin CRUD",
+    version="1.0.0",
+    lifespan=lifespan,
+)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"]
+    allow_headers=["*"],
 )
-#Creates all tables automatically when server starts
-create_tables()
-app.include_router(payment_router, prefix="/api/v1")
-app.include_router(coupon_router,  prefix="/api/v1")
+
+app.include_router(coupon_router, prefix="/api/v1")
+
+
 @app.get("/health", tags=["Health"])
-def health_check():
-    return {
-        "success": True,
-        "data": {"status": "ok", "M12": "active", "M16": "active"},
-        "message": "Server is running."
-    }
+def health():
+    return {"status": "ok", "module": "coupon"}

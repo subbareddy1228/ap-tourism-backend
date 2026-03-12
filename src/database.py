@@ -14,7 +14,7 @@ def get_db():
         db.close()
 
 def create_tables():
-    from src.models.transaction import Transaction, Refund, SavedCard
+  
     from src.models.coupon import Coupon, CouponUsage
     Base.metadata.create_all(bind=engine)
     print("Tables created successfully!")
