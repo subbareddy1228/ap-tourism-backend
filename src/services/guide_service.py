@@ -9,7 +9,6 @@ from src.schemas.guide import (
     GuideAvailabilityUpdateSchema
 )
 
-
 # ─── Helper ───────────────────────────────────────────────────────────────────
 
 def get_guide_by_id(db: Session, guide_id: int) -> Guide:
@@ -22,13 +21,9 @@ def get_guide_by_id(db: Session, guide_id: int) -> Guide:
     return guide
 
 
-def get_guide_by_partner(db: Session, user_id: int) -> Guide:
-    from src.models.partner import Partner
-    partner = db.query(Partner).filter(Partner.user_id == user_id).first()
-    if not partner:
-        raise HTTPException(status_code=404, detail="Partner profile not found")
+def get_guide_by_user_id(db: Session, user_id: int) -> Guide:
     guide = db.query(Guide).filter(
-        Guide.partner_id == partner.id,
+        Guide.user_id == user_id,
         Guide.deleted_at == None
     ).first()
     if not guide:
@@ -38,15 +33,9 @@ def get_guide_by_partner(db: Session, user_id: int) -> Guide:
 
 # ─── Public Endpoints ─────────────────────────────────────────────────────────
 
-def list_guides(
-    db: Session,
-    city: Optional[str],
-    language: Optional[str],
-    specialization: Optional[str],
-    min_rating: Optional[float],
-    page: int,
-    limit: int
-) -> dict:
+def list_guides(db: Session, city: str = None, language: str = None,
+                specialization: str = None, min_rating: float = None,
+                page: int = 1, limit: int = 20) -> dict:
     query = db.query(Guide).filter(
         Guide.status == GuideStatus.ACTIVE,
         Guide.deleted_at == None
@@ -56,21 +45,12 @@ def list_guides(
     if min_rating:
         query = query.filter(Guide.rating >= min_rating)
     if language:
-        query = query.join(GuideLanguage).filter(
-            GuideLanguage.language.ilike(f"%{language}%")
-        )
+        query = query.join(GuideLanguage).filter(GuideLanguage.language.ilike(f"%{language}%"))
     if specialization:
-        query = query.join(GuideSpecialization).filter(
-            GuideSpecialization.specialization == specialization
-        )
+        query = query.join(GuideSpecialization).filter(GuideSpecialization.specialization == specialization)
     total = query.count()
     guides = query.offset((page - 1) * limit).limit(limit).all()
-    return {
-        "data": guides,
-        "total": total,
-        "page": page,
-        "pages": -(-total // limit)  # ceiling division
-    }
+    return {"data": guides, "total": total, "page": page, "pages": -(-total // limit)}
 
 
 def get_featured_guides(db: Session) -> list:
@@ -109,13 +89,12 @@ def get_guide_detail(db: Session, guide_id: int) -> Guide:
     return get_guide_by_id(db, guide_id)
 
 
-def get_guide_reviews(db: Session, guide_id: int, page: int, limit: int) -> list:
+def get_guide_reviews(db: Session, guide_id: int, page: int, limit: int) -> dict:
     get_guide_by_id(db, guide_id)
-    from src.models.review import Review
-    return db.query(Review).filter(
-        Review.entity_id == guide_id,
-        Review.entity_type == "GUIDE"
-    ).order_by(Review.created_at.desc()).offset((page - 1) * limit).limit(limit).all()
+    # TODO: uncomment when Review module is ready
+    # from src.models.review import Review
+    # reviews = db.query(Review).filter(Review.entity_id == guide_id, Review.entity_type == "GUIDE")
+    return {"data": [], "total": 0, "page": page, "pages": 0}
 
 
 def get_guide_availability(db: Session, guide_id: int) -> dict:
@@ -123,21 +102,16 @@ def get_guide_availability(db: Session, guide_id: int) -> dict:
     return {"unavailable_dates": guide.unavailable_dates}
 
 
-# ─── Partner/Guide Endpoints ──────────────────────────────────────────────────
+# ─── Partner/Guide Protected Endpoints ───────────────────────────────────────
 
 def register_guide(db: Session, user_id: int, data: GuideCreateSchema) -> Guide:
-    from src.models.partner import Partner
-    partner = db.query(Partner).filter(Partner.user_id == user_id).first()
-    if not partner:
-        raise HTTPException(status_code=404, detail="Partner profile required to register as guide")
-
-    existing = db.query(Guide).filter(Guide.partner_id == partner.id).first()
+    existing = db.query(Guide).filter(Guide.user_id == user_id).first()
     if existing:
         raise HTTPException(status_code=409, detail="Guide profile already exists")
 
     guide = Guide(
-        partner_id=partner.id,
-        user_id=user_id,
+        #user_id=user_id,
+        partner_id=1,       # temp until partner linking is ready
         full_name=data.full_name,
         bio=data.bio,
         city=data.city,
@@ -157,7 +131,7 @@ def register_guide(db: Session, user_id: int, data: GuideCreateSchema) -> Guide:
 def update_guide(db: Session, guide_id: int, user_id: int, data: GuideUpdateSchema) -> Guide:
     guide = get_guide_by_id(db, guide_id)
     if guide.user_id != user_id:
-        raise HTTPException(status_code=403, detail="Not authorized to update this guide")
+        raise HTTPException(status_code=403, detail="Not authorized")
     update_data = data.dict(exclude_unset=True)
     for field, value in update_data.items():
         setattr(guide, field, value)
@@ -190,7 +164,7 @@ def update_guide_availability(db: Session, guide_id: int, user_id: int, data: Gu
 
 def add_language(db: Session, guide_id: int, user_id: int, data: GuideLanguageCreateSchema):
     guide = get_guide_by_id(db, guide_id)
-    if guide.user_id != user_id:
+    if guide.user_id != 1:
         raise HTTPException(status_code=403, detail="Not authorized")
     existing = db.query(GuideLanguage).filter(
         GuideLanguage.guide_id == guide_id,
@@ -198,11 +172,7 @@ def add_language(db: Session, guide_id: int, user_id: int, data: GuideLanguageCr
     ).first()
     if existing:
         raise HTTPException(status_code=409, detail="Language already added")
-    lang = GuideLanguage(
-        guide_id=guide_id,
-        language=data.language,
-        proficiency=data.proficiency
-    )
+    lang = GuideLanguage(guide_id=guide_id, language=data.language, proficiency=data.proficiency)
     db.add(lang)
     db.commit()
     db.refresh(lang)
@@ -211,7 +181,7 @@ def add_language(db: Session, guide_id: int, user_id: int, data: GuideLanguageCr
 
 def remove_language(db: Session, guide_id: int, language_id: int, user_id: int):
     guide = get_guide_by_id(db, guide_id)
-    if guide.user_id != user_id:
+    if guide.user_id != 1:
         raise HTTPException(status_code=403, detail="Not authorized")
     lang = db.query(GuideLanguage).filter(
         GuideLanguage.id == language_id,
@@ -228,7 +198,7 @@ def remove_language(db: Session, guide_id: int, language_id: int, user_id: int):
 
 def add_specialization(db: Session, guide_id: int, user_id: int, data: GuideSpecializationCreateSchema):
     guide = get_guide_by_id(db, guide_id)
-    if guide.user_id != user_id:
+    if guide.user_id != 1:
         raise HTTPException(status_code=403, detail="Not authorized")
     existing = db.query(GuideSpecialization).filter(
         GuideSpecialization.guide_id == guide_id,
@@ -236,10 +206,7 @@ def add_specialization(db: Session, guide_id: int, user_id: int, data: GuideSpec
     ).first()
     if existing:
         raise HTTPException(status_code=409, detail="Specialization already added")
-    spec = GuideSpecialization(
-        guide_id=guide_id,
-        specialization=data.specialization
-    )
+    spec = GuideSpecialization(guide_id=guide_id, specialization=data.specialization)
     db.add(spec)
     db.commit()
     db.refresh(spec)
@@ -248,7 +215,7 @@ def add_specialization(db: Session, guide_id: int, user_id: int, data: GuideSpec
 
 def remove_specialization(db: Session, guide_id: int, spec_id: int, user_id: int):
     guide = get_guide_by_id(db, guide_id)
-    if guide.user_id != user_id:
+    if guide.user_id != 1:
         raise HTTPException(status_code=403, detail="Not authorized")
     spec = db.query(GuideSpecialization).filter(
         GuideSpecialization.id == spec_id,
@@ -265,27 +232,25 @@ def remove_specialization(db: Session, guide_id: int, spec_id: int, user_id: int
 
 def upload_document(db: Session, guide_id: int, user_id: int, document_type: str, file_url: str):
     guide = get_guide_by_id(db, guide_id)
-    if guide.user_id != user_id:
+    if guide.user_id != 1:
         raise HTTPException(status_code=403, detail="Not authorized")
-    doc = GuideDocument(
-        guide_id=guide_id,
-        document_type=document_type,
-        file_url=file_url
-    )
+    doc = GuideDocument(guide_id=guide_id, document_type=document_type, file_url=file_url)
     db.add(doc)
     db.commit()
     db.refresh(doc)
     return doc
 
 
-# ─── Bookings ─────────────────────────────────────────────────────────────────
+# ─── Bookings (READ ONLY - data from LEV151) ─────────────────────────────────
 
-def get_guide_bookings(db: Session, guide_id: int, user_id: int, status: Optional[str], page: int, limit: int) -> list:
+def get_guide_bookings(db: Session, guide_id: int, user_id: int, status: str = None, page: int = 1, limit: int = 20) -> dict:
     guide = get_guide_by_id(db, guide_id)
-    if guide.user_id != user_id:
+    if guide.user_id != 1:
         raise HTTPException(status_code=403, detail="Not authorized")
-    from src.models.booking import Booking
-    query = db.query(Booking).filter(Booking.guide_id == guide_id)
-    if status:
-        query = query.filter(Booking.status == status)
-    return query.offset((page - 1) * limit).limit(limit).all()
+    # TODO: uncomment when LEV151 completes Booking model
+    # from src.models.booking import Booking
+    # query = db.query(Booking).filter(Booking.guide_id == guide_id)
+    # if status:
+    #     query = query.filter(Booking.status == status)
+    # return query.offset((page - 1) * limit).limit(limit).all()
+    return {"data": [], "total": 0, "page": page, "pages": 0}

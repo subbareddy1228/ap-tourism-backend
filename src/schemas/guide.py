@@ -4,7 +4,7 @@ from datetime import datetime
 from src.models.guide import GuideStatus, Specialization, LanguageProficiency
 
 
-# ─── Guide Schemas ────────────────────────────────────────────────────────────
+# ─── Create / Update ──────────────────────────────────────────────────────────
 
 class GuideCreateSchema(BaseModel):
     full_name: str
@@ -34,29 +34,8 @@ class GuideStatusUpdateSchema(BaseModel):
     status: GuideStatus
 
 
-class GuideResponseSchema(BaseModel):
-    id: int
-    partner_id: int
-    full_name: str
-    bio: Optional[str]
-    profile_photo: Optional[str]
-    city: str
-    state: str
-    experience_years: int
-    rating: float
-    total_reviews: int
-    total_trips: int
-    status: GuideStatus
-    is_featured: bool
-    is_verified: bool
-    price_per_day: Optional[float]
-    price_per_half_day: Optional[float]
-    certifications: List[str]
-    destinations: List[str]
-    created_at: datetime
-
-    class Config:
-        from_attributes = True
+class GuideAvailabilityUpdateSchema(BaseModel):
+    unavailable_dates: List[str]  # ["YYYY-MM-DD"]
 
 
 # ─── Language Schemas ─────────────────────────────────────────────────────────
@@ -98,12 +77,6 @@ class GuideSpecializationResponseSchema(BaseModel):
         from_attributes = True
 
 
-# ─── Availability Schemas ─────────────────────────────────────────────────────
-
-class GuideAvailabilityUpdateSchema(BaseModel):
-    unavailable_dates: List[str]  # ["YYYY-MM-DD", ...]
-
-
 # ─── Document Schemas ─────────────────────────────────────────────────────────
 
 class GuideDocumentResponseSchema(BaseModel):
@@ -117,14 +90,27 @@ class GuideDocumentResponseSchema(BaseModel):
         from_attributes = True
 
 
-# ─── Booking Schema ───────────────────────────────────────────────────────────
+# ─── Response Schema ──────────────────────────────────────────────────────────
 
-class GuideBookingResponseSchema(BaseModel):
+class GuideResponseSchema(BaseModel):
     id: int
-    status: str
-    travel_date: Optional[datetime]
-    amount: float
-    traveler_name: Optional[str]
+    user_id: int
+    full_name: str
+    bio: Optional[str]
+    profile_photo: Optional[str]
+    city: str
+    state: str
+    experience_years: int
+    rating: float
+    total_reviews: int
+    total_trips: int
+    status: GuideStatus
+    is_featured: bool
+    is_verified: bool
+    price_per_day: Optional[float]
+    price_per_half_day: Optional[float]
+    certifications: List[str]
+    destinations: List[str]
     created_at: datetime
 
     class Config:
@@ -137,11 +123,3 @@ class SuccessResponse(BaseModel):
     success: bool = True
     data: Any
     message: str = ""
-
-
-class PaginatedResponse(BaseModel):
-    success: bool = True
-    data: List[Any]
-    total: int
-    page: int
-    pages: int

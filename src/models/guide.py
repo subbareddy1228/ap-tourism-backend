@@ -29,8 +29,8 @@ class Guide(Base):
     __tablename__ = "guides"
 
     id = Column(Integer, primary_key=True, index=True)
-    partner_id = Column(Integer, ForeignKey("partners.id"), nullable=False)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    partner_id = Column(Integer, nullable=False)  # temp until partner linking ready
+    user_id = Column(Integer, nullable=False)      # LEV146 will add ForeignKey later
 
     # Profile
     full_name = Column(String(255), nullable=False)
@@ -59,10 +59,8 @@ class Guide(Base):
     price_per_day = Column(Float, nullable=True)
     price_per_half_day = Column(Float, nullable=True)
 
-    # Certifications
+    # Certifications & Destinations
     certifications = Column(JSON, default=[])
-
-    # Destinations they cover
     destinations = Column(JSON, default=[])
 
     # Timestamps
@@ -81,12 +79,10 @@ class GuideLanguage(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     guide_id = Column(Integer, ForeignKey("guides.id"), nullable=False)
-    language = Column(String(50), nullable=False)  # Telugu, Hindi, English, Tamil, Kannada
+    language = Column(String(50), nullable=False)
     proficiency = Column(Enum(LanguageProficiency), default=LanguageProficiency.CONVERSATIONAL)
-
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
-    # Relationships
     guide = relationship("Guide", back_populates="languages")
 
 
@@ -96,10 +92,8 @@ class GuideSpecialization(Base):
     id = Column(Integer, primary_key=True, index=True)
     guide_id = Column(Integer, ForeignKey("guides.id"), nullable=False)
     specialization = Column(Enum(Specialization), nullable=False)
-
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
-    # Relationships
     guide = relationship("Guide", back_populates="specializations")
 
 
@@ -111,8 +105,6 @@ class GuideDocument(Base):
     document_type = Column(String(50), nullable=False)
     file_url = Column(String(500), nullable=False)
     is_verified = Column(Boolean, default=False)
-
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
-    # Relationships
     guide = relationship("Guide", back_populates="documents")

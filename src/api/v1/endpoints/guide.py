@@ -10,7 +10,6 @@ from src.schemas.guide import (
     GuideAvailabilityUpdateSchema, GuideResponseSchema
 )
 import src.services.guide_service as guide_service
-from src.core.dependencies import get_current_user, require_partner
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/guides", tags=["Guides"])
@@ -20,6 +19,10 @@ router = APIRouter(prefix="/api/v1/guides", tags=["Guides"])
 
 def success(data, message: str = "") -> dict:
     return {"success": True, "data": data, "message": message}
+
+
+# NOTE: user_id=1 is temporary until LEV148 completes auth module
+# After auth is ready, replace all user_id=1 with user.id from JWT token
 
 
 # ─── Public Endpoints ─────────────────────────────────────────────────────────
@@ -87,7 +90,7 @@ def get_guide_detail(
     guide_id: int,
     db: Session = Depends(get_db)
 ):
-    """Full guide profile: bio, experience_years, languages, certifications, destinations, rating."""
+    """Full guide profile: bio, languages, certifications, destinations, rating."""
     result = guide_service.get_guide_detail(db, guide_id)
     return success(result)
 
@@ -114,16 +117,15 @@ def get_guide_availability(
     return success(result)
 
 
-# ─── Partner/Guide Protected Endpoints ───────────────────────────────────────
+# ─── Protected Endpoints ──────────────────────────────────────────────────────
 
 @router.post("/")
 def register_guide(
     data: GuideCreateSchema,
-    db: Session = Depends(get_db),
-    user=Depends(require_partner)
+    db: Session = Depends(get_db)
 ):
-    """Register as guide. Requires existing partner account."""
-    result = guide_service.register_guide(db, user.id, data)
+    """Register as guide."""
+    result = guide_service.register_guide(db, 1, data)
     return success(GuideResponseSchema.from_orm(result), "Guide registered successfully")
 
 
@@ -131,11 +133,10 @@ def register_guide(
 def update_guide(
     guide_id: int,
     data: GuideUpdateSchema,
-    db: Session = Depends(get_db),
-    user=Depends(require_partner)
+    db: Session = Depends(get_db)
 ):
     """Update guide profile."""
-    result = guide_service.update_guide(db, guide_id, user.id, data)
+    result = guide_service.update_guide(db, guide_id, 1, data)
     return success(GuideResponseSchema.from_orm(result), "Guide updated")
 
 
@@ -143,11 +144,10 @@ def update_guide(
 def update_guide_status(
     guide_id: int,
     data: GuideStatusUpdateSchema,
-    db: Session = Depends(get_db),
-    user=Depends(require_partner)
+    db: Session = Depends(get_db)
 ):
     """Update guide status: ACTIVE, INACTIVE, SUSPENDED."""
-    result = guide_service.update_guide_status(db, guide_id, user.id, data)
+    result = guide_service.update_guide_status(db, guide_id, 1, data)
     return success(GuideResponseSchema.from_orm(result), "Status updated")
 
 
@@ -155,11 +155,10 @@ def update_guide_status(
 def update_guide_availability(
     guide_id: int,
     data: GuideAvailabilityUpdateSchema,
-    db: Session = Depends(get_db),
-    user=Depends(require_partner)
+    db: Session = Depends(get_db)
 ):
-    """Set unavailable dates on the guide's calendar."""
-    result = guide_service.update_guide_availability(db, guide_id, user.id, data)
+    """Set unavailable dates on the guide calendar."""
+    result = guide_service.update_guide_availability(db, guide_id, 1, data)
     return success({"unavailable_dates": result.unavailable_dates}, "Availability updated")
 
 
@@ -169,11 +168,10 @@ def update_guide_availability(
 def add_language(
     guide_id: int,
     data: GuideLanguageCreateSchema,
-    db: Session = Depends(get_db),
-    user=Depends(require_partner)
+    db: Session = Depends(get_db)
 ):
-    """Add a language with proficiency: BASIC, CONVERSATIONAL, FLUENT, NATIVE."""
-    result = guide_service.add_language(db, guide_id, user.id, data)
+    """Add a language: Telugu, Hindi, English, Tamil, Kannada."""
+    result = guide_service.add_language(db, guide_id, 1, data)
     return success(result, "Language added")
 
 
@@ -181,11 +179,10 @@ def add_language(
 def remove_language(
     guide_id: int,
     language_id: int,
-    db: Session = Depends(get_db),
-    user=Depends(require_partner)
+    db: Session = Depends(get_db)
 ):
     """Remove a language from guide profile."""
-    result = guide_service.remove_language(db, guide_id, language_id, user.id)
+    result = guide_service.remove_language(db, guide_id, language_id, 1)
     return success(result)
 
 
@@ -195,11 +192,10 @@ def remove_language(
 def add_specialization(
     guide_id: int,
     data: GuideSpecializationCreateSchema,
-    db: Session = Depends(get_db),
-    user=Depends(require_partner)
+    db: Session = Depends(get_db)
 ):
     """Add specialization: TEMPLE, ADVENTURE, HERITAGE, ECO_TOURISM."""
-    result = guide_service.add_specialization(db, guide_id, user.id, data)
+    result = guide_service.add_specialization(db, guide_id, 1, data)
     return success(result, "Specialization added")
 
 
@@ -207,11 +203,10 @@ def add_specialization(
 def remove_specialization(
     guide_id: int,
     spec_id: int,
-    db: Session = Depends(get_db),
-    user=Depends(require_partner)
+    db: Session = Depends(get_db)
 ):
     """Remove a specialization from guide profile."""
-    result = guide_service.remove_specialization(db, guide_id, spec_id, user.id)
+    result = guide_service.remove_specialization(db, guide_id, spec_id, 1)
     return success(result)
 
 
@@ -222,17 +217,16 @@ def upload_document(
     guide_id: int,
     document_type: str = Form(...),
     file: UploadFile = File(...),
-    db: Session = Depends(get_db),
-    user=Depends(require_partner)
+    db: Session = Depends(get_db)
 ):
-    """Upload guide documents to S3."""
+    """Upload guide documents."""
     # TODO: upload to S3 using s3_utils
     file_url = f"https://s3.amazonaws.com/ap-tourism/guide-documents/{file.filename}"
-    result = guide_service.upload_document(db, guide_id, user.id, document_type, file_url)
+    result = guide_service.upload_document(db, guide_id, 1, document_type, file_url)
     return success(result, "Document uploaded")
 
 
-# ─── Bookings ─────────────────────────────────────────────────────────────────
+# ─── Bookings (READ ONLY) ─────────────────────────────────────────────────────
 
 @router.get("/{guide_id}/bookings")
 def get_guide_bookings(
@@ -240,9 +234,8 @@ def get_guide_bookings(
     status: Optional[str] = Query(None),
     page: int = Query(1, ge=1),
     limit: int = Query(20, le=100),
-    db: Session = Depends(get_db),
-    user=Depends(require_partner)
+    db: Session = Depends(get_db)
 ):
     """Guide's assigned trips: upcoming, active, completed."""
-    result = guide_service.get_guide_bookings(db, guide_id, user.id, status, page, limit)
+    result = guide_service.get_guide_bookings(db, guide_id, 1, status, page, limit)
     return success(result)
