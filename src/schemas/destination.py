@@ -95,3 +95,17 @@ class DestinationResponse(DestinationBase):
 
     class Config:
         from_attributes = True
+
+class DestinationListResponse(BaseModel):
+    id: str
+    name: str
+    slug: str
+    district: str
+    type: DestinationType
+    tagline: str
+    rating: float          # ← show star rating on card
+    is_featured: bool      # ← show featured badge on card
+    images: List[Image] = []  # ← show hero image on card
+
+    class Config:
+        from_attributes = True

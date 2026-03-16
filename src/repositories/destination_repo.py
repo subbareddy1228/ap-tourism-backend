@@ -3,12 +3,11 @@ from typing import List, Optional
 
 from sqlalchemy.orm import Session
 
-from src.models.destination import Destination
-from src.models.destination import DestinationType
+from src.models.destination import Destination, DestinationType
 
 
 # ─────────────────────────────────────────
-# HELPERS
+# HELPER
 # ─────────────────────────────────────────
 
 def _is_uuid(value: str) -> bool:
@@ -20,7 +19,7 @@ def _is_uuid(value: str) -> bool:
 # READ
 # ─────────────────────────────────────────
 
-def get_all(
+async def get_all(
     db: Session,
     skip: int = 0,
     limit: int = 10,
@@ -38,12 +37,12 @@ def get_all(
     return query.offset(skip).limit(limit).all()
 
 
-def get_count(
+async def get_count(
     db: Session,
     type: Optional[DestinationType] = None,
     district: Optional[str] = None,
 ) -> int:
-    """Total count for pagination."""
+
     query = db.query(Destination).filter(Destination.is_active == True)
 
     if type:
@@ -54,7 +53,7 @@ def get_count(
     return query.count()
 
 
-def get_by_id(db: Session, destination_id: str) -> Optional[Destination]:
+async def get_by_id(db: Session, destination_id: str) -> Optional[Destination]:
 
     return db.query(Destination).filter(
         Destination.id == destination_id,
@@ -62,7 +61,7 @@ def get_by_id(db: Session, destination_id: str) -> Optional[Destination]:
     ).first()
 
 
-def get_by_slug(db: Session, slug: str) -> Optional[Destination]:
+async def get_by_slug(db: Session, slug: str) -> Optional[Destination]:
 
     return db.query(Destination).filter(
         Destination.slug == slug,
@@ -70,21 +69,14 @@ def get_by_slug(db: Session, slug: str) -> Optional[Destination]:
     ).first()
 
 
-def get_by_id_or_slug(db: Session, value: str) -> Optional[Destination]:
-    """
-    Single lookup for GET /{id} endpoint.
-    Accepts both UUID and slug.
+async def get_by_id_or_slug(db: Session, value: str) -> Optional[Destination]:
 
-    Examples:
-        get_by_id_or_slug(db, "araku-valley")
-        get_by_id_or_slug(db, "f3a1b2c4-9d8e-4f2a-b1c3-a2b3c4d5e6f7")
-    """
     if _is_uuid(value):
-        return get_by_id(db, value)
-    return get_by_slug(db, value)
+        return await get_by_id(db, value)
+    return await get_by_slug(db, value)
 
 
-def get_featured(db: Session) -> List[Destination]:
+async def get_featured(db: Session) -> List[Destination]:
 
     return db.query(Destination).filter(
         Destination.is_featured == True,
@@ -92,7 +84,7 @@ def get_featured(db: Session) -> List[Destination]:
     ).all()
 
 
-def get_popular(db: Session) -> List[Destination]:
+async def get_popular(db: Session) -> List[Destination]:
 
     return db.query(Destination).filter(
         Destination.is_active == True
@@ -102,16 +94,16 @@ def get_popular(db: Session) -> List[Destination]:
     ).limit(9).all()
 
 
-def get_types() -> List[str]:
+async def get_types() -> List[str]:
     return [e.value for e in DestinationType]
 
 
-def slug_exists(
+async def slug_exists(
     db: Session,
     slug: str,
     exclude_id: Optional[str] = None
 ) -> bool:
-    """Check if slug is already taken. Used before create/update."""
+
     query = db.query(Destination).filter(Destination.slug == slug)
     if exclude_id:
         query = query.filter(Destination.id != exclude_id)
@@ -122,7 +114,7 @@ def slug_exists(
 # WRITE
 # ─────────────────────────────────────────
 
-def create(db: Session, destination: Destination) -> Destination:
+async def create(db: Session, destination: Destination) -> Destination:
 
     db.add(destination)
     db.commit()
@@ -131,7 +123,7 @@ def create(db: Session, destination: Destination) -> Destination:
     return destination
 
 
-def update(db: Session, destination: Destination) -> Destination:
+async def update(db: Session, destination: Destination) -> Destination:
 
     db.commit()
     db.refresh(destination)

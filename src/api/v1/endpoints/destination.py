@@ -18,51 +18,79 @@ from src.services.destination_service import (
 router = APIRouter(prefix="/destinations", tags=["Destinations"])
 
 
-# PUBLIC
+# ---------------------------------------
+# GET ALL DESTINATIONS
+# GET /api/v1/destinations/
+# Filters: type, district, skip, limit
+# ---------------------------------------
 @router.get("/")
-def list_destinations(
-    type: Optional[DestinationType] = Query(None),
-    district: Optional[str] = Query(None),
+async def list_destinations(
+    type: Optional[DestinationType] = Query(None, description="NATURE | HERITAGE | ADVENTURE | COASTAL | RELIGIOUS"),
+    district: Optional[str] = Query(None, description="Filter by district"),
     skip: int = Query(0, ge=0),
     limit: int = Query(10, ge=1, le=100),
     db: Session = Depends(get_db),
 ):
-    return get_destinations(db, skip=skip, limit=limit, type=type, district=district)
+    return await get_destinations(db, skip=skip, limit=limit, type=type, district=district)
 
 
+# ---------------------------------------
+# GET FEATURED DESTINATIONS
+# GET /api/v1/destinations/featured
+# ---------------------------------------
 @router.get("/featured")
-def get_featured_destinations(db: Session = Depends(get_db)):
-    return get_featured_destinations(db)
+async def list_featured_destinations(db: Session = Depends(get_db)):
+    return await get_featured_destinations(db)
 
 
+# ---------------------------------------
+# GET POPULAR DESTINATIONS
+# GET /api/v1/destinations/popular
+# ---------------------------------------
 @router.get("/popular")
-def get_popular_destinations(db: Session = Depends(get_db)):
-    return get_popular_destinations(db)
+async def list_popular_destinations(db: Session = Depends(get_db)):
+    return await get_popular_destinations(db)
 
 
+# ---------------------------------------
+# GET DESTINATION TYPES
+# GET /api/v1/destinations/types
+# ---------------------------------------
 @router.get("/types")
-def get_destination_types():
-    return get_destination_types()
+async def list_destination_types():
+    return await get_destination_types()
 
 
-@router.get("/{value}")
-def get_destination(value: str, db: Session = Depends(get_db)):
-    return get_destination(db, value)
+# ---------------------------------------
+# GET DESTINATION BY ID OR SLUG
+# GET /api/v1/destinations/{value}
+# NOTE: always last
+# ---------------------------------------
+@router.get("/{destination_id}")
+async def retrieve_destination(destination_id: str, db: Session = Depends(get_db)):
+    return await get_destination(db, destination_id)
 
 
-# ADMIN
+# ---------------------------------------
+# CREATE DESTINATION (Admin)
+# POST /api/v1/destinations/
+# ---------------------------------------
 @router.post("/")
-def create_destination(
+async def create_new_destination(
     data: DestinationCreate,
     db: Session = Depends(get_db),
 ):
-    return create_destination(db, data)
+    return await create_destination(db, data)
 
 
+# ---------------------------------------
+# UPDATE DESTINATION (Admin)
+# PUT /api/v1/destinations/{destination_id}
+# ---------------------------------------
 @router.put("/{destination_id}")
-def update_destination(
+async def update_existing_destination(
     destination_id: str,
     data: DestinationUpdate,
     db: Session = Depends(get_db),
 ):
-    return update_destination(db, destination_id, data)
+    return await update_destination(db, destination_id, data)
