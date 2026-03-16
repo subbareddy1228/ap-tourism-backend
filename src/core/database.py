@@ -1,23 +1,35 @@
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker # type: ignore
+from sqlalchemy.orm import declarative_base # type: ignore
 from src.core.config import settings
 
-engine = create_engine(
-    settings.DATABASE_URL,
+# Convert postgresql:// to postgresql+asyncpg://
+DATABASE_URL = settings.DATABASE_URL.replace(
+    "postgresql://", "postgresql+asyncpg://"
+)
+
+engine = create_async_engine(
+    DATABASE_URL,
     pool_pre_ping=True,
     pool_size=10,
     max_overflow=20,
+    echo=False,
 )
 
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+AsyncSessionLocal = async_sessionmaker(
+    bind=engine,
+    class_=AsyncSession,
+    autocommit=False,
+    autoflush=False,
+    expire_on_commit=False,
+)
 
 Base = declarative_base()
 
 
-def get_db():
-    """FastAPI dependency — yields a DB session and closes it after the request."""
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+async def get_db():
+    """FastAPI dependency — yields async DB session and closes after request."""
+    async with AsyncSessionLocal() as session:
+        try:
+            yield session
+        finally:
+            await session.close()

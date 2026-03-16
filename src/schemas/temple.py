@@ -1,129 +1,158 @@
 from __future__ import annotations
-from datetime import datetime
+from datetime import datetime, date, time
 from typing import Optional, List, Any, Dict
 from uuid import UUID
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import BaseModel, Field
 
 
 # ─────────────────────────────────────────────
-# Base / Shared
+# Temple Base
 # ─────────────────────────────────────────────
-class TempleTimings(BaseModel):
-    open: str = Field(..., example="06:00")
-    close: str = Field(..., example="20:00")
-
-
 class TempleBase(BaseModel):
-    name: str
-    description: Optional[str] = None
-    deity: str
-    district: str
-    address: Optional[str] = None
-    latitude: Optional[float] = None
-    longitude: Optional[float] = None
-    dress_code: Optional[str] = None
-    timings: Optional[Dict[str, TempleTimings]] = None   # {"monday": {...}, ...}
-    images: Optional[List[str]] = []
+    name:           str
+    description:    Optional[str]   = None
+    deity:          str
+    district:       str
+    address:        Optional[str]   = None
+    latitude:       Optional[float] = None
+    longitude:      Optional[float] = None
+    dress_code:     Optional[str]   = None
+    contact_number: Optional[str]   = None
+    website:        Optional[str]   = None
+    timings:        Optional[Dict[str, Any]] = None
+    images:         Optional[List[str]]      = []
 
 
 # ─────────────────────────────────────────────
-# Create / Update (Admin)
+# Admin — Create Temple
+# POST /
 # ─────────────────────────────────────────────
 class TempleCreate(TempleBase):
-    pass
+    is_featured: Optional[bool] = False
+    is_active:   Optional[bool] = True
 
 
+# ─────────────────────────────────────────────
+# Admin — Update Temple
+# PUT /{id}
+# All fields optional — only update what is sent
+# ─────────────────────────────────────────────
 class TempleUpdate(BaseModel):
-    name: Optional[str] = None
-    description: Optional[str] = None
-    deity: Optional[str] = None
-    district: Optional[str] = None
-    address: Optional[str] = None
-    latitude: Optional[float] = None
-    longitude: Optional[float] = None
-    is_featured: Optional[bool] = None
-    dress_code: Optional[str] = None
-    timings: Optional[Dict[str, Any]] = None
-    images: Optional[List[str]] = None
-    is_active: Optional[bool] = None
+    name:           Optional[str]   = None
+    description:    Optional[str]   = None
+    deity:          Optional[str]   = None
+    district:       Optional[str]   = None
+    address:        Optional[str]   = None
+    latitude:       Optional[float] = None
+    longitude:      Optional[float] = None
+    dress_code:     Optional[str]   = None
+    contact_number: Optional[str]   = None
+    website:        Optional[str]   = None
+    is_featured:    Optional[bool]  = None
+    timings:        Optional[Dict[str, Any]] = None
+    images:         Optional[List[str]]      = None
+    is_active:      Optional[bool]  = None
 
 
 # ─────────────────────────────────────────────
-# Response Schemas
-# ─────────────────────────────────────────────
-class TempleListItem(BaseModel):
-    """Lightweight schema used in list endpoints."""
-    id: UUID
-    name: str
-    deity: str
-    district: str
-    address: Optional[str]
-    latitude: Optional[float]
-    longitude: Optional[float]
-    is_featured: bool
-    booking_count: int
-    images: Optional[List[str]] = []
-
-    model_config = {"from_attributes": True}
-
-
-class TempleDetail(TempleBase):
-    """Full detail schema for GET /{id}."""
-    id: UUID
-    is_featured: bool
-    booking_count: int
-    is_active: bool
-    created_at: datetime
-    updated_at: datetime
-
-    model_config = {"from_attributes": True}
-
-
-# ─────────────────────────────────────────────
-# Event Schema
+# Temple Event Response
+# GET /{id}/events
 # ─────────────────────────────────────────────
 class TempleEventResponse(BaseModel):
-    id: UUID
-    temple_id: UUID
-    name: str
-    description: Optional[str]
-    event_date: str
-    start_time: Optional[str]
-    end_time: Optional[str]
+    id:          UUID
+    temple_id:   UUID
+    name:        str
+    description: Optional[str] = None
+    event_date:  date
+    start_time:  Optional[time] = None
+    end_time:    Optional[time] = None
+    is_active:   bool
+    created_at:  datetime
 
     model_config = {"from_attributes": True}
 
 
 # ─────────────────────────────────────────────
-# Review Schemas
+# Temple Review Schemas
+# GET /{id}/reviews
 # ─────────────────────────────────────────────
 class TempleReviewCreate(BaseModel):
-    rating: float = Field(..., ge=1.0, le=5.0)
-    title: Optional[str] = None
-    body: Optional[str] = None
-    visit_date: Optional[str] = None
+    rating:     float = Field(..., ge=1.0, le=5.0)
+    title:      Optional[str]  = None
+    body:       Optional[str]  = None
+    visit_date: Optional[date] = None
 
 
 class TempleReviewResponse(BaseModel):
-    id: UUID
-    temple_id: UUID
-    user_id: UUID
-    rating: float
-    title: Optional[str]
-    body: Optional[str]
-    visit_date: Optional[str]
+    id:          UUID
+    temple_id:   UUID
+    user_id:     UUID
+    rating:      float
+    title:       Optional[str]  = None
+    body:        Optional[str]  = None
+    visit_date:  Optional[date] = None
     is_verified: bool
-    created_at: datetime
+    created_at:  datetime
 
     model_config = {"from_attributes": True}
 
 
 # ─────────────────────────────────────────────
-# Filter / Query params
+# Temple List Item
+# GET / — includes total_slots_available_today
 # ─────────────────────────────────────────────
-class TempleFilters(BaseModel):
-    deity: Optional[str] = None
-    district: Optional[str] = None
-    darshan_type: Optional[str] = None
-    page: int = 1
-    page_size: int = 20
+class TempleListItem(BaseModel):
+    id:                         UUID
+    name:                       str
+    deity:                      str
+    district:                   str
+    address:                    Optional[str]       = None
+    latitude:                   Optional[float]     = None
+    longitude:                  Optional[float]     = None
+    is_featured:                bool
+    booking_count:              int                 = 0
+    images:                     Optional[List[str]] = []
+    total_slots_available_today: int                = 0
+
+    model_config = {"from_attributes": True}
+
+
+# ─────────────────────────────────────────────
+# Temple Detail
+# GET /{id} — full detail with events and reviews
+# ─────────────────────────────────────────────
+class TempleDetail(BaseModel):
+    id:             UUID
+    name:           str
+    description:    Optional[str]   = None
+    deity:          str
+    district:       str
+    address:        Optional[str]   = None
+    latitude:       Optional[float] = None
+    longitude:      Optional[float] = None
+    dress_code:     Optional[str]   = None
+    contact_number: Optional[str]   = None
+    website:        Optional[str]   = None
+    timings:        Optional[Dict[str, Any]]    = None
+    images:         Optional[List[str]]         = []
+    is_featured:    bool
+    booking_count:  int                         = 0
+    is_active:      bool
+    created_at:     datetime
+    updated_at:     datetime
+    events:         Optional[List[TempleEventResponse]]  = []
+    reviews:        Optional[List[TempleReviewResponse]] = []
+
+    model_config = {"from_attributes": True}
+
+
+# ─────────────────────────────────────────────
+# Timings Response
+# GET /{id}/timings
+# ─────────────────────────────────────────────
+class TempleTimingsResponse(BaseModel):
+    temple_id: UUID
+    name:      str
+    timings:   Optional[Dict[str, Any]] = None
+
+    model_config = {"from_attributes": True}

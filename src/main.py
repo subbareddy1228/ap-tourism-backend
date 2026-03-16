@@ -1,18 +1,11 @@
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from contextlib import asynccontextmanager
+from fastapi.middleware.cors import CORSMiddleware # type: ignore
 
-from src.core.config import settings
-from src.core.logging import setup_logging
-from src.core.middleware import RequestLoggingMiddleware
 from src.api.v1.router import router as v1_router
+from src.core.middleware import RequestLoggingMiddleware
+from src.core.logging import setup_logging
 
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    setup_logging()
-    yield
-
+setup_logging()
 
 app = FastAPI(
     title="AP Tourism Backend",
@@ -20,16 +13,16 @@ app = FastAPI(
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
-    lifespan=lifespan,
 )
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"] if settings.DEBUG else ["https://aptourism.gov.in"],
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
 app.add_middleware(RequestLoggingMiddleware)
 
 app.include_router(v1_router, prefix="/api")
