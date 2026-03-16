@@ -3,7 +3,6 @@ core/config.py
 All environment variables and app settings loaded from .env
 """
 
-import asyncpg
 from pydantic_settings import BaseSettings
 from typing import List
 

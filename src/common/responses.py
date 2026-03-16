@@ -5,7 +5,6 @@ Standard API response format used across all endpoints.
 
 from typing import Any, Optional
 from pydantic import BaseModel
-from src.common.enums import UserRole, UserStatus, OTPPurpose
 
 
 
