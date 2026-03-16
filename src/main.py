@@ -1,15 +1,16 @@
 from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi
 from src.api.v1.endpoints import partner
-app = FastAPI(title="AP Tourism Backend",version="1.0.0")
+from src.api.deps.database import engine, Base
+from src.models.partner import Partner, PartnerDocument, PartnerPayout
 
-# @app.get("/")
-# def home():
-#     return {"message": "AP Tourism API running"}
+Base.metadata.create_all(bind=engine)
+app = FastAPI(title="AP Tourism Backend", version="1.0.0")
 
-# include routers
+# Include routers
 app.include_router(partner.router)
 
+# Security scheme for Swagger UI
 def custom_openapi():
     if app.openapi_schema:
         return app.openapi_schema
@@ -27,5 +28,6 @@ def custom_openapi():
     }
     app.openapi_schema = openapi_schema
     return app.openapi_schema
+
 
 app.openapi = custom_openapi
