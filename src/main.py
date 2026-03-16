@@ -13,7 +13,7 @@ from src.core.logging import setup_logging
  
 from src.api.v1.endpoints.auth import router as auth_router
 from src.api.v1.endpoints.users import router as users_router
-from src.api.v1.endpoints.partners import router as partners_router
+from src.api.v1.endpoints.partner import router as partners_router
  
 setup_logging()
  
