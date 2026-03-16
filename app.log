@@ -1114,3 +1114,21 @@ For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/St
 2026-03-16 11:32:18,173 | INFO | src.services.auth_service | Password reset attempt phone=7793969902
 2026-03-16 11:32:18,468 | INFO | src.services.auth_service | Password reset success user_id=6949901c-dfda-4e5c-bb16-6c796ec13455
 2026-03-16 11:33:26,170 | INFO | src.services.auth_service | Login success user_id=6949901c-dfda-4e5c-bb16-6c796ec13455
+2026-03-16 15:08:45,122 | INFO | src.services.auth_service | Registration attempt phone=9959642306
+2026-03-16 15:08:46,329 | INFO | httpx | HTTP Request: POST https://api.twilio.com/2010-04-01/Accounts/AC1788055ac9231f959d10c1c5959cfa9c/Messages.json "HTTP/1.1 401 Unauthorized"
+2026-03-16 15:08:46,332 | ERROR | src.integrations.twilio | Twilio SMS failed: Client error '401 Unauthorized' for url 'https://api.twilio.com/2010-04-01/Accounts/AC1788055ac9231f959d10c1c5959cfa9c/Messages.json'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401
+2026-03-16 15:11:32,854 | INFO | src.services.auth_service | Registration attempt phone=9959642306
+2026-03-16 15:12:30,385 | INFO | httpx | HTTP Request: POST https://api.twilio.com/2010-04-01/Accounts/AC1788055ac9231f959d10c1c5959cfa9c/Messages.json "HTTP/1.1 401 Unauthorized"
+2026-03-16 15:12:30,389 | ERROR | src.integrations.twilio | Twilio SMS failed: Client error '401 Unauthorized' for url 'https://api.twilio.com/2010-04-01/Accounts/AC1788055ac9231f959d10c1c5959cfa9c/Messages.json'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401
+2026-03-16 15:16:17,269 | INFO | httpx | HTTP Request: POST https://api.twilio.com/2010-04-01/Accounts/AC1788055ac9231f959d10c1c5959cfa9c/Messages.json "HTTP/1.1 401 Unauthorized"
+2026-03-16 15:16:17,271 | ERROR | src.integrations.twilio | Twilio SMS failed: Client error '401 Unauthorized' for url 'https://api.twilio.com/2010-04-01/Accounts/AC1788055ac9231f959d10c1c5959cfa9c/Messages.json'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401
+2026-03-16 15:18:10,869 | INFO | httpx | HTTP Request: POST https://api.twilio.com/2010-04-01/Accounts/AC1788055ac9231f959d10c1c5959cfa9c/Messages.json "HTTP/1.1 201 Created"
+2026-03-16 15:18:10,871 | INFO | src.integrations.twilio | Twilio OTP sent successfully to 7793969902
+2026-03-16 15:18:49,779 | INFO | src.services.auth_service | OTP login attempt phone=7793969902
+2026-03-16 15:19:36,730 | INFO | src.services.auth_service | Login success user_id=6949901c-dfda-4e5c-bb16-6c796ec13455
+2026-03-16 15:24:34,054 | INFO | httpx | HTTP Request: POST https://api.twilio.com/2010-04-01/Accounts/AC1788055ac9231f959d10c1c5959cfa9c/Messages.json "HTTP/1.1 201 Created"
+2026-03-16 15:24:34,055 | INFO | src.integrations.twilio | Twilio OTP sent successfully to 9959642306
+2026-03-16 15:26:20,697 | INFO | src.services.auth_service | Login success user_id=966146f2-1338-4c2f-a5ce-e886e645e30c
