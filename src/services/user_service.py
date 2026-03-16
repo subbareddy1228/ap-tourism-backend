@@ -374,3 +374,82 @@ async def verify_phone_otp(data: VerifyPhoneRequest, current_user: User, db: Asy
     await db.commit()
 
     return {"message": "Phone verified successfully"}
+
+# ══════════════════ PREFERENCES ══════════════════
+
+async def get_preferences(current_user: User, db: AsyncSession) -> dict:
+
+    profile = await get_or_create_profile(str(current_user.id), db)
+
+    prefs = profile.preferences or {}
+
+    return {
+        "dietary":       prefs.get("dietary"),
+        "language":      profile.language,
+        "accessibility": prefs.get("accessibility"),
+        "notifications": prefs.get("notifications", {"email": True, "sms": True, "push": True}),
+    }
+
+
+async def update_preferences(data: PreferencesRequest, current_user: User, db: AsyncSession) -> dict:
+
+    profile = await get_or_create_profile(str(current_user.id), db)
+
+    prefs = dict(profile.preferences or {})
+
+    if data.dietary is not None:
+        prefs["dietary"] = data.dietary
+
+    if data.accessibility is not None:
+        prefs["accessibility"] = data.accessibility
+
+    if data.notifications is not None:
+        prefs["notifications"] = data.notifications.model_dump()
+
+    if data.language is not None:
+        profile.language = data.language
+
+    profile.preferences = prefs
+    profile.updated_at = datetime.utcnow()
+
+    await db.commit()
+
+    return await get_preferences(current_user, db)
+
+
+# ══════════════════ SESSIONS ══════════════════
+
+async def list_sessions(current_user: User, db: AsyncSession):
+
+    result = await db.execute(
+        select(UserSession).where(
+            UserSession.user_id == current_user.id,
+            UserSession.is_active == True
+        )
+    )
+
+    return result.scalars().all()
+
+
+async def revoke_session(session_id: str, current_user: User, db: AsyncSession) -> dict:
+
+    result = await db.execute(
+        select(UserSession).where(
+            UserSession.id == session_id,
+            UserSession.user_id == current_user.id
+        )
+    )
+
+    session = result.scalar_one_or_none()
+
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    # Blacklist the JTI in Redis so the token can't be used anymore
+    if session.jti:
+        await blacklist_jti(session.jti, expire_seconds=86400)
+
+    session.is_active = False
+    await db.commit()
+
+    return {"message": "Session revoked successfully"}
