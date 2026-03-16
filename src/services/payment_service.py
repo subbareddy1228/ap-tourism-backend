@@ -15,40 +15,75 @@ from src.schemas.payment import (
     TransactionOut, PaymentHistoryResponse,
     PaymentMethodsResponse, PaymentMethodItem,
     ValidateUPIRequest, ValidateUPIResponse,
-    SavedCardsResponse, SaveCardRequest, SaveCardResponse,
-    DeleteCardResponse, SavedCardOut,
+    SavedCardsResponse, SaveCardRequest, SaveCardResponse, DeleteCardResponse,
+    SavedCardOut,
     RefundRequest, RefundResponse, RefundOut, RefundsListResponse,
     PayLaterCheckRequest, PayLaterCheckResponse,
     PayLaterApplyRequest, PayLaterApplyResponse,
 )
 
 logger = logging.getLogger(__name__)
+
 RAZORPAY_SECRET = "your_razorpay_secret"
 
+METHOD_MAP = {
+    "razorpay":    "CARD",
+    "upi":         "UPI",
+    "card":        "CARD",
+    "netbanking":  "NET_BANKING",
+    "net_banking": "NET_BANKING",
+    "wallet":      "WALLET",
+    "emi":         "EMI",
+    "pay_later":   "PAY_LATER",
+    "UPI":         "UPI",
+    "CARD":        "CARD",
+    "NET_BANKING": "NET_BANKING",
+    "WALLET":      "WALLET",
+    "EMI":         "EMI",
+    "PAY_LATER":   "PAY_LATER",
+}
+
+
+def _map_method(method: str) -> str:
+    return METHOD_MAP.get(str(method), "CARD")
+
+
+# ─────────────────────────────────────────────
+# PAYMENT METHODS
+# ─────────────────────────────────────────────
 
 def get_payment_methods() -> PaymentMethodsResponse:
     methods = [
-        PaymentMethodItem(id="razorpay",   name="Razorpay",          type="gateway"),
-        PaymentMethodItem(id="upi",        name="UPI",               type="upi"),
-        PaymentMethodItem(id="card",       name="Credit/Debit Card", type="card"),
-        PaymentMethodItem(id="netbanking", name="Net Banking",       type="netbanking"),
-        PaymentMethodItem(id="wallet",     name="Wallet",            type="wallet"),
-        PaymentMethodItem(id="pay_later",  name="Pay Later",         type="bnpl"),
+        PaymentMethodItem(id="UPI",         name="UPI",               type="upi"),
+        PaymentMethodItem(id="CARD",        name="Credit/Debit Card",  type="card"),
+        PaymentMethodItem(id="NET_BANKING", name="Net Banking",        type="netbanking"),
+        PaymentMethodItem(id="WALLET",      name="Wallet",             type="wallet"),
+        PaymentMethodItem(id="EMI",         name="EMI",                type="emi"),
+        PaymentMethodItem(id="PAY_LATER",   name="Pay Later",          type="bnpl"),
     ]
     return PaymentMethodsResponse(success=True, methods=methods)
 
 
+# ─────────────────────────────────────────────
+# INITIATE
+# ─────────────────────────────────────────────
+
 def initiate_payment(db: Session, data: InitiatePaymentRequest) -> InitiatePaymentResponse:
     try:
         razorpay_order_id = f"order_{uuid.uuid4().hex[:16]}"
+        now = datetime.utcnow()
         txn = Transaction(
-            user_id           = data.user_id,
             booking_id        = data.booking_id,
+            user_id           = data.user_id,
             amount            = data.amount,
             currency          = data.currency,
-            status            = "pending",
-            payment_method    = data.payment_method,
+            status            = "INITIATED",
+            payment_method    = _map_method(data.payment_method),
             razorpay_order_id = razorpay_order_id,
+            payment_metadata  = data.notes,
+            initiated_at      = now,
+            created_at        = now,
+            updated_at        = now,
         )
         db.add(txn)
         db.commit()
@@ -61,45 +96,50 @@ def initiate_payment(db: Session, data: InitiatePaymentRequest) -> InitiatePayme
         )
     except Exception as e:
         db.rollback()
-        return InitiatePaymentResponse(
-            success=False, amount=data.amount,
-            message=f"Failed to initiate payment: {str(e)}"
-        )
+        logger.error(f"Initiate error: {e}")
+        return InitiatePaymentResponse(success=False, amount=data.amount, message=f"Failed: {str(e)}")
 
+
+# ─────────────────────────────────────────────
+# VERIFY
+# ─────────────────────────────────────────────
 
 def verify_payment(db: Session, data: VerifyPaymentRequest) -> VerifyPaymentResponse:
     txn = db.query(Transaction).filter(Transaction.id == data.transaction_id).first()
     if not txn:
         return VerifyPaymentResponse(success=False, status="not_found", message="Transaction not found.")
-
     body     = f"{data.razorpay_order_id}|{data.razorpay_payment_id}"
     expected = hmac.new(RAZORPAY_SECRET.encode(), body.encode(), hashlib.sha256).hexdigest()
     is_valid = hmac.compare_digest(expected, data.razorpay_signature)
-
+    now = datetime.utcnow()
     if is_valid:
-        txn.status = "success"
-        txn.razorpay_payment_id = data.razorpay_payment_id
-        txn.razorpay_signature  = data.razorpay_signature
-        txn.updated_at = datetime.utcnow()
+        txn.status = "SUCCESS"; txn.razorpay_payment_id = data.razorpay_payment_id
+        txn.razorpay_signature = data.razorpay_signature
+        txn.completed_at = now; txn.updated_at = now
         db.commit()
-        return VerifyPaymentResponse(success=True, transaction_id=txn.id, status="success", message="Payment verified successfully.")
+        return VerifyPaymentResponse(success=True, transaction_id=txn.id, status="SUCCESS", message="Payment verified.")
     else:
-        txn.status     = "failed"
-        txn.updated_at = datetime.utcnow()
+        txn.status = "FAILED"; txn.updated_at = now
         db.commit()
-        return VerifyPaymentResponse(success=False, transaction_id=txn.id, status="failed", message="Signature verification failed.")
+        return VerifyPaymentResponse(success=False, transaction_id=txn.id, status="FAILED", message="Signature verification failed.")
 
+
+# ─────────────────────────────────────────────
+# HISTORY
+# ─────────────────────────────────────────────
 
 def get_payment_history(db: Session, user_id: UUID) -> PaymentHistoryResponse:
-    txns = db.query(Transaction).filter(
-        Transaction.user_id == user_id
-    ).order_by(Transaction.created_at.desc()).all()
+    txns = db.query(Transaction).filter(Transaction.user_id == user_id).order_by(Transaction.created_at.desc()).all()
     return PaymentHistoryResponse(
         success=True,
         transactions=[TransactionOut.model_validate(t) for t in txns],
         total=len(txns),
     )
 
+
+# ─────────────────────────────────────────────
+# GET TRANSACTION
+# ─────────────────────────────────────────────
 
 def get_transaction(db: Session, transaction_id: UUID) -> Optional[TransactionOut]:
     txn = db.query(Transaction).filter(Transaction.id == transaction_id).first()
@@ -108,8 +148,12 @@ def get_transaction(db: Session, transaction_id: UUID) -> Optional[TransactionOu
     return TransactionOut.model_validate(txn)
 
 
+# ─────────────────────────────────────────────
+# VALIDATE UPI
+# ─────────────────────────────────────────────
+
 def validate_upi(data: ValidateUPIRequest) -> ValidateUPIResponse:
-    upi      = data.upi_id.strip()
+    upi = data.upi_id.strip()
     is_valid = "@" in upi and len(upi) > 3
     return ValidateUPIResponse(
         success=True, upi_id=upi, is_valid=is_valid,
@@ -118,12 +162,13 @@ def validate_upi(data: ValidateUPIRequest) -> ValidateUPIResponse:
     )
 
 
+# ─────────────────────────────────────────────
+# SAVED CARDS
+# ─────────────────────────────────────────────
+
 def get_saved_cards(db: Session, user_id: UUID) -> SavedCardsResponse:
     cards = db.query(SavedCard).filter(SavedCard.user_id == user_id).all()
-    return SavedCardsResponse(
-        success=True,
-        cards=[SavedCardOut.model_validate(c) for c in cards],
-    )
+    return SavedCardsResponse(success=True, cards=[SavedCardOut.model_validate(c) for c in cards])
 
 
 def save_card(db: Session, data: SaveCardRequest) -> SaveCardResponse:
@@ -143,27 +188,24 @@ def save_card(db: Session, data: SaveCardRequest) -> SaveCardResponse:
         db.add(card)
         db.commit()
         db.refresh(card)
-        return SaveCardResponse(
-            success=True,
-            card=SavedCardOut.model_validate(card),
-            message="Card saved successfully.",
-        )
+        return SaveCardResponse(success=True, card=SavedCardOut.model_validate(card), message="Card saved.")
     except Exception as e:
         db.rollback()
-        return SaveCardResponse(success=False, message=f"Failed to save card: {str(e)}")
+        return SaveCardResponse(success=False, message=f"Failed: {str(e)}")
 
 
 def delete_saved_card(db: Session, card_id: UUID, user_id: UUID) -> DeleteCardResponse:
-    card = db.query(SavedCard).filter(
-        SavedCard.id == card_id,
-        SavedCard.user_id == user_id,
-    ).first()
+    card = db.query(SavedCard).filter(SavedCard.id == card_id, SavedCard.user_id == user_id).first()
     if not card:
         return DeleteCardResponse(success=False, message="Card not found.")
     db.delete(card)
     db.commit()
-    return DeleteCardResponse(success=True, message="Card deleted successfully.")
+    return DeleteCardResponse(success=True, message="Card deleted.")
 
+
+# ─────────────────────────────────────────────
+# REFUND
+# ─────────────────────────────────────────────
 
 def request_refund(db: Session, data: RefundRequest) -> RefundResponse:
     txn = db.query(Transaction).filter(
@@ -172,26 +214,21 @@ def request_refund(db: Session, data: RefundRequest) -> RefundResponse:
     ).first()
     if not txn:
         return RefundResponse(success=False, message="Transaction not found.")
-    if txn.status != "success":
+    if str(txn.status) != "SUCCESS":
         return RefundResponse(success=False, message="Only successful transactions can be refunded.")
     try:
         refund = Refund(
             transaction_id = txn.id,
             user_id        = data.user_id,
-            amount         = data.amount or txn.amount,
+            amount         = data.amount or float(txn.amount),
             status         = "pending",
             reason         = data.reason,
         )
         db.add(refund)
-        txn.status     = "refunded"
-        txn.updated_at = datetime.utcnow()
+        txn.status = "REFUNDED"; txn.updated_at = datetime.utcnow()
         db.commit()
         db.refresh(refund)
-        return RefundResponse(
-            success=True,
-            refund=RefundOut.model_validate(refund),
-            message="Refund request submitted successfully.",
-        )
+        return RefundResponse(success=True, refund=RefundOut.model_validate(refund), message="Refund submitted.")
     except Exception as e:
         db.rollback()
         return RefundResponse(success=False, message=f"Refund failed: {str(e)}")
@@ -201,74 +238,65 @@ def get_refund(db: Session, refund_id: UUID) -> RefundResponse:
     refund = db.query(Refund).filter(Refund.id == refund_id).first()
     if not refund:
         return RefundResponse(success=False, message="Refund not found.")
-    return RefundResponse(success=True, refund=RefundOut.model_validate(refund), message="Refund fetched.")
+    return RefundResponse(success=True, refund=RefundOut.model_validate(refund), message="OK")
 
 
 def get_refunds(db: Session, user_id: UUID) -> RefundsListResponse:
-    refunds = db.query(Refund).filter(Refund.user_id == user_id).order_by(Refund.created_at.desc()).all()
-    return RefundsListResponse(
-        success=True,
-        refunds=[RefundOut.model_validate(r) for r in refunds],
-        total=len(refunds),
-    )
+    refunds = db.query(Refund).filter(Refund.user_id == user_id).all()
+    return RefundsListResponse(success=True, refunds=[RefundOut.model_validate(r) for r in refunds], total=len(refunds))
 
+
+# ─────────────────────────────────────────────
+# PAY LATER
+# ─────────────────────────────────────────────
 
 def check_pay_later(data: PayLaterCheckRequest) -> PayLaterCheckResponse:
-    credit_limit    = 10000.0
-    available_limit = 10000.0
-    eligible        = data.amount <= available_limit
+    eligible = data.amount <= 10000.0
     return PayLaterCheckResponse(
         success=True, eligible=eligible,
-        credit_limit=credit_limit, available_limit=available_limit,
-        message="Eligible for Pay Later." if eligible else f"Amount exceeds limit of Rs.{available_limit:.0f}.",
+        credit_limit=10000.0, available_limit=10000.0,
+        message="Eligible." if eligible else "Amount exceeds limit.",
     )
 
 
 def apply_pay_later(db: Session, data: PayLaterApplyRequest) -> PayLaterApplyResponse:
     try:
-        due_date = datetime.utcnow() + timedelta(days=30)
+        now = datetime.utcnow()
+        due_date = now + timedelta(days=30)
         txn = Transaction(
-            user_id        = data.user_id,
-            booking_id     = data.booking_id,
-            amount         = data.amount,
-            currency       = "INR",
-            status         = "pay_later",
-            payment_method = "pay_later",
+            booking_id       = data.booking_id,
+            user_id          = data.user_id,
+            amount           = data.amount,
+            currency         = "INR",
+            status           = "INITIATED",
+            payment_method   = "PAY_LATER",
+            initiated_at     = now,
+            created_at       = now,
+            updated_at       = now,
+            payment_metadata = f"Pay Later due {due_date.date()}",
         )
         db.add(txn)
         db.commit()
         db.refresh(txn)
-        return PayLaterApplyResponse(
-            success=True, transaction_id=txn.id,
-            amount=data.amount, due_date=due_date,
-            message=f"Pay Later applied. Due date: {due_date.date()}",
-        )
+        return PayLaterApplyResponse(success=True, transaction_id=txn.id, amount=data.amount, due_date=due_date, message=f"Pay Later applied. Due: {due_date.date()}")
     except Exception as e:
         db.rollback()
-        return PayLaterApplyResponse(success=False, amount=data.amount, message=f"Pay Later failed: {str(e)}")
+        return PayLaterApplyResponse(success=False, amount=data.amount, message=f"Failed: {str(e)}")
 
+
+# ─────────────────────────────────────────────
+# WEBHOOK
+# ─────────────────────────────────────────────
 
 def handle_webhook(db: Session, payload: dict) -> dict:
     event = payload.get("event", "")
     if event == "payment.captured":
-        order_id   = payload.get("payload", {}).get("payment", {}).get("entity", {}).get("order_id")
-        payment_id = payload.get("payload", {}).get("payment", {}).get("entity", {}).get("id")
+        order_id = payload.get("payload", {}).get("payment", {}).get("entity", {}).get("order_id")
+        pay_id   = payload.get("payload", {}).get("payment", {}).get("entity", {}).get("id")
         if order_id:
             txn = db.query(Transaction).filter(Transaction.razorpay_order_id == order_id).first()
             if txn:
-                txn.status = "success"
-                txn.razorpay_payment_id = payment_id
-                txn.updated_at = datetime.utcnow()
+                txn.status = "SUCCESS"; txn.razorpay_payment_id = pay_id
+                txn.completed_at = datetime.utcnow(); txn.updated_at = datetime.utcnow()
                 db.commit()
-    elif event == "refund.processed":
-        payment_id = payload.get("payload", {}).get("refund", {}).get("entity", {}).get("payment_id")
-        refund_id  = payload.get("payload", {}).get("refund", {}).get("entity", {}).get("id")
-        if payment_id:
-            txn = db.query(Transaction).filter(Transaction.razorpay_payment_id == payment_id).first()
-            if txn:
-                refund = db.query(Refund).filter(Refund.transaction_id == txn.id).first()
-                if refund:
-                    refund.status             = "processed"
-                    refund.razorpay_refund_id = refund_id
-                    db.commit()
     return {"success": True, "event": event, "message": "Webhook processed."}

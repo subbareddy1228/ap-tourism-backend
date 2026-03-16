@@ -9,8 +9,9 @@ class InitiatePaymentRequest(BaseModel):
     booking_id: UUID
     amount: float = Field(..., gt=0)
     currency: str = "INR"
-    payment_method: str = "razorpay"
+    payment_method: str = "CARD"
     coupon_code: Optional[str] = None
+    notes: Optional[str] = None
 
 
 class InitiatePaymentResponse(BaseModel):
@@ -62,7 +63,6 @@ class PaymentMethodItem(BaseModel):
     id: str
     name: str
     type: str
-    icon: Optional[str] = None
     is_active: bool = True
 
 
@@ -84,7 +84,6 @@ class ValidateUPIResponse(BaseModel):
     message: str
 
 
-# SavedCard — field names match DB columns
 class SavedCardOut(BaseModel):
     id: UUID
     user_id: UUID

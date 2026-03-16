@@ -1,25 +1,32 @@
+"""
+src/models/transaction.py — Matches exact DB schema
+"""
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, Float, Boolean, DateTime, Text
+from sqlalchemy import Column, String, Float, Boolean, DateTime, Text, Numeric
 from sqlalchemy.dialects.postgresql import UUID
 from src.database import Base
+import sqlalchemy as sa
 
 
 class Transaction(Base):
     __tablename__ = "transactions"
 
     id                  = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    booking_id          = Column(UUID(as_uuid=True), nullable=False)
     user_id             = Column(UUID(as_uuid=True), nullable=False)
-    booking_id          = Column(UUID(as_uuid=True), nullable=True)
-    amount              = Column(Float, nullable=False)
-    currency            = Column(String(10), default="INR")
-    status              = Column(String(50), default="pending")
-    payment_method      = Column(String(50), nullable=True)
+    amount              = Column(Numeric(10, 2), nullable=False)
+    currency            = Column(String(10), nullable=False, default="INR")
+    status              = Column(sa.Enum('INITIATED','PENDING','SUCCESS','FAILED','REFUNDED','PARTIAL_REFUND', name='paymentstatus'), nullable=False, default='INITIATED')
+    payment_method      = Column(sa.Enum('UPI','CARD','NET_BANKING','WALLET','EMI','PAY_LATER', name='paymentmethod'), nullable=True)
     razorpay_order_id   = Column(String(100), nullable=True)
     razorpay_payment_id = Column(String(100), nullable=True)
     razorpay_signature  = Column(String(255), nullable=True)
-    created_at          = Column(DateTime, default=datetime.utcnow)
-    updated_at          = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    payment_metadata    = Column(Text, nullable=True)
+    initiated_at        = Column(DateTime, nullable=False, default=datetime.utcnow)
+    completed_at        = Column(DateTime, nullable=True)
+    created_at          = Column(DateTime, nullable=False, default=datetime.utcnow)
+    updated_at          = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
 class SavedCard(Base):
