@@ -19,7 +19,7 @@ def _is_uuid(value: str) -> bool:
 # ----------------------------------
 # CREATE PACKAGE (Admin)
 # ----------------------------------
-def create_package(db: Session, package: Package):
+async def create_package(db: Session, package: Package):
 
     db.add(package)
     db.commit()
@@ -31,28 +31,61 @@ def create_package(db: Session, package: Package):
 # ----------------------------------
 # GET ALL PACKAGES
 # ----------------------------------
-def get_packages(
+async def get_packages(
     db: Session,
     skip: int = 0,
     limit: int = 10,
+    type=None,
+    destination_id: Optional[str] = None,
+    duration_days: Optional[int] = None,
+    min_price: Optional[float] = None,
+    max_price: Optional[float] = None,
 ):
+    query = db.query(Package).filter(Package.is_active == True)
 
-    return db.query(Package).filter(
-        Package.is_active == True
-    ).offset(skip).limit(limit).all()
+    if type:
+        query = query.filter(Package.type == type)
+    if destination_id:
+        query = query.filter(Package.destination_id == destination_id)
+    if duration_days is not None:
+        query = query.filter(Package.duration_days == duration_days)
+    if min_price is not None:
+        query = query.filter(Package.price >= min_price)
+    if max_price is not None:
+        query = query.filter(Package.price <= max_price)
+
+    return query.offset(skip).limit(limit).all()
 
 
-def get_packages_count(db: Session) -> int:
+async def get_packages_count(
+    db: Session,
+    type=None,
+    destination_id: Optional[str] = None,
+    duration_days: Optional[int] = None,
+    min_price: Optional[float] = None,
+    max_price: Optional[float] = None,
+) -> int:
 
-    return db.query(Package).filter(
-        Package.is_active == True
-    ).count()
+    query = db.query(Package).filter(Package.is_active == True)
+
+    if type:
+        query = query.filter(Package.type == type)
+    if destination_id:
+        query = query.filter(Package.destination_id == destination_id)
+    if duration_days is not None:
+        query = query.filter(Package.duration_days == duration_days)
+    if min_price is not None:
+        query = query.filter(Package.price >= min_price)
+    if max_price is not None:
+        query = query.filter(Package.price <= max_price)
+
+    return query.count()
 
 
 # ----------------------------------
 # FEATURED PACKAGES
 # ----------------------------------
-def get_featured_packages(db: Session):
+async def get_featured_packages(db: Session):
 
     return db.query(Package).filter(
         Package.is_featured == True,
@@ -64,7 +97,7 @@ def get_featured_packages(db: Session):
 # POPULAR PACKAGES
 # sorted by total_bookings + rating
 # ----------------------------------
-def get_popular_packages(db: Session):
+async def get_popular_packages(db: Session):
 
     return db.query(Package).filter(
         Package.is_active == True
@@ -77,20 +110,19 @@ def get_popular_packages(db: Session):
 # ----------------------------------
 # FILTER BY DURATION
 # ----------------------------------
-def get_packages_by_duration(
+async def get_packages_by_duration(
     db: Session,
     days: int,
     skip: int = 0,
     limit: int = 10,
 ):
-
     return db.query(Package).filter(
         Package.duration_days == days,
         Package.is_active == True
     ).offset(skip).limit(limit).all()
 
 
-def get_packages_by_duration_count(db: Session, days: int) -> int:
+async def get_packages_by_duration_count(db: Session, days: int) -> int:
 
     return db.query(Package).filter(
         Package.duration_days == days,
@@ -104,14 +136,13 @@ def get_packages_by_duration_count(db: Session, days: int) -> int:
 # standard → ₹15k - ₹40k
 # premium  → ₹40k+ (max_price is None)
 # ----------------------------------
-def get_packages_by_budget(
+async def get_packages_by_budget(
     db: Session,
     min_price: float,
     max_price: Optional[float] = None,
     skip: int = 0,
     limit: int = 10,
 ):
-
     query = db.query(Package).filter(
         Package.price >= min_price,
         Package.is_active == True
@@ -123,7 +154,7 @@ def get_packages_by_budget(
     return query.offset(skip).limit(limit).all()
 
 
-def get_packages_by_budget_count(
+async def get_packages_by_budget_count(
     db: Session,
     min_price: float,
     max_price: Optional[float] = None,
@@ -143,7 +174,7 @@ def get_packages_by_budget_count(
 # ----------------------------------
 # GET PACKAGE BY ID
 # ----------------------------------
-def get_package_by_id(db: Session, package_id: str):
+async def get_package_by_id(db: Session, package_id: str):
 
     return db.query(Package).filter(
         Package.id == package_id,
@@ -154,7 +185,7 @@ def get_package_by_id(db: Session, package_id: str):
 # ----------------------------------
 # GET PACKAGE BY SLUG
 # ----------------------------------
-def get_package_by_slug(db: Session, slug: str):
+async def get_package_by_slug(db: Session, slug: str):
 
     return db.query(Package).filter(
         Package.slug == slug,
@@ -164,24 +195,20 @@ def get_package_by_slug(db: Session, slug: str):
 
 # ----------------------------------
 # GET PACKAGE BY ID OR SLUG
-#
-# Examples:
-#   /packages/araku-valley-3-days      → slug lookup
-#   /packages/f3a1b2c4-9d8e-...       → UUID lookup
 # ----------------------------------
-def get_package_by_id_or_slug(db: Session, value: str):
+async def get_package_by_id_or_slug(db: Session, value: str):
 
-    if _is_uuid(value):
-        return get_package_by_id(db, value)
-    return get_package_by_slug(db, value)
+    if await _is_uuid(value):
+        return await get_package_by_id(db, value)
+    return await get_package_by_slug(db, value)
 
 
 # ----------------------------------
 # GET PACKAGE IMAGES
 # ----------------------------------
-def get_package_images(db: Session, package_id: str):
+async def get_package_images(db: Session, package_id: str):
 
-    package = get_package_by_id(db, package_id)
+    package = await get_package_by_id(db, package_id)
     if not package:
         return None
     return package.images
@@ -189,11 +216,10 @@ def get_package_images(db: Session, package_id: str):
 
 # ----------------------------------
 # GET PACKAGE REVIEWS
-# Reviews model handled by colleague
+# Reviews model handled by colleague LEV152
 # Uncomment when colleague finishes review module
-# Agree on: src/models/review.py → Review.package_id
 # ----------------------------------
-def get_package_reviews(
+async def get_package_reviews(
     db: Session,
     package_id: str,
     skip: int = 0,
@@ -203,22 +229,21 @@ def get_package_reviews(
     # return db.query(Review).filter(
     #     Review.package_id == package_id
     # ).offset(skip).limit(limit).all()
-    pass
+    return []
 
 
-def get_package_reviews_count(db: Session, package_id: str) -> int:
+async def get_package_reviews_count(db: Session, package_id: str) -> int:
     # from src.models.review import Review
     # return db.query(Review).filter(
     #     Review.package_id == package_id
     # ).count()
-    pass
+    return 0
 
 
 # ----------------------------------
 # CHECK SLUG EXISTS
-# Used before create/update
 # ----------------------------------
-def slug_exists(
+async def slug_exists(
     db: Session,
     slug: str,
     exclude_id: Optional[str] = None,
@@ -235,7 +260,7 @@ def slug_exists(
 # ----------------------------------
 # UPDATE PACKAGE
 # ----------------------------------
-def update_package(db: Session, package: Package):
+async def update_package(db: Session, package: Package):
 
     db.commit()
     db.refresh(package)

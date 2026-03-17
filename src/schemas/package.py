@@ -35,9 +35,9 @@ class PackageImage(BaseModel):
 # ─────────────────────────────────────────
 
 class PackageBase(BaseModel):
-    name: str = Field(..., example="Araku Valley 3 Days Tour")
-    slug: str = Field(..., example="araku-valley-3-days")
-    destination_id: str = Field(..., example="f3a1b2c4-9d8e-4f2a-b1c3-a2b3c4d5e6f7")
+    name: str = Field(..., example="Vizag Explorer")
+    slug: str = Field(..., example="vizag-explorer")
+    destination_id: str = Field(..., example="00000000-0000-0000-0000-000000000001")
     type: PackageType
 
     duration_days: int = Field(..., ge=1, example=3)

@@ -24,23 +24,23 @@ router = APIRouter(prefix="/packages", tags=["Packages"])
 
 # ---------------------------------------
 # GET ALL PACKAGES
-# GET /api/v1/packages
+# GET /api/v1/packages/
 # Filters: type, destination, duration, budget
 # ---------------------------------------
 @router.get("/")
-def list_packages(
+async def list_packages(
     type: Optional[PackageType] = Query(None, description="PILGRIMAGE | LEISURE | ADVENTURE"),
     destination_id: Optional[str] = Query(None, description="Filter by destination UUID"),
     duration_days: Optional[int] = Query(None, description="Filter by number of days"),
     min_price: Optional[float] = Query(None, description="Minimum price"),
     max_price: Optional[float] = Query(None, description="Maximum price"),
-    skip: int = Query(0, ge=0, description="Number of records to skip"),
-    limit: int = Query(10, ge=1, le=100, description="Number of records to return"),
+    page: int = Query(1, ge=1, description="Page number"),
+    limit: int = Query(10, ge=1, le=100, description="Items per page"),
     db: Session = Depends(get_db),
 ):
-    return get_all_packages(
+    return await get_all_packages(
         db,
-        skip=skip,
+        page=page,
         limit=limit,
         type=type,
         destination_id=destination_id,
@@ -55,8 +55,8 @@ def list_packages(
 # GET /api/v1/packages/featured
 # ---------------------------------------
 @router.get("/featured")
-def list_featured_packages(db: Session = Depends(get_db)):
-    return get_featured_packages_list(db)
+async def list_featured_packages(db: Session = Depends(get_db)):
+    return await get_featured_packages_list(db)
 
 
 # ---------------------------------------
@@ -64,8 +64,8 @@ def list_featured_packages(db: Session = Depends(get_db)):
 # GET /api/v1/packages/popular
 # ---------------------------------------
 @router.get("/popular")
-def list_packages_by_bookings(db: Session = Depends(get_db)):
-    return get_popular_packages_list(db)
+async def list_popular_packages(db: Session = Depends(get_db)):
+    return await get_popular_packages_list(db)
 
 
 # ---------------------------------------
@@ -73,13 +73,13 @@ def list_packages_by_bookings(db: Session = Depends(get_db)):
 # GET /api/v1/packages/by-duration/{days}
 # ---------------------------------------
 @router.get("/by-duration/{days}")
-def list_packages_by_duration(
+async def list_packages_by_duration(
     days: int,
-    skip: int = Query(0, ge=0),
+    page: int = Query(1, ge=1),
     limit: int = Query(10, ge=1, le=100),
     db: Session = Depends(get_db),
 ):
-    return get_packages_duration(db, days=days, skip=skip, limit=limit)
+    return await get_packages_duration(db, days=days, page=page, limit=limit)
 
 
 # ---------------------------------------
@@ -89,20 +89,20 @@ def list_packages_by_duration(
 # ?min=5000&max=15000 (optional custom range)
 # ---------------------------------------
 @router.get("/by-budget")
-def list_packages_by_budget(
+async def list_packages_by_budget(
     range: str = Query(..., description="budget | standard | premium"),
     min: Optional[float] = Query(None, description="Custom min price"),
     max: Optional[float] = Query(None, description="Custom max price"),
-    skip: int = Query(0, ge=0),
+    page: int = Query(1, ge=1),
     limit: int = Query(10, ge=1, le=100),
     db: Session = Depends(get_db),
 ):
-    return get_packages_budget(
+    return await get_packages_budget(
         db,
         budget_range=range,
         min_price=min,
         max_price=max,
-        skip=skip,
+        page=page,
         limit=limit,
     )
 
@@ -113,8 +113,8 @@ def list_packages_by_budget(
 # NOTE: must be before /{value}
 # ---------------------------------------
 @router.get("/{package_id}/images")
-def get_package_images(package_id: str, db: Session = Depends(get_db)):
-    return get_package_images_list(db, package_id)
+async def retrieve_package_images(package_id: str, db: Session = Depends(get_db)):
+    return await get_package_images_list(db, package_id)
 
 
 # ---------------------------------------
@@ -123,33 +123,35 @@ def get_package_images(package_id: str, db: Session = Depends(get_db)):
 # NOTE: must be before /{value}
 # ---------------------------------------
 @router.get("/{package_id}/reviews")
-def get_package_reviews(
+async def retrieve_package_reviews(
     package_id: str,
-    skip: int = Query(0, ge=0),
+    page: int = Query(1, ge=1),
     limit: int = Query(10, ge=1, le=100),
     db: Session = Depends(get_db),
 ):
-    return get_package_reviews_list(db, package_id=package_id, skip=skip, limit=limit)
+    return await get_package_reviews_list(db, package_id=package_id, page=page, limit=limit)
 
 
 # ---------------------------------------
 # GET PACKAGE BY ID OR SLUG
 # GET /api/v1/packages/{value}
-# NOTE: always last — catches everything above not matched
+# NOTE: always last
 # ---------------------------------------
 @router.get("/{package_id}")
-def get_package(package_id: str, db: Session = Depends(get_db)):
-    return get_package_details(db, package_id)
+async def retrieve_package(package_id: str, db: Session = Depends(get_db)):
+    return await get_package_details(db, package_id)
 
+
+# ---------------------------------------
 # CREATE PACKAGE (Admin)
-# POST /api/v1/packages
+# POST /api/v1/packages/
 # ---------------------------------------
 @router.post("/")
-def create_package(
+async def create_package(
     data: PackageCreate,
     db: Session = Depends(get_db),
 ):
-    return create_new_package(db, data)
+    return await create_new_package(db, data)
 
 
 # ---------------------------------------
@@ -157,9 +159,9 @@ def create_package(
 # PUT /api/v1/packages/{package_id}
 # ---------------------------------------
 @router.put("/{package_id}")
-def update_package(
+async def update_package(
     package_id: str,
     data: PackageUpdate,
     db: Session = Depends(get_db),
 ):
-    return update_existing_package(db, package_id, data)
+    return await update_existing_package(db, package_id, data)
