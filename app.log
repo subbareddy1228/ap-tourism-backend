@@ -1138,3 +1138,4 @@ For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/St
 2026-03-17 14:02:22,338 | INFO | src.integrations.twilio | Twilio OTP sent successfully to 7793969902
 2026-03-17 14:14:13,775 | INFO | src.services.partner_service | Partner registered user_id=6949901c-dfda-4e5c-bb16-6c796ec13455 business=Subba Hotels
 2026-03-17 14:29:48,366 | INFO | src.services.auth_service | Login success user_id=6949901c-dfda-4e5c-bb16-6c796ec13455
+2026-03-17 20:24:18,888 | INFO | src.services.auth_service | Login success user_id=6949901c-dfda-4e5c-bb16-6c796ec13455
