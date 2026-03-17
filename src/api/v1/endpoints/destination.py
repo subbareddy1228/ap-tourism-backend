@@ -21,17 +21,16 @@ router = APIRouter(prefix="/destinations", tags=["Destinations"])
 # ---------------------------------------
 # GET ALL DESTINATIONS
 # GET /api/v1/destinations/
-# Filters: type, district, skip, limit
 # ---------------------------------------
 @router.get("/")
 async def list_destinations(
     type: Optional[DestinationType] = Query(None, description="NATURE | HERITAGE | ADVENTURE | COASTAL | RELIGIOUS"),
     district: Optional[str] = Query(None, description="Filter by district"),
-    skip: int = Query(0, ge=0),
-    limit: int = Query(10, ge=1, le=100),
+    page: int = Query(1, ge=1, description="Page number"),
+    limit: int = Query(10, ge=1, le=100, description="Items per page"),
     db: Session = Depends(get_db),
 ):
-    return await get_destinations(db, skip=skip, limit=limit, type=type, district=district)
+    return await get_destinations(db, page=page, limit=limit, type=type, district=district)
 
 
 # ---------------------------------------

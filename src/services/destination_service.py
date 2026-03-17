@@ -3,8 +3,47 @@ from sqlalchemy.orm import Session
 from typing import Optional
 
 from src.models.destination import Destination, DestinationType
-from src.schemas.destination import DestinationCreate, DestinationUpdate, DestinationListResponse   
+from src.schemas.destination import DestinationCreate, DestinationUpdate, DestinationListResponse
 from src.repositories import destination_repo as repo
+
+
+# ─────────────────────────────────────────
+# TEMPORARY HELPERS
+# Will be replaced by src/common/responses.py
+# and src/common/pagination.py 
+# ─────────────────────────────────────────
+
+def success_response(data, message: str = "Success"):
+    return {"success": True, "data": data, "message": message}
+
+
+def error_response(error: str, code: int = 400):
+    return {"success": False, "error": error, "code": code}
+
+
+def paginate(items, total: int, page: int, limit: int):
+    pages = (total + limit - 1) // limit  # ceiling division
+    return {
+        "data": items,
+        "total": total,
+        "page": page,
+        "pages": pages,
+    }
+
+
+# ─────────────────────────────────────────
+# In-memory cache (temporary until redis.py is ready)
+# ─────────────────────────────────────────
+_cache = {}
+
+def get_cache(key: str):
+    return _cache.get(key)
+
+def set_cache(key: str, value):
+    _cache[key] = value
+
+def clear_cache(key: str):
+    _cache.pop(key, None)
 
 
 # ---------------------------------------
@@ -35,51 +74,95 @@ async def create_destination(db: Session, data: DestinationCreate):
         is_active=data.is_active,
     )
 
-    return await repo.create(db, db_destination)
+    result = await repo.create(db, db_destination)
+
+    # clear list cache when new destination added
+    clear_cache("destinations:featured")
+    clear_cache("destinations:popular")
+
+    return success_response(
+        DestinationListResponse.model_validate(result),
+        "Destination created successfully"
+    )
 
 
 # ---------------------------------------
 # GET ALL DESTINATIONS
+# page based pagination
 # ---------------------------------------
 async def get_destinations(
     db: Session,
-    skip: int = 0,
+    page: int = 1,
     limit: int = 10,
     type: Optional[DestinationType] = None,
     district: Optional[str] = None,
 ):
+    skip = (page - 1) * limit
     items = await repo.get_all(db, skip=skip, limit=limit, type=type, district=district)
     total = await repo.get_count(db, type=type, district=district)
 
-    return {
-        "total": total,
-        "items": [DestinationListResponse.model_validate(i) for i in items],
-    }
-          
+    data = paginate(
+        items=[DestinationListResponse.model_validate(i) for i in items],
+        total=total,
+        page=page,
+        limit=limit,
+    )
+
+    return success_response(data)
+
 
 # ---------------------------------------
 # GET FEATURED DESTINATIONS
+# Cached in memory (1 hour = 3600 seconds)
+# Will use Redis once LEV148 fills redis.py
 # ---------------------------------------
 async def get_featured_destinations(db: Session):
-    return await repo.get_featured(db)
+
+    cache_key = "destinations:featured"
+    cached = get_cache(cache_key)
+
+    if cached:
+        return success_response(cached, "Featured destinations (cached)")
+
+    items = await repo.get_featured(db)
+    data = [DestinationListResponse.model_validate(i) for i in items]
+
+    set_cache(cache_key, data)
+
+    return success_response(data, "Featured destinations")
 
 
 # ---------------------------------------
 # GET POPULAR DESTINATIONS
+# Cached in memory
 # ---------------------------------------
 async def get_popular_destinations(db: Session):
-    return await repo.get_popular(db)
+
+    cache_key = "destinations:popular"
+    cached = get_cache(cache_key)
+
+    if cached:
+        return success_response(cached, "Popular destinations (cached)")
+
+    items = await repo.get_popular(db)
+    data = [DestinationListResponse.model_validate(i) for i in items]
+
+    set_cache(cache_key, data)
+
+    return success_response(data, "Popular destinations")
 
 
 # ---------------------------------------
 # GET DESTINATION TYPES
 # ---------------------------------------
 async def get_destination_types():
-    return await repo.get_types()
+    data = await repo.get_types()
+    return success_response(data, "Destination types")
 
 
 # ---------------------------------------
-# GET DESTINATION BY ID
+# GET DESTINATION BY ID OR SLUG
+# Full detail response
 # ---------------------------------------
 async def get_destination(db: Session, value: str):
 
@@ -91,7 +174,7 @@ async def get_destination(db: Session, value: str):
             detail=f"Destination '{value}' not found"
         )
 
-    return destination
+    return success_response(destination, "Destination detail")
 
 
 # ---------------------------------------
@@ -121,4 +204,13 @@ async def update_destination(
     for key, value in update_data.items():
         setattr(destination, key, value)
 
-    return await repo.update(db, destination)
+    result = await repo.update(db, destination)
+
+    # clear cache after update
+    clear_cache("destinations:featured")
+    clear_cache("destinations:popular")
+
+    return success_response(
+        DestinationListResponse.model_validate(result),
+        "Destination updated successfully"
+    )
