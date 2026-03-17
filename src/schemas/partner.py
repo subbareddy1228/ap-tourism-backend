@@ -181,9 +181,14 @@ class BankDetailsResponse(BaseModel):
     branch_name:          Optional[str]
     is_verified:          bool
     updated_at:           Optional[datetime]
- 
+
     class Config:
         from_attributes = True
+
+    @field_validator("id", mode="before")
+    @classmethod
+    def convert_uuid(cls, v):
+        return str(v)
  
  
 # ══════════════════ DOCUMENTS ══════════════════
