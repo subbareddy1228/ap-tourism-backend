@@ -47,6 +47,7 @@ class User(Base):
     family      = relationship("FamilyMember",   back_populates="user")
     sessions    = relationship("UserSession",    back_populates="user")
     partner     = relationship("Partner",        back_populates="user", uselist=False)
+    wallet = relationship("Wallet", back_populates="user", uselist=False)
  
     # bookings    = relationship("Booking",        back_populates="user")
     # reviews     = relationship("Review",         back_populates="user")

@@ -23,6 +23,7 @@ from src.core.logging import setup_logging
 from src.api.v1.endpoints.auth import router as auth_router
 from src.api.v1.endpoints.users import router as users_router
 from src.api.v1.endpoints.partner import router as partners_router
+from src.api.v1.endpoints.wallet import router as wallet_router
 
 setup_logging()
 
@@ -57,6 +58,7 @@ app.add_middleware(
 app.include_router(auth_router,  prefix="/api/v1")   # M1 — Auth
 app.include_router(users_router, prefix="/api/v1")   # M2 — Users
 app.include_router(partners_router, prefix="/api/v1") # M3 — Partners
+app.include_router(wallet_router, prefix="/api/v1")  # M4 — Wallet
 
 @app.get("/api/v1/health", tags=["Health"])
 async def health():
