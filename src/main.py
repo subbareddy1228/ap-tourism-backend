@@ -61,3 +61,12 @@ async def lifespan(app: FastAPI):
     await init_redis()
     yield
     await close_redis()
+@app.get("/api/v1/wallet/test-balance")
+def test_balance():
+    return {
+        "success": True,
+        "data": {
+            "balance": 1000.00,
+            "currency": "INR"
+        }
+    }
