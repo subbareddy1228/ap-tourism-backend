@@ -5,7 +5,8 @@ from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, func
 
 from src.models.coupon import Coupon, CouponUsage, Referral
 from src.schemas.coupon import (
@@ -24,17 +25,19 @@ logger = logging.getLogger(__name__)
 # HELPERS
 # ─────────────────────────────────────────────
 
-def _get_by_code(db: Session, code: str) -> Optional[Coupon]:
-    return db.query(Coupon).filter(
-        Coupon.code == code.upper(),
-    ).first()
+async def _get_by_code(db: AsyncSession, code: str) -> Optional[Coupon]:
+    result = await db.execute(select(Coupon).where(Coupon.code == code.upper()))
+    return result.scalar_one_or_none()
 
 
-def _user_usage_count(db: Session, coupon_id: UUID, user_id: UUID) -> int:
-    return db.query(CouponUsage).filter(
-        CouponUsage.coupon_id == coupon_id,
-        CouponUsage.user_id == user_id,
-    ).count()
+async def _user_usage_count(db: AsyncSession, coupon_id: UUID, user_id: UUID) -> int:
+    result = await db.execute(
+        select(func.count()).select_from(CouponUsage).where(
+            CouponUsage.coupon_id == coupon_id,
+            CouponUsage.user_id == user_id,
+        )
+    )
+    return result.scalar() or 0
 
 
 def _gen_referral_code(user_id: UUID) -> str:
@@ -72,49 +75,35 @@ def _calculate_discount(coupon: Coupon, order_value: float) -> float:
 # VALIDATE
 # ─────────────────────────────────────────────
 
-def validate_coupon(db: Session, data: ValidateCouponRequest) -> ValidateCouponResponse:
-    coupon = _get_by_code(db, data.code)
+async def validate_coupon(db: AsyncSession, data: ValidateCouponRequest) -> ValidateCouponResponse:
+    coupon = await _get_by_code(db, data.code)
 
     if not coupon:
-        return ValidateCouponResponse(
-            is_valid=False, code=data.code.upper(),
-            final_amount=data.order_value,
-            message="Coupon code not found."
-        )
+        return ValidateCouponResponse(is_valid=False, code=data.code.upper(),
+            final_amount=data.order_value, message="Coupon code not found.")
 
     if not _is_valid(coupon):
-        return ValidateCouponResponse(
-            is_valid=False, code=coupon.code,
-            final_amount=data.order_value,
-            message="Coupon has expired or is no longer active."
-        )
+        return ValidateCouponResponse(is_valid=False, code=coupon.code,
+            final_amount=data.order_value, message="Coupon has expired or is no longer active.")
 
     min_val = float(coupon.min_order_value or 0)
     if data.order_value < min_val:
-        return ValidateCouponResponse(
-            is_valid=False, code=coupon.code,
-            final_amount=data.order_value,
-            message=f"Minimum order value Rs.{min_val:.0f} required."
-        )
+        return ValidateCouponResponse(is_valid=False, code=coupon.code,
+            final_amount=data.order_value, message=f"Minimum order value Rs.{min_val:.0f} required.")
 
     per_user = int(coupon.usage_per_user or coupon.max_uses_per_user or 1)
-    if _user_usage_count(db, coupon.id, data.user_id) >= per_user:
-        return ValidateCouponResponse(
-            is_valid=False, code=coupon.code,
-            final_amount=data.order_value,
-            message="You have already used this coupon the maximum number of times."
-        )
+    if await _user_usage_count(db, coupon.id, data.user_id) >= per_user:
+        return ValidateCouponResponse(is_valid=False, code=coupon.code,
+            final_amount=data.order_value, message="You have already used this coupon the maximum number of times.")
 
     discount = _calculate_discount(coupon, data.order_value)
     final    = round(data.order_value - discount, 2)
 
     return ValidateCouponResponse(
-        is_valid=True,
-        code=coupon.code,
+        is_valid=True, code=coupon.code,
         discount_type=str(coupon.discount_type).upper(),
         discount_value=float(coupon.discount_value),
-        discount_amount=discount,
-        final_amount=final,
+        discount_amount=discount, final_amount=final,
         message=f"Coupon valid! You save Rs.{discount:.2f}",
         coupon=CouponOut.model_validate(coupon),
     )
@@ -124,32 +113,27 @@ def validate_coupon(db: Session, data: ValidateCouponRequest) -> ValidateCouponR
 # APPLY
 # ─────────────────────────────────────────────
 
-def apply_coupon(db: Session, data: ApplyCouponRequest) -> ApplyCouponResponse:
-    val = validate_coupon(db, ValidateCouponRequest(
+async def apply_coupon(db: AsyncSession, data: ApplyCouponRequest) -> ApplyCouponResponse:
+    val = await validate_coupon(db, ValidateCouponRequest(
         user_id=data.user_id, code=data.code, order_value=data.order_value
     ))
 
     if not val.is_valid:
-        return ApplyCouponResponse(
-            success=False, code=data.code.upper(),
-            discount_amount=0.0, final_amount=data.order_value,
-            message=val.message,
-        )
+        return ApplyCouponResponse(success=False, code=data.code.upper(),
+            discount_amount=0.0, final_amount=data.order_value, message=val.message)
 
-    coupon = _get_by_code(db, data.code)
+    coupon = await _get_by_code(db, data.code)
     usage  = CouponUsage(
-        coupon_id        = coupon.id,
-        user_id          = data.user_id,
-        booking_id       = data.booking_id,
-        discount_applied = val.discount_amount,
-        order_value      = data.order_value,
+        coupon_id       = coupon.id,
+        user_id         = data.user_id,
+        booking_id      = data.booking_id,
+        discount_amount = val.discount_amount,
+        order_value     = data.order_value,
     )
     db.add(usage)
     coupon.used_count   = (coupon.used_count or 0) + 1
     coupon.current_uses = (coupon.current_uses or 0) + 1
-    db.commit()
-
-    logger.info(f"Coupon applied: {coupon.code} user={data.user_id} discount=Rs.{val.discount_amount}")
+    await db.commit()
 
     return ApplyCouponResponse(
         success=True, code=coupon.code,
@@ -163,48 +147,43 @@ def apply_coupon(db: Session, data: ApplyCouponRequest) -> ApplyCouponResponse:
 # REMOVE
 # ─────────────────────────────────────────────
 
-def remove_coupon(db: Session, user_id: UUID, booking_id: UUID) -> RemoveCouponResponse:
-    usage = db.query(CouponUsage).filter(
-        CouponUsage.user_id == user_id,
-        CouponUsage.booking_id == booking_id,
-    ).first()
+async def remove_coupon(db: AsyncSession, user_id: UUID, booking_id: UUID) -> RemoveCouponResponse:
+    result = await db.execute(
+        select(CouponUsage).where(CouponUsage.user_id == user_id, CouponUsage.booking_id == booking_id)
+    )
+    usage = result.scalar_one_or_none()
 
     if not usage:
-        return RemoveCouponResponse(
-            success=False,
-            message="No coupon found for this booking.",
-            refunded_amount=0.0
-        )
+        return RemoveCouponResponse(success=False, message="No coupon found for this booking.", refunded_amount=0.0)
 
-    refunded = float(usage.discount_applied or 0)
-    coupon   = db.query(Coupon).filter(Coupon.id == usage.coupon_id).first()
+    refunded = float(usage.discount_amount or 0)
+    c_result = await db.execute(select(Coupon).where(Coupon.id == usage.coupon_id))
+    coupon   = c_result.scalar_one_or_none()
     if coupon:
         coupon.used_count   = max(0, (coupon.used_count or 0) - 1)
         coupon.current_uses = max(0, (coupon.current_uses or 0) - 1)
 
-    db.delete(usage)
-    db.commit()
+    await db.delete(usage)
+    await db.commit()
 
-    return RemoveCouponResponse(
-        success=True,
-        message=f"Coupon removed. Rs.{refunded:.2f} discount reversed.",
-        refunded_amount=refunded,
-    )
+    return RemoveCouponResponse(success=True,
+        message=f"Coupon removed. Rs.{refunded:.2f} discount reversed.", refunded_amount=refunded)
 
 
 # ─────────────────────────────────────────────
 # MY COUPONS
 # ─────────────────────────────────────────────
 
-def get_my_coupons(db: Session, user_id: UUID) -> MyCouponsResponse:
-    now    = datetime.utcnow()
-    usages = db.query(CouponUsage).filter(CouponUsage.user_id == user_id).all()
+async def get_my_coupons(db: AsyncSession, user_id: UUID) -> MyCouponsResponse:
+    now = datetime.utcnow()
+    u_result = await db.execute(select(CouponUsage).where(CouponUsage.user_id == user_id))
+    usages = u_result.scalars().all()
     used_coupon_ids = {str(u.coupon_id) for u in usages}
 
-    all_public = db.query(Coupon).filter(
-        Coupon.is_public == True,
-        Coupon.valid_until >= now,
-    ).all()
+    p_result = await db.execute(
+        select(Coupon).where(Coupon.is_public == True, Coupon.valid_until >= now)
+    )
+    all_public = p_result.scalars().all()
 
     available = []
     for c in all_public:
@@ -219,34 +198,30 @@ def get_my_coupons(db: Session, user_id: UUID) -> MyCouponsResponse:
     used_items  = []
     total_saved = 0.0
     for u in usages:
-        c = db.query(Coupon).filter(Coupon.id == u.coupon_id).first()
+        c_res = await db.execute(select(Coupon).where(Coupon.id == u.coupon_id))
+        c = c_res.scalar_one_or_none()
         if c:
             used_items.append(MyCouponItem(
                 coupon=CouponOut.model_validate(c),
-                is_used=True,
-                used_at=u.used_at,
-                discount_applied=float(u.discount_applied or 0),
+                is_used=True, used_at=u.used_at,
+                discount_applied=float(u.discount_amount or 0),
                 is_applicable=False,
             ))
-            total_saved += float(u.discount_applied or 0)
+            total_saved += float(u.discount_amount or 0)
 
-    return MyCouponsResponse(
-        available=available,
-        used=used_items,
-        total_savings=round(total_saved, 2)
-    )
+    return MyCouponsResponse(available=available, used=used_items, total_savings=round(total_saved, 2))
 
 
 # ─────────────────────────────────────────────
 # REFERRAL
 # ─────────────────────────────────────────────
 
-def get_referral_info(db: Session, user_id: UUID) -> ReferralResponse:
-    referral = db.query(Referral).filter(Referral.referrer_user_id == user_id).first()
+async def get_referral_info(db: AsyncSession, user_id: UUID) -> ReferralResponse:
+    result = await db.execute(select(Referral).where(Referral.referrer_user_id == user_id))
+    referral = result.scalar_one_or_none()
 
     if not referral:
         code = _gen_referral_code(user_id)
-
         ref_coupon = Coupon(
             code              = code,
             title             = f"Referral - {code}",
@@ -268,7 +243,7 @@ def get_referral_info(db: Session, user_id: UUID) -> ReferralResponse:
             referral_user_id  = user_id,
         )
         db.add(ref_coupon)
-        db.flush()
+        await db.flush()
 
         referral = Referral(
             referrer_user_id = user_id,
@@ -278,14 +253,20 @@ def get_referral_info(db: Session, user_id: UUID) -> ReferralResponse:
             referred_reward  = 200.0,
         )
         db.add(referral)
-        db.commit()
-        db.refresh(referral)
+        await db.commit()
+        await db.refresh(referral)
 
-    total      = db.query(Referral).filter(Referral.referrer_user_id == user_id).count()
-    successful = db.query(Referral).filter(
-        Referral.referrer_user_id == user_id,
-        Referral.is_redeemed == True,
-    ).count()
+    total_res = await db.execute(
+        select(func.count()).select_from(Referral).where(Referral.referrer_user_id == user_id)
+    )
+    total = total_res.scalar() or 0
+
+    succ_res = await db.execute(
+        select(func.count()).select_from(Referral).where(
+            Referral.referrer_user_id == user_id, Referral.is_redeemed == True
+        )
+    )
+    successful = succ_res.scalar() or 0
 
     return ReferralResponse(
         referral_code        = referral.referral_code,
@@ -302,15 +283,20 @@ def get_referral_info(db: Session, user_id: UUID) -> ReferralResponse:
 # ACTIVE / PUBLIC
 # ─────────────────────────────────────────────
 
-def get_active_coupons(db: Session, page: int = 1, per_page: int = 10) -> ActiveCouponsResponse:
+async def get_active_coupons(db: AsyncSession, page: int = 1, per_page: int = 10) -> ActiveCouponsResponse:
     now    = datetime.utcnow()
     offset = (page - 1) * per_page
-    query  = db.query(Coupon).filter(
-        Coupon.is_public == True,
-        Coupon.valid_until >= now,
+
+    count_result = await db.execute(
+        select(func.count()).select_from(Coupon).where(Coupon.is_public == True, Coupon.valid_until >= now)
     )
-    total   = query.count()
-    coupons = query.order_by(Coupon.valid_until).offset(offset).limit(per_page).all()
+    total = count_result.scalar() or 0
+
+    result = await db.execute(
+        select(Coupon).where(Coupon.is_public == True, Coupon.valid_until >= now)
+        .order_by(Coupon.valid_until).offset(offset).limit(per_page)
+    )
+    coupons = result.scalars().all()
 
     return ActiveCouponsResponse(
         coupons=[CouponOut.model_validate(c) for c in coupons],
@@ -318,8 +304,8 @@ def get_active_coupons(db: Session, page: int = 1, per_page: int = 10) -> Active
     )
 
 
-def get_by_code_public(db: Session, code: str) -> CouponOut:
-    c = _get_by_code(db, code)
+async def get_by_code_public(db: AsyncSession, code: str) -> CouponOut:
+    c = await _get_by_code(db, code)
     if not c or not c.is_public:
         raise ValueError("Coupon not found")
     return CouponOut.model_validate(c)

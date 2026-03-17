@@ -102,7 +102,7 @@ class CouponUsage(Base):
     user_id          = Column(UUID(as_uuid=True), nullable=False, index=True)
     booking_id       = Column(UUID(as_uuid=True), nullable=True)
     transaction_id   = Column(UUID(as_uuid=True), nullable=True)
-    discount_applied = Column(Float, nullable=False)
+    discount_amount = Column(Float, nullable=False)
     order_value      = Column(Float, nullable=False)
     used_at          = Column(DateTime, default=datetime.utcnow)
 

@@ -1,20 +1,19 @@
-﻿from sqlalchemy import create_engine
-from sqlalchemy.orm import declarative_base, sessionmaker
+﻿from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+from sqlalchemy.orm import declarative_base
 from src.core.config import settings
-
-engine = create_engine(settings.DATABASE_URL, pool_pre_ping=True, pool_size=10, max_overflow=20)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+# Convert postgresql:// to postgresql+asyncpg://
+async_url = settings.DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://")
+engine = create_async_engine(async_url, pool_pre_ping=True, pool_size=10, max_overflow=20)
+AsyncSessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 Base = declarative_base()
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-def create_tables():
-  
-    from src.models.coupon import Coupon, CouponUsage
-    Base.metadata.create_all(bind=engine)
+async def get_db():
+    async with AsyncSessionLocal() as session:
+        try:
+            yield session
+        finally:
+            await session.close()
+async def create_tables():
+    from src.models.coupon import Coupon, CouponUsage, Referral
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
     print("Tables created successfully!")
