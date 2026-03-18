@@ -13,7 +13,7 @@ from sqlalchemy import (
     String,
     Text,
 )
-
+from sqlalchemy.dialects.postgresql import UUID
 from src.core.database import Base
 
 
@@ -30,7 +30,7 @@ class Destination(Base):
     __tablename__ = "destinations"
 
     # Primary Key
-    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
     # Basic Information
     name = Column(String(150), nullable=False, unique=True)
