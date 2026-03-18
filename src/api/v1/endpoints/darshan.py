@@ -14,7 +14,7 @@ from src.schemas.darshan import (
 )
 from src.common.responses import ResponseSchema
 
-router = APIRouter(prefix="/temples", tags=["Darshan, Pooja & Prasadam"])
+router = APIRouter()
 
 
 async def get_service(

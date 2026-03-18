@@ -47,7 +47,7 @@ class Temple(Base):
 
     events           = relationship("TempleEvent",      back_populates="temple", cascade="all, delete-orphan")
     reviews          = relationship("TempleReview",     back_populates="temple", cascade="all, delete-orphan")
-    darshan_types    = relationship("DarshanTypeModel", back_populates="temple", cascade="all, delete-orphan")
+    darshan_types    = relationship("DarshanType", back_populates="temple", cascade="all, delete-orphan")
     darshan_slots    = relationship("DarshanSlot",      back_populates="temple", cascade="all, delete-orphan")
     darshan_bookings = relationship("DarshanBooking",   back_populates="temple", cascade="all, delete-orphan")
     pooja_services   = relationship("PoojaService",     back_populates="temple", cascade="all, delete-orphan")

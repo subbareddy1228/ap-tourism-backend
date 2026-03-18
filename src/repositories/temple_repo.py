@@ -33,13 +33,13 @@ class TempleRepository:
         if district:
             query = query.where(Temple.district.ilike(f"%{district}%"))
         if darshan_type:
-            from src.models.darshan import DarshanTypeModel
+            from src.models.darshan import DarshanType
             query = (
                 query
-                .join(DarshanTypeModel, DarshanTypeModel.temple_id == Temple.id)
+                .join(DarshanType, DarshanType.temple_id == Temple.id)
                 .where(
-                    DarshanTypeModel.darshan_type == darshan_type,
-                    DarshanTypeModel.is_active == True,
+                    DarshanType.darshan_type == darshan_type,
+                    DarshanType.is_active == True,
                 )
                 .distinct()
             )
@@ -60,13 +60,13 @@ class TempleRepository:
         if district:
             query = query.where(Temple.district.ilike(f"%{district}%"))
         if darshan_type:
-            from src.models.darshan import DarshanTypeModel
+            from src.models.darshan import DarshanType
             subq = (
                 select(Temple.id)
-                .join(DarshanTypeModel, DarshanTypeModel.temple_id == Temple.id)
+                .join(DarshanType, DarshanType.temple_id == Temple.id)
                 .where(
-                    DarshanTypeModel.darshan_type == darshan_type,
-                    DarshanTypeModel.is_active == True,
+                    DarshanType.darshan_type == darshan_type,
+                    DarshanType.is_active == True,
                     Temple.is_active == True,
                 )
                 .distinct()

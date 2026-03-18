@@ -22,7 +22,7 @@ from uuid import uuid4
 from src.core.database import AsyncSessionLocal
 from src.models.temple import Temple, TempleEvent
 from src.models.darshan import (
-    DarshanTypeModel, DarshanSlot,
+    DarshanType, DarshanType, DarshanSlot,
     PoojaService, PoojaSlot,
     PrasadamItem,
 )
@@ -83,7 +83,7 @@ async def seed():
         # ─────────────────────────────────────────────
         # 3. Darshan Types
         # ─────────────────────────────────────────────
-        free_darshan = DarshanTypeModel(
+        free_darshan = DarshanType(
             id=uuid4(),
             temple_id=temple.id,
             name="Free Darshan",
@@ -96,7 +96,7 @@ async def seed():
             is_active=True,
         )
 
-        special_darshan = DarshanTypeModel(
+        special_darshan = DarshanType(
             id=uuid4(),
             temple_id=temple.id,
             name="Special Entry Darshan",
@@ -109,7 +109,7 @@ async def seed():
             is_active=True,
         )
 
-        suprabhata = DarshanTypeModel(
+        suprabhata = DarshanType(
             id=uuid4(),
             temple_id=temple.id,
             name="Suprabhata Seva",
@@ -122,7 +122,7 @@ async def seed():
             is_active=True,
         )
 
-        vip_darshan = DarshanTypeModel(
+        vip_darshan = DarshanType(
             id=uuid4(),
             temple_id=temple.id,
             name="VIP Darshan",

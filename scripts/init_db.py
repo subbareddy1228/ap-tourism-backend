@@ -7,7 +7,7 @@ from src.core.database import Base, engine
 # import all models so SQLAlchemy knows about them
 from src.models.temple import Temple, TempleEvent, TempleReview
 from src.models.darshan import (
-    DarshanTypeModel, DarshanSlot, DarshanBooking,
+    DarshanType, DarshanSlot, DarshanBooking,
     PoojaService, PoojaSlot, PoojaBooking,
     PrasadamItem, PrasadamOrder, PrasadamOrderItem,
 )
