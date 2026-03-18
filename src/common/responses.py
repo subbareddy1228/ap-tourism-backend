@@ -1,39 +1,11 @@
-# from typing import Any, Optional
-# from fastapi.responses import JSONResponse
 
-
-# def success_response(
-#     data: Any = None,
-#     message: str = "Success",
-#     status_code: int = 200,
-# ) -> JSONResponse:
-#     return JSONResponse(
-#         status_code=status_code,
-#         content={
-#             "success": True,
-#             "message": message,
-#             "data": data,
-#         },
-#     )
-
-
-# def error_response(
-#     message: str = "An error occurred",
-#     status_code: int = 400,
-#     details: Optional[Any] = None,
-# ) -> JSONResponse:
-#     return JSONResponse(
-#         status_code=status_code,
-#         content={
-#             "success": False,
-#             "message": message,
-#             "details": details,
-#         },
-#     )
 
 import math
 from typing import Any, Optional, Generic, TypeVar, List
 from pydantic import BaseModel
+from typing import Any, Optional
+from pydantic import BaseModel
+
 
 T = TypeVar("T")
 
@@ -88,3 +60,18 @@ class PaginatedResponse(BaseModel):
             pages=pages,
             message=message
         )
+    
+    # APIResponse — alias for LEV146 compatibility
+
+class APIResponse(BaseModel):
+    status:  str
+    message: str
+    data:    Optional[Any] = None
+
+    @classmethod
+    def success(cls, message: str = "Success", data: Any = None):
+        return cls(status="success", message=message, data=data)
+
+    @classmethod
+    def error(cls, message: str = "Error", data: Any = None):
+        return cls(status="error", message=message, data=data)

@@ -1,17 +1,11 @@
 from fastapi import APIRouter
-from src.api.v1.endpoints.temple import router as temple_router
-from src.api.v1.endpoints.darshan import router as darshan_router
+from src.api.v1.endpoints import auth, users, temples, wallet, partner, darshan
 
 router = APIRouter()
 
-router.include_router(
-    temple_router,
-    prefix="/temples",
-    tags=["Temples"]
-)
-
-router.include_router(
-    darshan_router,
-    prefix="/darshan",
-    tags=["Darshan, Pooja & Prasadam"]   # keep ONLY here
-)
+router.include_router(auth.router)
+router.include_router(users.router)
+router.include_router(temples.router)
+router.include_router(darshan.router)
+router.include_router(wallet.router)
+router.include_router(partner.router)

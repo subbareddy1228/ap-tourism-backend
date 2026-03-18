@@ -195,4 +195,3 @@ class TempleService:
             raise NotFoundException(f"Temple {temple_id} not found")
         self._delete_cache(f"temple:{temple_id}:detail", "temples:featured", "temples:popular:10")
         return TempleDetail.model_validate(temple)
-
