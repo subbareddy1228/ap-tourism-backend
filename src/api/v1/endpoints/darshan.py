@@ -28,7 +28,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.database import get_db
 from src.api.deps.auth import get_current_user
-from src.models.user import User
 from src.services.darshan_service import DarshanService
 from src.schemas.darshan import (
     DarshanCheckAvailabilityRequest,
@@ -123,7 +122,7 @@ async def check_availability(
 async def book_darshan(
     temple_id: UUID,
     req: DarshanBookRequest,
-    current_user: User = Depends(get_current_user),
+    current_user = Depends(get_current_user),
     svc: DarshanService = Depends(get_service),
 ):
     data = await svc.book_darshan(
@@ -138,7 +137,7 @@ async def book_darshan(
 async def get_darshan_booking(
     temple_id: UUID,
     booking_id: UUID,
-    current_user: User = Depends(get_current_user),
+    current_user = Depends(get_current_user),
     svc: DarshanService = Depends(get_service)
 ):
     data = await svc.get_darshan_booking(temple_id, booking_id)
@@ -182,7 +181,7 @@ async def get_pooja_slots(
 async def book_pooja(
     temple_id: UUID,
     req: PoojaBookRequest,
-    current_user: User = Depends(get_current_user),
+    current_user = Depends(get_current_user),
     svc: DarshanService = Depends(get_service),
 ):
     data = await svc.book_pooja(
@@ -202,7 +201,7 @@ async def book_pooja(
 @router.get("/{temple_id}/prasadam/orders", response_model=APIResponse, summary="My prasadam orders")
 async def get_my_prasadam_orders(
     temple_id: UUID,
-    current_user: User = Depends(get_current_user),
+    current_user = Depends(get_current_user),
     svc: DarshanService = Depends(get_service)
 ):
     data = await svc.get_my_prasadam_orders(
@@ -235,7 +234,7 @@ async def get_prasadam_item(
 async def order_prasadam(
     temple_id: UUID,
     req: PrasadamOrderRequest,
-    current_user: User = Depends(get_current_user),
+    current_user = Depends(get_current_user),
     svc: DarshanService = Depends(get_service),
 ):
     data = await svc.order_prasadam(
