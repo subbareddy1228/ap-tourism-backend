@@ -13,38 +13,48 @@ from src.repositories import destination_repo as repo
 # and src/common/pagination.py 
 # ─────────────────────────────────────────
 
-def success_response(data, message: str = "Success"):
+async def success_response(data, message: str = "Success"):
     return {"success": True, "data": data, "message": message}
 
 
-def error_response(error: str, code: int = 400):
+async def error_response(error: str, code: int = 400):
     return {"success": False, "error": error, "code": code}
 
 
-def paginate(items, total: int, page: int, limit: int):
-    pages = (total + limit - 1) // limit  # ceiling division
+async def paginate(items, total: int, page: int, limit: int):
+    pages = (total + limit - 1) // limit
     return {
         "data": items,
         "total": total,
         "page": page,
         "pages": pages,
     }
-
-
 # ─────────────────────────────────────────
 # In-memory cache (temporary until redis.py is ready)
 # ─────────────────────────────────────────
-_cache = {}
+# src/services/destination_service.py
 
-def get_cache(key: str):
-    return _cache.get(key)
+import aioredis
 
-def set_cache(key: str, value):
-    _cache[key] = value
+redis = None  # initialize as None at module level
 
-def clear_cache(key: str):
-    _cache.pop(key, None)
+async def get_redis():
+    global redis
+    if redis is None:
+        redis = await aioredis.from_url("redis://localhost")
+    return redis
 
+async def get_cache(key: str):
+    r = await get_redis()
+    return await r.get(key)
+
+async def set_cache(key: str, value, ttl: int = 300):
+    r = await get_redis()
+    await r.set(key, value, ex=ttl)
+
+async def clear_cache(key: str):
+    r = await get_redis()
+    await r.delete(key)
 
 # ---------------------------------------
 # CREATE DESTINATION (Admin)
