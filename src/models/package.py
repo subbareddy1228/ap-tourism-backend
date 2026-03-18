@@ -14,6 +14,7 @@ from sqlalchemy import (
     String,
     Text,
 )
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from src.core.database import Base
 
@@ -29,14 +30,13 @@ class Package(Base):
     __tablename__ = "packages"
 
     # Primary Key
-    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     # Basic Information
     name = Column(String(200), nullable=False)
     slug = Column(String(200), nullable=False, unique=True, index=True)
 
     # Foreign Key → Destination
-    destination_id = Column(String(36), ForeignKey("destinations.id"), nullable=False, index=True)
+    destination_id = Column(UUID(as_uuid=True), ForeignKey("destinations.id"), nullable=False)
 
     # Duration
     duration_days = Column(Integer, nullable=False)
