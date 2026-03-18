@@ -9,6 +9,7 @@ from datetime import datetime
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, or_, func, update
+from sqlalchemy.orm import selectinload
 
 from src.models.vehicle import Vehicle, Driver, VehicleDocument, VehicleReview, VehicleStatus, VehicleType
 
@@ -31,9 +32,9 @@ class VehicleRepository:
     # ─── Read ─────────────────────────────────────────────────────────────────
 
     async def get_by_id(self, vehicle_id: UUID) -> Optional[Vehicle]:
-        result = await self.db.execute(
-            select(Vehicle).filter(Vehicle.id == vehicle_id, Vehicle.deleted_at.is_(None))
-        )
+        result = await self.db.execute(select(Vehicle).options(selectinload(Vehicle.documents),selectinload(Vehicle.drivers))
+                                       .filter(Vehicle.id == vehicle_id, Vehicle.deleted_at.is_(None))
+                                       )
         return result.scalars().first()
 
     async def get_by_registration(self, reg_number: str) -> Optional[Vehicle]:

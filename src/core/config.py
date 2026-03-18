@@ -20,6 +20,8 @@ class Settings(BaseSettings):
     # Google Maps
     GOOGLE_MAPS_API_KEY: str = ""
 
+    UPLOAD_DIR: str = "uploads/hotels"
+
     # Redis
     REDIS_URL: str = "redis://localhost:6379/0"
 

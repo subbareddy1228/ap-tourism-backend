@@ -5,6 +5,9 @@ Integrates with ORS for distance/fare calculation and AWS S3 for images
 """
 
 import uuid
+import os
+import aiofiles
+from src.core.config import settings
 from typing import Optional, List, Dict, Any
 from uuid import UUID
 from datetime import datetime
@@ -179,8 +182,21 @@ class VehicleService:
 
     async def upload_vehicle_image(self, partner_id: UUID, vehicle_id: UUID, file: UploadFile):
         vehicle = await self._get_partner_vehicle(partner_id, vehicle_id)
-        s3_key = f"vehicles/{vehicle_id}/images/{uuid.uuid4()}_{file.filename}"
-        image_url = self.s3_client.upload_file(file.file, s3_key, file.content_type)
+        allowed = ["image/jpeg", "image/png", "image/jpg", "image/webp"]
+        if file.content_type not in allowed:
+            raise HTTPException(status_code=400, detail="Only JPG, PNG and WEBP images are allowed")
+        contents = await file.read()
+        if len(contents) > 5 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="Image size must be less than 5MB")
+        os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
+        file_ext  = file.filename.split(".")[-1]
+        file_name = f"{uuid.uuid4()}_{file.filename}"
+        file_path = os.path.join(settings.UPLOAD_DIR, file_name)
+        image_url = f"/uploads/vehicles/{file_name}"
+
+        async with aiofiles.open(file_path, "wb") as f:
+            await f.write(contents)
+
         return await self.vehicle_repo.add_image(vehicle, image_url)
 
     async def delete_vehicle_image(self, partner_id: UUID, vehicle_id: UUID, img_id: str):
