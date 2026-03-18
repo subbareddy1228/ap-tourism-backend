@@ -34,7 +34,7 @@ from src.schemas.auth import (
 from src.common.responses import APIResponse
 from src.services import auth_service
 
-router = APIRouter(prefix="/auth", tags=["Authentication"])
+router = APIRouter(tags=["Authentication"])
 bearer_scheme = HTTPBearer()
 
 

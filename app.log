@@ -1139,3 +1139,115 @@ For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/St
 2026-03-17 14:14:13,775 | INFO | src.services.partner_service | Partner registered user_id=6949901c-dfda-4e5c-bb16-6c796ec13455 business=Subba Hotels
 2026-03-17 14:29:48,366 | INFO | src.services.auth_service | Login success user_id=6949901c-dfda-4e5c-bb16-6c796ec13455
 2026-03-17 20:24:18,888 | INFO | src.services.auth_service | Login success user_id=6949901c-dfda-4e5c-bb16-6c796ec13455
+2026-03-18 12:07:22,637 | INFO | sqlalchemy.engine.Engine | select pg_catalog.version()
+2026-03-18 12:07:22,638 | INFO | sqlalchemy.engine.Engine | [raw sql] ()
+2026-03-18 12:07:22,645 | INFO | sqlalchemy.engine.Engine | select current_schema()
+2026-03-18 12:07:22,645 | INFO | sqlalchemy.engine.Engine | [raw sql] ()
+2026-03-18 12:07:22,649 | INFO | sqlalchemy.engine.Engine | show standard_conforming_strings
+2026-03-18 12:07:22,651 | INFO | sqlalchemy.engine.Engine | [raw sql] ()
+2026-03-18 12:07:22,655 | INFO | sqlalchemy.engine.Engine | BEGIN (implicit)
+2026-03-18 12:07:22,697 | INFO | sqlalchemy.engine.Engine | SELECT users.id, users.phone, users.email, users.full_name, users.password_hash, users.role, users.status, users.is_phone_verified, users.is_email_verified, users.created_at, users.updated_at, users.last_login, users.deleted_at 
+FROM users 
+WHERE users.phone = $1::VARCHAR
+2026-03-18 12:07:22,697 | INFO | sqlalchemy.engine.Engine | [generated in 0.00080s] ('7793969902',)
+2026-03-18 12:07:22,790 | WARNING | passlib.handlers.bcrypt | (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2026-03-18 12:07:22,799 | INFO | sqlalchemy.engine.Engine | ROLLBACK
+2026-03-18 12:11:36,877 | INFO | sqlalchemy.engine.Engine | select pg_catalog.version()
+2026-03-18 12:11:36,878 | INFO | sqlalchemy.engine.Engine | [raw sql] ()
+2026-03-18 12:11:36,881 | INFO | sqlalchemy.engine.Engine | select current_schema()
+2026-03-18 12:11:36,882 | INFO | sqlalchemy.engine.Engine | [raw sql] ()
+2026-03-18 12:11:36,884 | INFO | sqlalchemy.engine.Engine | show standard_conforming_strings
+2026-03-18 12:11:36,885 | INFO | sqlalchemy.engine.Engine | [raw sql] ()
+2026-03-18 12:11:36,887 | INFO | sqlalchemy.engine.Engine | BEGIN (implicit)
+2026-03-18 12:11:36,927 | INFO | sqlalchemy.engine.Engine | SELECT users.id, users.phone, users.email, users.full_name, users.password_hash, users.role, users.status, users.is_phone_verified, users.is_email_verified, users.created_at, users.updated_at, users.last_login, users.deleted_at 
+FROM users 
+WHERE users.phone = $1::VARCHAR
+2026-03-18 12:11:36,927 | INFO | sqlalchemy.engine.Engine | [generated in 0.00072s] ('7793969902',)
+2026-03-18 12:11:36,952 | WARNING | passlib.handlers.bcrypt | (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2026-03-18 12:11:36,961 | INFO | sqlalchemy.engine.Engine | ROLLBACK
+2026-03-18 12:12:00,832 | INFO | sqlalchemy.engine.Engine | BEGIN (implicit)
+2026-03-18 12:12:00,833 | INFO | sqlalchemy.engine.Engine | SELECT users.id, users.phone, users.email, users.full_name, users.password_hash, users.role, users.status, users.is_phone_verified, users.is_email_verified, users.created_at, users.updated_at, users.last_login, users.deleted_at 
+FROM users 
+WHERE users.phone = $1::VARCHAR
+2026-03-18 12:12:00,834 | INFO | sqlalchemy.engine.Engine | [cached since 23.91s ago] ('7793969902',)
+2026-03-18 12:12:00,836 | WARNING | passlib.handlers.bcrypt | (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2026-03-18 12:12:00,845 | INFO | sqlalchemy.engine.Engine | ROLLBACK
+2026-03-18 12:17:18,257 | INFO | src.services.auth_service | OTP login attempt phone=7793969902
+2026-03-18 12:17:18,262 | INFO | sqlalchemy.engine.Engine | BEGIN (implicit)
+2026-03-18 12:17:18,263 | INFO | sqlalchemy.engine.Engine | SELECT users.id, users.phone, users.email, users.full_name, users.password_hash, users.role, users.status, users.is_phone_verified, users.is_email_verified, users.created_at, users.updated_at, users.last_login, users.deleted_at 
+FROM users 
+WHERE users.phone = $1::VARCHAR
+2026-03-18 12:17:18,265 | INFO | sqlalchemy.engine.Engine | [cached since 341.3s ago] ('7793969902',)
+2026-03-18 12:17:18,272 | INFO | sqlalchemy.engine.Engine | UPDATE users SET updated_at=$1::TIMESTAMP WITHOUT TIME ZONE, last_login=$2::TIMESTAMP WITHOUT TIME ZONE WHERE users.id = $3::UUID
+2026-03-18 12:17:18,273 | INFO | sqlalchemy.engine.Engine | [generated in 0.00163s] (datetime.datetime(2026, 3, 18, 6, 47, 18, 271902), datetime.datetime(2026, 3, 18, 6, 47, 18, 267329), UUID('6949901c-dfda-4e5c-bb16-6c796ec13455'))
+2026-03-18 12:17:18,287 | INFO | sqlalchemy.engine.Engine | COMMIT
+2026-03-18 12:17:18,291 | INFO | sqlalchemy.engine.Engine | BEGIN (implicit)
+2026-03-18 12:17:18,294 | INFO | sqlalchemy.engine.Engine | SELECT users.id, users.phone, users.email, users.full_name, users.password_hash, users.role, users.status, users.is_phone_verified, users.is_email_verified, users.created_at, users.updated_at, users.last_login, users.deleted_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-03-18 12:17:18,296 | INFO | sqlalchemy.engine.Engine | [generated in 0.00138s] (UUID('6949901c-dfda-4e5c-bb16-6c796ec13455'),)
+2026-03-18 12:17:18,306 | INFO | src.services.auth_service | OTP login success user_id=6949901c-dfda-4e5c-bb16-6c796ec13455
+2026-03-18 12:17:18,309 | INFO | sqlalchemy.engine.Engine | COMMIT
+2026-03-18 12:17:44,676 | INFO | sqlalchemy.engine.Engine | BEGIN (implicit)
+2026-03-18 12:17:44,678 | INFO | sqlalchemy.engine.Engine | SELECT users.id, users.phone, users.email, users.full_name, users.password_hash, users.role, users.status, users.is_phone_verified, users.is_email_verified, users.created_at, users.updated_at, users.last_login, users.deleted_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-03-18 12:17:44,679 | INFO | sqlalchemy.engine.Engine | [generated in 0.00109s] ('6949901c-dfda-4e5c-bb16-6c796ec13455',)
+2026-03-18 12:17:44,701 | INFO | sqlalchemy.engine.Engine | SELECT user_profiles.id, user_profiles.user_id, user_profiles.date_of_birth, user_profiles.gender, user_profiles.language, user_profiles.avatar_url, user_profiles.kyc_status, user_profiles.preferences, user_profiles.created_at, user_profiles.updated_at 
+FROM user_profiles 
+WHERE user_profiles.user_id = $1::UUID
+2026-03-18 12:17:44,703 | INFO | sqlalchemy.engine.Engine | [generated in 0.01675s] ('6949901c-dfda-4e5c-bb16-6c796ec13455',)
+2026-03-18 12:17:44,714 | INFO | sqlalchemy.engine.Engine | COMMIT
+2026-03-18 12:18:06,059 | INFO | sqlalchemy.engine.Engine | BEGIN (implicit)
+2026-03-18 12:18:06,060 | INFO | sqlalchemy.engine.Engine | SELECT users.id, users.phone, users.email, users.full_name, users.password_hash, users.role, users.status, users.is_phone_verified, users.is_email_verified, users.created_at, users.updated_at, users.last_login, users.deleted_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-03-18 12:18:06,060 | INFO | sqlalchemy.engine.Engine | [cached since 21.38s ago] ('6949901c-dfda-4e5c-bb16-6c796ec13455',)
+2026-03-18 12:18:06,098 | INFO | sqlalchemy.engine.Engine | ROLLBACK
+2026-03-18 12:18:27,235 | INFO | sqlalchemy.engine.Engine | BEGIN (implicit)
+2026-03-18 12:18:27,236 | INFO | sqlalchemy.engine.Engine | SELECT users.id, users.phone, users.email, users.full_name, users.password_hash, users.role, users.status, users.is_phone_verified, users.is_email_verified, users.created_at, users.updated_at, users.last_login, users.deleted_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-03-18 12:18:27,236 | INFO | sqlalchemy.engine.Engine | [cached since 42.56s ago] ('6949901c-dfda-4e5c-bb16-6c796ec13455',)
+2026-03-18 12:18:27,257 | INFO | sqlalchemy.engine.Engine | SELECT partners.id, partners.user_id, partners.business_name, partners.business_type, partners.gstin, partners.pan, partners.description, partners.logo_url, partners.contact_phone, partners.contact_email, partners.website, partners.address, partners.city, partners.state, partners.pincode, partners.latitude, partners.longitude, partners.verification_status, partners.is_active, partners.verified_at, partners.rejection_reason, partners.commission_rate, partners.total_earnings, partners.pending_payout, partners.auto_accept, partners.unavailable_dates, partners.notification_prefs, partners.rating, partners.total_reviews, partners.created_at, partners.updated_at 
+FROM partners 
+WHERE partners.user_id = $1::UUID
+2026-03-18 12:18:27,258 | INFO | sqlalchemy.engine.Engine | [generated in 0.00095s] (UUID('6949901c-dfda-4e5c-bb16-6c796ec13455'),)
+2026-03-18 12:18:27,270 | INFO | sqlalchemy.engine.Engine | COMMIT
+2026-03-18 12:18:36,895 | INFO | sqlalchemy.engine.Engine | BEGIN (implicit)
+2026-03-18 12:18:36,896 | INFO | sqlalchemy.engine.Engine | SELECT users.id, users.phone, users.email, users.full_name, users.password_hash, users.role, users.status, users.is_phone_verified, users.is_email_verified, users.created_at, users.updated_at, users.last_login, users.deleted_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-03-18 12:18:36,896 | INFO | sqlalchemy.engine.Engine | [cached since 52.22s ago] ('6949901c-dfda-4e5c-bb16-6c796ec13455',)
+2026-03-18 12:18:36,899 | INFO | sqlalchemy.engine.Engine | SELECT wallets.id, wallets.user_id, wallets.balance, wallets.status, wallets.created_at, wallets.updated_at 
+FROM wallets 
+WHERE wallets.user_id = $1::UUID
+2026-03-18 12:18:36,900 | INFO | sqlalchemy.engine.Engine | [generated in 0.00074s] ('6949901c-dfda-4e5c-bb16-6c796ec13455',)
+2026-03-18 12:18:36,923 | INFO | sqlalchemy.engine.Engine | COMMIT
+2026-03-18 12:19:00,619 | INFO | sqlalchemy.engine.Engine | BEGIN (implicit)
+2026-03-18 12:19:00,620 | INFO | sqlalchemy.engine.Engine | SELECT users.id, users.phone, users.email, users.full_name, users.password_hash, users.role, users.status, users.is_phone_verified, users.is_email_verified, users.created_at, users.updated_at, users.last_login, users.deleted_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-03-18 12:19:00,620 | INFO | sqlalchemy.engine.Engine | [cached since 75.94s ago] ('6949901c-dfda-4e5c-bb16-6c796ec13455',)
+2026-03-18 12:19:00,625 | INFO | sqlalchemy.engine.Engine | SELECT wallets.id, wallets.user_id, wallets.balance, wallets.status, wallets.created_at, wallets.updated_at 
+FROM wallets 
+WHERE wallets.user_id = $1::UUID
+2026-03-18 12:19:00,625 | INFO | sqlalchemy.engine.Engine | [cached since 23.73s ago] ('6949901c-dfda-4e5c-bb16-6c796ec13455',)
+2026-03-18 12:19:00,743 | INFO | sqlalchemy.engine.Engine | ROLLBACK
+2026-03-18 12:35:18,623 | INFO | httpx | HTTP Request: POST https://api.twilio.com/2010-04-01/Accounts/AC1788055ac9231f959d10c1c5959cfa9c/Messages.json "HTTP/1.1 201 Created"
+2026-03-18 12:35:18,625 | INFO | src.integrations.twilio | Twilio OTP sent successfully to 9959642306
