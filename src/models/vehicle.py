@@ -1,6 +1,9 @@
 """
-Module 6 - Vehicle Model
-SQLAlchemy ORM models for the Vehicle APIs
+models/vehicle.py
+Vehicle module models — fixed for LEV146 integration.
+Changes:
+  - Removed ForeignKey to bookings.id (bookings module not yet built)
+  - Uses Base from src.core.database (LEV146 pattern)
 """
 
 import uuid
@@ -18,94 +21,94 @@ from src.core.database import Base
 
 
 class VehicleType(str, enum.Enum):
-    SEDAN = "SEDAN"
-    SUV = "SUV"
+    SEDAN           = "SEDAN"
+    SUV             = "SUV"
     TEMPO_TRAVELLER = "TEMPO_TRAVELLER"
-    BUS = "BUS"
-    AUTO = "AUTO"
-    BIKE = "BIKE"
+    BUS             = "BUS"
+    AUTO            = "AUTO"
+    BIKE            = "BIKE"
 
 
 class VehicleStatus(str, enum.Enum):
-    ACTIVE = "ACTIVE"
-    INACTIVE = "INACTIVE"
+    ACTIVE            = "ACTIVE"
+    INACTIVE          = "INACTIVE"
     UNDER_MAINTENANCE = "UNDER_MAINTENANCE"
-    SUSPENDED = "SUSPENDED"
+    SUSPENDED         = "SUSPENDED"
 
 
 class DriverStatus(str, enum.Enum):
-    ACTIVE = "ACTIVE"
+    ACTIVE   = "ACTIVE"
     INACTIVE = "INACTIVE"
-    ON_TRIP = "ON_TRIP"
+    ON_TRIP  = "ON_TRIP"
 
 
 class VehicleDocumentType(str, enum.Enum):
-    RC = "RC"
-    INSURANCE = "INSURANCE"
+    RC                  = "RC"
+    INSURANCE           = "INSURANCE"
     FITNESS_CERTIFICATE = "FITNESS_CERTIFICATE"
-    PERMIT = "PERMIT"
-    PUC = "PUC"
+    PERMIT              = "PERMIT"
+    PUC                 = "PUC"
 
 
 # Base rate per km by vehicle type (in INR)
 VEHICLE_BASE_RATES = {
-    VehicleType.SEDAN: 12.0,
-    VehicleType.SUV: 16.0,
+    VehicleType.SEDAN:           12.0,
+    VehicleType.SUV:             16.0,
     VehicleType.TEMPO_TRAVELLER: 22.0,
-    VehicleType.BUS: 40.0,
-    VehicleType.AUTO: 8.0,
-    VehicleType.BIKE: 5.0,
+    VehicleType.BUS:             40.0,
+    VehicleType.AUTO:             8.0,
+    VehicleType.BIKE:             5.0,
 }
 
 
 class Vehicle(Base):
     __tablename__ = "vehicles"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    partner_id = Column(UUID(as_uuid=True), nullable=False)
+    id                  = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    partner_id          = Column(UUID(as_uuid=True), nullable=False, index=True)
 
     # Basic Info
-    vehicle_type = Column(SAEnum(VehicleType), nullable=False)
-    make = Column(String(100), nullable=False)           # e.g. Toyota
-    model = Column(String(100), nullable=False)          # e.g. Innova
-    year = Column(Integer, nullable=False)
+    vehicle_type        = Column(SAEnum(VehicleType), nullable=False)
+    make                = Column(String(100), nullable=False)
+    model               = Column(String(100), nullable=False)
+    year                = Column(Integer, nullable=False)
     registration_number = Column(String(20), unique=True, nullable=False)
-    color = Column(String(50))
+    color               = Column(String(50))
 
     # Capacity & Features
-    capacity = Column(Integer, nullable=False)           # passenger count
-    has_ac = Column(Boolean, default=True)
-    has_wifi = Column(Boolean, default=False)
-    has_gps = Column(Boolean, default=False)
-    gps_device_id = Column(String(100))
-    features = Column(JSONB, default={})                 # extra features as JSON
+    capacity            = Column(Integer, nullable=False)
+    has_ac              = Column(Boolean, default=True)
+    has_wifi            = Column(Boolean, default=False)
+    has_gps             = Column(Boolean, default=False)
+    gps_device_id       = Column(String(100))
+    features            = Column(JSONB, default=dict)
 
     # Pricing
-    price_per_km = Column(Float, nullable=False)         # INR per km
-    min_fare = Column(Float, default=200.0)              # minimum fare
+    price_per_km        = Column(Float, nullable=False)
+    min_fare            = Column(Float, default=200.0)
 
     # Location & Availability
-    current_city = Column(String(100))
-    available_cities = Column(JSONB, default=[])         # list of cities served
-    status = Column(SAEnum(VehicleStatus), default=VehicleStatus.ACTIVE)
+    current_city        = Column(String(100))
+    available_cities    = Column(JSONB, default=list)
+    status              = Column(SAEnum(VehicleStatus), default=VehicleStatus.ACTIVE)
 
     # Media
-    images = Column(JSONB, default=[])                   # list of S3 URLs
+    images              = Column(JSONB, default=list)
 
     # Stats
-    rating = Column(Float, default=0.0)
-    total_reviews = Column(Integer, default=0)
-    total_trips = Column(Integer, default=0)
+    rating              = Column(Float, default=0.0)
+    total_reviews       = Column(Integer, default=0)
+    total_trips         = Column(Integer, default=0)
 
     # Timestamps
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-    deleted_at = Column(DateTime(timezone=True), nullable=True)
+    created_at          = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at          = Column(DateTime(timezone=True), onupdate=func.now())
+    deleted_at          = Column(DateTime(timezone=True), nullable=True)
 
     # Relationships
     documents = relationship("VehicleDocument", back_populates="vehicle", cascade="all, delete-orphan")
-    drivers = relationship("Driver", back_populates="vehicle")
-    reviews = relationship("VehicleReview", back_populates="vehicle")
+    drivers   = relationship("Driver",          back_populates="vehicle")
+    reviews   = relationship("VehicleReview",   back_populates="vehicle")
 
     def __repr__(self):
         return f"<Vehicle {self.registration_number} ({self.vehicle_type})>"
@@ -114,16 +117,14 @@ class Vehicle(Base):
 class VehicleDocument(Base):
     __tablename__ = "vehicle_documents"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    vehicle_id = Column(UUID(as_uuid=True), ForeignKey("vehicles.id", ondelete="CASCADE"), nullable=False)
-
+    id            = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    vehicle_id    = Column(UUID(as_uuid=True), ForeignKey("vehicles.id", ondelete="CASCADE"), nullable=False)
     document_type = Column(SAEnum(VehicleDocumentType), nullable=False)
-    file_url = Column(String(500), nullable=False)       # S3 URL
-    expiry_date = Column(DateTime(timezone=True), nullable=True)
-    is_verified = Column(Boolean, default=False)
-
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    file_url      = Column(String(500), nullable=False)
+    expiry_date   = Column(DateTime(timezone=True), nullable=True)
+    is_verified   = Column(Boolean, default=False)
+    created_at    = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at    = Column(DateTime(timezone=True), onupdate=func.now())
 
     vehicle = relationship("Vehicle", back_populates="documents")
 
@@ -131,22 +132,19 @@ class VehicleDocument(Base):
 class Driver(Base):
     __tablename__ = "drivers"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    partner_id = Column(UUID(as_uuid=True), nullable=False)
-    vehicle_id = Column(UUID(as_uuid=True), ForeignKey("vehicles.id"), nullable=True)
-
-    name = Column(String(200), nullable=False)
-    phone = Column(String(15), nullable=False)
+    id             = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    partner_id     = Column(UUID(as_uuid=True), nullable=False, index=True)
+    vehicle_id     = Column(UUID(as_uuid=True), ForeignKey("vehicles.id"), nullable=True)
+    name           = Column(String(200), nullable=False)
+    phone          = Column(String(15), nullable=False)
     license_number = Column(String(50), unique=True, nullable=False)
     license_expiry = Column(DateTime(timezone=True), nullable=False)
-    photo_url = Column(String(500))                      # S3 URL
-
-    status = Column(SAEnum(DriverStatus), default=DriverStatus.ACTIVE)
-    rating = Column(Float, default=0.0)
-    total_trips = Column(Integer, default=0)
-
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    photo_url      = Column(String(500))
+    status         = Column(SAEnum(DriverStatus), default=DriverStatus.ACTIVE)
+    rating         = Column(Float, default=0.0)
+    total_trips    = Column(Integer, default=0)
+    created_at     = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at     = Column(DateTime(timezone=True), onupdate=func.now())
 
     vehicle = relationship("Vehicle", back_populates="drivers")
 
@@ -154,15 +152,13 @@ class Driver(Base):
 class VehicleReview(Base):
     __tablename__ = "vehicle_reviews"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    vehicle_id = Column(UUID(as_uuid=True), ForeignKey("vehicles.id"), nullable=False)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    booking_id = Column(UUID(as_uuid=True), ForeignKey("bookings.id"), nullable=True)
-
-    rating = Column(Integer, nullable=False)             # 1-5
-    comment = Column(Text)
+    id          = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    vehicle_id  = Column(UUID(as_uuid=True), ForeignKey("vehicles.id"), nullable=False)
+    user_id     = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    booking_id  = Column(UUID(as_uuid=True), nullable=True)   # ← No FK — bookings module not yet built
+    rating      = Column(Integer, nullable=False)
+    comment     = Column(Text)
     is_verified = Column(Boolean, default=False)
-
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_at  = Column(DateTime(timezone=True), server_default=func.now())
 
     vehicle = relationship("Vehicle", back_populates="reviews")
