@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 
-from src.core.database import get_db
+from src.api.deps.database import get_db
 from src.models.destination import DestinationType
 from src.schemas.destination import DestinationCreate, DestinationUpdate
 from src.services.destination_service import (
@@ -28,7 +28,7 @@ async def list_destinations(
     district: Optional[str] = Query(None, description="Filter by district"),
     page: int = Query(1, ge=1, description="Page number"),
     limit: int = Query(10, ge=1, le=100, description="Items per page"),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
     return await get_destinations(db, page=page, limit=limit, type=type, district=district)
 
@@ -38,7 +38,7 @@ async def list_destinations(
 # GET /api/v1/destinations/featured
 # ---------------------------------------
 @router.get("/featured")
-async def list_featured_destinations(db: Session = Depends(get_db)):
+async def list_featured_destinations(db: AsyncSession = Depends(get_db)):
     return await get_featured_destinations(db)
 
 
@@ -47,7 +47,7 @@ async def list_featured_destinations(db: Session = Depends(get_db)):
 # GET /api/v1/destinations/popular
 # ---------------------------------------
 @router.get("/popular")
-async def list_popular_destinations(db: Session = Depends(get_db)):
+async def list_popular_destinations(db: AsyncSession = Depends(get_db)):
     return await get_popular_destinations(db)
 
 
@@ -66,7 +66,7 @@ async def list_destination_types():
 # NOTE: always last
 # ---------------------------------------
 @router.get("/{destination_id}")
-async def retrieve_destination(destination_id: str, db: Session = Depends(get_db)):
+async def retrieve_destination(destination_id: str, db: AsyncSession = Depends(get_db)):
     return await get_destination(db, destination_id)
 
 
@@ -77,7 +77,7 @@ async def retrieve_destination(destination_id: str, db: Session = Depends(get_db
 @router.post("/")
 async def create_new_destination(
     data: DestinationCreate,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
     return await create_destination(db, data)
 
@@ -90,6 +90,6 @@ async def create_new_destination(
 async def update_existing_destination(
     destination_id: str,
     data: DestinationUpdate,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
     return await update_destination(db, destination_id, data)

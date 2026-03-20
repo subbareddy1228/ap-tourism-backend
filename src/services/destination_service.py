@@ -1,5 +1,5 @@
 from fastapi import HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 
 from src.models.destination import Destination, DestinationType
@@ -10,7 +10,7 @@ from src.repositories import destination_repo as repo
 # ─────────────────────────────────────────
 # TEMPORARY HELPERS
 # Will be replaced by src/common/responses.py
-# and src/common/pagination.py 
+# and src/common/pagination.py
 # ─────────────────────────────────────────
 
 async def success_response(data, message: str = "Success"):
@@ -29,37 +29,28 @@ async def paginate(items, total: int, page: int, limit: int):
         "page": page,
         "pages": pages,
     }
+
+
 # ─────────────────────────────────────────
 # In-memory cache (temporary until redis.py is ready)
 # ─────────────────────────────────────────
-# src/services/destination_service.py
 
-import aioredis
-
-redis = None  # initialize as None at module level
-
-async def get_redis():
-    global redis
-    if redis is None:
-        redis = await aioredis.from_url("redis://localhost")
-    return redis
+_cache = {}
 
 async def get_cache(key: str):
-    r = await get_redis()
-    return await r.get(key)
+    return _cache.get(key)
 
 async def set_cache(key: str, value, ttl: int = 300):
-    r = await get_redis()
-    await r.set(key, value, ex=ttl)
+    _cache[key] = value
 
 async def clear_cache(key: str):
-    r = await get_redis()
-    await r.delete(key)
+    _cache.pop(key, None)
+
 
 # ---------------------------------------
 # CREATE DESTINATION (Admin)
 # ---------------------------------------
-async def create_destination(db: Session, data: DestinationCreate):
+async def create_destination(db: AsyncSession, data: DestinationCreate):
 
     if await repo.slug_exists(db, slug=data.slug):
         raise HTTPException(
@@ -86,11 +77,10 @@ async def create_destination(db: Session, data: DestinationCreate):
 
     result = await repo.create(db, db_destination)
 
-    # clear list cache when new destination added
-    clear_cache("destinations:featured")
-    clear_cache("destinations:popular")
+    await clear_cache("destinations:featured")
+    await clear_cache("destinations:popular")
 
-    return success_response(
+    return await success_response(
         DestinationListResponse.model_validate(result),
         "Destination created successfully"
     )
@@ -98,10 +88,9 @@ async def create_destination(db: Session, data: DestinationCreate):
 
 # ---------------------------------------
 # GET ALL DESTINATIONS
-# page based pagination
 # ---------------------------------------
 async def get_destinations(
-    db: Session,
+    db: AsyncSession,
     page: int = 1,
     limit: int = 10,
     type: Optional[DestinationType] = None,
@@ -111,55 +100,52 @@ async def get_destinations(
     items = await repo.get_all(db, skip=skip, limit=limit, type=type, district=district)
     total = await repo.get_count(db, type=type, district=district)
 
-    data = paginate(
+    data = await paginate(
         items=[DestinationListResponse.model_validate(i) for i in items],
         total=total,
         page=page,
         limit=limit,
     )
 
-    return success_response(data)
+    return await success_response(data)
 
 
 # ---------------------------------------
 # GET FEATURED DESTINATIONS
-# Cached in memory (1 hour = 3600 seconds)
-# Will use Redis once LEV148 fills redis.py
 # ---------------------------------------
-async def get_featured_destinations(db: Session):
+async def get_featured_destinations(db: AsyncSession):
 
     cache_key = "destinations:featured"
-    cached = get_cache(cache_key)
+    cached = await get_cache(cache_key)
 
     if cached:
-        return success_response(cached, "Featured destinations (cached)")
+        return await success_response(cached, "Featured destinations (cached)")
 
     items = await repo.get_featured(db)
     data = [DestinationListResponse.model_validate(i) for i in items]
 
-    set_cache(cache_key, data)
+    await set_cache(cache_key, data)
 
-    return success_response(data, "Featured destinations")
+    return await success_response(data, "Featured destinations")
 
 
 # ---------------------------------------
 # GET POPULAR DESTINATIONS
-# Cached in memory
 # ---------------------------------------
-async def get_popular_destinations(db: Session):
+async def get_popular_destinations(db: AsyncSession):
 
     cache_key = "destinations:popular"
-    cached = get_cache(cache_key)
+    cached = await get_cache(cache_key)
 
     if cached:
-        return success_response(cached, "Popular destinations (cached)")
+        return await success_response(cached, "Popular destinations (cached)")
 
     items = await repo.get_popular(db)
     data = [DestinationListResponse.model_validate(i) for i in items]
 
-    set_cache(cache_key, data)
+    await set_cache(cache_key, data)
 
-    return success_response(data, "Popular destinations")
+    return await success_response(data, "Popular destinations")
 
 
 # ---------------------------------------
@@ -167,14 +153,13 @@ async def get_popular_destinations(db: Session):
 # ---------------------------------------
 async def get_destination_types():
     data = await repo.get_types()
-    return success_response(data, "Destination types")
+    return await success_response(data, "Destination types")
 
 
 # ---------------------------------------
 # GET DESTINATION BY ID OR SLUG
-# Full detail response
 # ---------------------------------------
-async def get_destination(db: Session, value: str):
+async def get_destination(db: AsyncSession, value: str):
 
     destination = await repo.get_by_id_or_slug(db, value)
 
@@ -184,14 +169,14 @@ async def get_destination(db: Session, value: str):
             detail=f"Destination '{value}' not found"
         )
 
-    return success_response(destination, "Destination detail")
+    return await success_response(destination, "Destination detail")
 
 
 # ---------------------------------------
 # UPDATE DESTINATION (Admin)
 # ---------------------------------------
 async def update_destination(
-    db: Session,
+    db: AsyncSession,
     destination_id: str,
     data: DestinationUpdate,
 ):
@@ -216,11 +201,10 @@ async def update_destination(
 
     result = await repo.update(db, destination)
 
-    # clear cache after update
-    clear_cache("destinations:featured")
-    clear_cache("destinations:popular")
+    await clear_cache("destinations:featured")
+    await clear_cache("destinations:popular")
 
-    return success_response(
+    return await success_response(
         DestinationListResponse.model_validate(result),
         "Destination updated successfully"
     )

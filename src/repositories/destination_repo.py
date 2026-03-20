@@ -1,7 +1,8 @@
 import re
 from typing import List, Optional
 
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, func
 
 from src.models.destination import Destination, DestinationType
 
@@ -20,78 +21,92 @@ async def _is_uuid(value: str) -> bool:
 # ─────────────────────────────────────────
 
 async def get_all(
-    db: Session,
+    db: AsyncSession,
     skip: int = 0,
     limit: int = 10,
     type: Optional[DestinationType] = None,
     district: Optional[str] = None,
 ) -> List[Destination]:
 
-    query = db.query(Destination).filter(Destination.is_active == True)
+    query = select(Destination).where(Destination.is_active == True)
 
     if type:
-        query = query.filter(Destination.type == type)
+        query = query.where(Destination.type == type)
     if district:
-        query = query.filter(Destination.district.ilike(f"%{district}%"))
+        query = query.where(Destination.district.ilike(f"%{district}%"))
 
-    return query.offset(skip).limit(limit).all()
+    result = await db.execute(query.offset(skip).limit(limit))
+    return result.scalars().all()
 
 
 async def get_count(
-    db: Session,
+    db: AsyncSession,
     type: Optional[DestinationType] = None,
     district: Optional[str] = None,
 ) -> int:
 
-    query = db.query(Destination).filter(Destination.is_active == True)
+    query = select(func.count()).select_from(Destination).where(Destination.is_active == True)
 
     if type:
-        query = query.filter(Destination.type == type)
+        query = query.where(Destination.type == type)
     if district:
-        query = query.filter(Destination.district.ilike(f"%{district}%"))
+        query = query.where(Destination.district.ilike(f"%{district}%"))
 
-    return query.count()
-
-
-async def get_by_id(db: Session, destination_id: str) -> Optional[Destination]:
-
-    return db.query(Destination).filter(
-        Destination.id == destination_id,
-        Destination.is_active == True
-    ).first()
+    result = await db.execute(query)
+    return result.scalar()
 
 
-async def get_by_slug(db: Session, slug: str) -> Optional[Destination]:
+async def get_by_id(db: AsyncSession, destination_id: str) -> Optional[Destination]:
 
-    return db.query(Destination).filter(
-        Destination.slug == slug,
-        Destination.is_active == True
-    ).first()
+    result = await db.execute(
+        select(Destination).where(
+            Destination.id == destination_id,
+            Destination.is_active == True
+        )
+    )
+    return result.scalars().first()
 
 
-async def get_by_id_or_slug(db: Session, value: str) -> Optional[Destination]:
+async def get_by_slug(db: AsyncSession, slug: str) -> Optional[Destination]:
 
-    if _is_uuid(value):
+    result = await db.execute(
+        select(Destination).where(
+            Destination.slug == slug,
+            Destination.is_active == True
+        )
+    )
+    return result.scalars().first()
+
+
+async def get_by_id_or_slug(db: AsyncSession, value: str) -> Optional[Destination]:
+
+    if await _is_uuid(value):
         return await get_by_id(db, value)
     return await get_by_slug(db, value)
 
 
-async def get_featured(db: Session) -> List[Destination]:
+async def get_featured(db: AsyncSession) -> List[Destination]:
 
-    return db.query(Destination).filter(
-        Destination.is_featured == True,
-        Destination.is_active == True
-    ).all()
+    result = await db.execute(
+        select(Destination).where(
+            Destination.is_featured == True,
+            Destination.is_active == True
+        )
+    )
+    return result.scalars().all()
 
 
-async def get_popular(db: Session) -> List[Destination]:
+async def get_popular(db: AsyncSession) -> List[Destination]:
 
-    return db.query(Destination).filter(
-        Destination.is_active == True
-    ).order_by(
-        Destination.reviews_count.desc(),
-        Destination.rating.desc()
-    ).limit(9).all()
+    result = await db.execute(
+        select(Destination).where(
+            Destination.is_active == True
+        ).order_by(
+            Destination.reviews_count.desc(),
+            Destination.rating.desc()
+        ).limit(9)
+    )
+    return result.scalars().all()
 
 
 async def get_types() -> List[str]:
@@ -99,33 +114,35 @@ async def get_types() -> List[str]:
 
 
 async def slug_exists(
-    db: Session,
+    db: AsyncSession,
     slug: str,
     exclude_id: Optional[str] = None
 ) -> bool:
 
-    query = db.query(Destination).filter(Destination.slug == slug)
+    query = select(Destination).where(Destination.slug == slug)
     if exclude_id:
-        query = query.filter(Destination.id != exclude_id)
-    return query.first() is not None
+        query = query.where(Destination.id != exclude_id)
+
+    result = await db.execute(query)
+    return result.scalars().first() is not None
 
 
 # ─────────────────────────────────────────
 # WRITE
 # ─────────────────────────────────────────
 
-async def create(db: Session, destination: Destination) -> Destination:
+async def create(db: AsyncSession, destination: Destination) -> Destination:
 
     db.add(destination)
-    db.commit()
-    db.refresh(destination)
+    await db.commit()
+    await db.refresh(destination)
 
     return destination
 
 
-async def update(db: Session, destination: Destination) -> Destination:
+async def update(db: AsyncSession, destination: Destination) -> Destination:
 
-    db.commit()
-    db.refresh(destination)
+    await db.commit()
+    await db.refresh(destination)
 
     return destination
