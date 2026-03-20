@@ -1,8 +1,24 @@
-from sqlalchemy.orm import Session
-from fastapi import HTTPException
-from typing import Optional
+"""
+services/guide_service.py
+Guide module — fixed for LEV146 integration.
+Changes:
+  - sync Session → async AsyncSession
+  - db.query() → await db.execute(select())
+  - .dict() → .model_dump()
+  - UUID primary keys
+"""
 
-from src.models.guide import Guide, GuideLanguage, GuideSpecialization, GuideDocument, GuideStatus
+from uuid import UUID
+from typing import Optional
+from datetime import datetime
+
+from fastapi import HTTPException
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+
+from src.models.guide import (
+    Guide, GuideLanguage, GuideSpecialization, GuideDocument, GuideStatus
+)
 from src.schemas.guide import (
     GuideCreateSchema, GuideUpdateSchema, GuideStatusUpdateSchema,
     GuideLanguageCreateSchema, GuideSpecializationCreateSchema,
@@ -10,106 +26,171 @@ from src.schemas.guide import (
 )
 
 
-# ─── Helpers ──────────────────────────────────────────────────────────────────
+# ─── Helpers ──────────────────────────────────────────────────
 
-async def get_guide_by_id(db: Session, guide_id: int) -> Guide:
-    guide = db.query(Guide).filter(
-        Guide.id == guide_id,
-        Guide.deleted_at == None
-    ).first()
+async def get_guide_by_id(db: AsyncSession, guide_id: UUID) -> Guide:
+    result = await db.execute(
+        select(Guide).where(Guide.id == guide_id, Guide.deleted_at.is_(None))
+    )
+    guide = result.scalar_one_or_none()
     if not guide:
         raise HTTPException(status_code=404, detail="Guide not found")
     return guide
 
 
-async def get_guide_by_user_id(db: Session, user_id: int) -> Guide:
-    guide = db.query(Guide).filter(
-        Guide.user_id == user_id,
-        Guide.deleted_at == None
-    ).first()
+async def get_guide_by_user_id(db: AsyncSession, user_id: UUID) -> Guide:
+    result = await db.execute(
+        select(Guide).where(Guide.user_id == user_id, Guide.deleted_at.is_(None))
+    )
+    guide = result.scalar_one_or_none()
     if not guide:
         raise HTTPException(status_code=404, detail="Guide profile not found")
     return guide
 
 
-# ─── Public ───────────────────────────────────────────────────────────────────
+def _guide_to_dict(guide: Guide) -> dict:
+    return {
+        "id":                 str(guide.id),
+        "user_id":            str(guide.user_id),
+        "full_name":          guide.full_name,
+        "bio":                guide.bio,
+        "profile_photo":      guide.profile_photo,
+        "city":               guide.city,
+        "state":              guide.state,
+        "experience_years":   guide.experience_years,
+        "rating":             guide.rating,
+        "total_reviews":      guide.total_reviews,
+        "total_trips":        guide.total_trips,
+        "status":             guide.status.value if guide.status else None,
+        "is_featured":        guide.is_featured,
+        "is_verified":        guide.is_verified,
+        "price_per_day":      guide.price_per_day,
+        "price_per_half_day": guide.price_per_half_day,
+        "certifications":     guide.certifications or [],
+        "destinations":       guide.destinations or [],
+        "unavailable_dates":  guide.unavailable_dates or [],
+        "created_at":         guide.created_at,
+    }
 
-async def list_guides(db: Session, city: str = None, language: str = None,
-                      specialization: str = None, min_rating: float = None,
-                      page: int = 1, limit: int = 20) -> dict:
-    query = db.query(Guide).filter(
+
+# ─── Public ───────────────────────────────────────────────────
+
+async def list_guides(
+    db: AsyncSession,
+    city: str = None,
+    language: str = None,
+    specialization: str = None,
+    min_rating: float = None,
+    page: int = 1,
+    limit: int = 20
+) -> dict:
+    from sqlalchemy import func
+    query = select(Guide).where(
         Guide.status == GuideStatus.ACTIVE,
-        Guide.deleted_at == None
+        Guide.deleted_at.is_(None)
     )
     if city:
-        query = query.filter(Guide.city.ilike(f"%{city}%"))
+        query = query.where(Guide.city.ilike(f"%{city}%"))
     if min_rating:
-        query = query.filter(Guide.rating >= min_rating)
+        query = query.where(Guide.rating >= min_rating)
     if language:
-        query = query.join(GuideLanguage).filter(GuideLanguage.language.ilike(f"%{language}%"))
+        query = query.join(GuideLanguage).where(
+            GuideLanguage.language.ilike(f"%{language}%")
+        )
     if specialization:
-        query = query.join(GuideSpecialization).filter(GuideSpecialization.specialization == specialization)
-    total = query.count()
-    guides = query.offset((page - 1) * limit).limit(limit).all()
-    return {"data": guides, "total": total, "page": page, "pages": -(-total // limit)}
+        query = query.join(GuideSpecialization).where(
+            GuideSpecialization.specialization == specialization
+        )
+
+    count_result = await db.execute(
+        select(func.count()).select_from(query.subquery())
+    )
+    total = count_result.scalar()
+
+    result = await db.execute(query.offset((page - 1) * limit).limit(limit))
+    guides = result.scalars().all()
+
+    return {
+        "data":  [_guide_to_dict(g) for g in guides],
+        "total": total,
+        "page":  page,
+        "pages": -(-total // limit) if total else 0,
+    }
 
 
-async def get_featured_guides(db: Session) -> list:
-    return db.query(Guide).filter(
-        Guide.is_featured == True,
-        Guide.status == GuideStatus.ACTIVE,
-        Guide.deleted_at == None
-    ).order_by(Guide.rating.desc()).limit(10).all()
+async def get_featured_guides(db: AsyncSession) -> list:
+    result = await db.execute(
+        select(Guide).where(
+            Guide.is_featured == True,
+            Guide.status == GuideStatus.ACTIVE,
+            Guide.deleted_at.is_(None)
+        ).order_by(Guide.rating.desc()).limit(10)
+    )
+    guides = result.scalars().all()
+    return [_guide_to_dict(g) for g in guides]
 
 
-async def get_guides_by_language(db: Session, language: str, page: int, limit: int) -> list:
-    return db.query(Guide).join(GuideLanguage).filter(
-        GuideLanguage.language.ilike(f"%{language}%"),
-        Guide.status == GuideStatus.ACTIVE,
-        Guide.deleted_at == None
-    ).offset((page - 1) * limit).limit(limit).all()
+async def get_guides_by_language(db: AsyncSession, language: str, page: int, limit: int) -> list:
+    result = await db.execute(
+        select(Guide).join(GuideLanguage).where(
+            GuideLanguage.language.ilike(f"%{language}%"),
+            Guide.status == GuideStatus.ACTIVE,
+            Guide.deleted_at.is_(None)
+        ).offset((page - 1) * limit).limit(limit)
+    )
+    guides = result.scalars().all()
+    return [_guide_to_dict(g) for g in guides]
 
 
-async def get_guides_by_specialization(db: Session, specialization: str, page: int, limit: int) -> list:
-    return db.query(Guide).join(GuideSpecialization).filter(
-        GuideSpecialization.specialization == specialization,
-        Guide.status == GuideStatus.ACTIVE,
-        Guide.deleted_at == None
-    ).offset((page - 1) * limit).limit(limit).all()
+async def get_guides_by_specialization(db: AsyncSession, specialization: str, page: int, limit: int) -> list:
+    result = await db.execute(
+        select(Guide).join(GuideSpecialization).where(
+            GuideSpecialization.specialization == specialization,
+            Guide.status == GuideStatus.ACTIVE,
+            Guide.deleted_at.is_(None)
+        ).offset((page - 1) * limit).limit(limit)
+    )
+    guides = result.scalars().all()
+    return [_guide_to_dict(g) for g in guides]
 
 
-async def get_guides_by_location(db: Session, city: str, page: int, limit: int) -> list:
-    return db.query(Guide).filter(
-        Guide.city.ilike(f"%{city}%"),
-        Guide.status == GuideStatus.ACTIVE,
-        Guide.deleted_at == None
-    ).offset((page - 1) * limit).limit(limit).all()
+async def get_guides_by_location(db: AsyncSession, city: str, page: int, limit: int) -> list:
+    result = await db.execute(
+        select(Guide).where(
+            Guide.city.ilike(f"%{city}%"),
+            Guide.status == GuideStatus.ACTIVE,
+            Guide.deleted_at.is_(None)
+        ).offset((page - 1) * limit).limit(limit)
+    )
+    guides = result.scalars().all()
+    return [_guide_to_dict(g) for g in guides]
 
 
-async def get_guide_detail(db: Session, guide_id: int) -> Guide:
-    return await get_guide_by_id(db, guide_id)
+async def get_guide_detail(db: AsyncSession, guide_id: UUID) -> dict:
+    guide = await get_guide_by_id(db, guide_id)
+    return _guide_to_dict(guide)
 
 
-async def get_guide_reviews(db: Session, guide_id: int, page: int, limit: int) -> dict:
+async def get_guide_reviews(db: AsyncSession, guide_id: UUID, page: int, limit: int) -> dict:
     await get_guide_by_id(db, guide_id)
-    # TODO: uncomment when Review module is ready
     return {"data": [], "total": 0, "page": page, "pages": 0}
 
 
-async def get_guide_availability(db: Session, guide_id: int) -> dict:
+async def get_guide_availability(db: AsyncSession, guide_id: UUID) -> dict:
     guide = await get_guide_by_id(db, guide_id)
-    return {"unavailable_dates": guide.unavailable_dates}
+    return {"unavailable_dates": guide.unavailable_dates or []}
 
 
-# ─── Protected ────────────────────────────────────────────────────────────────
+# ─── Protected ────────────────────────────────────────────────
 
-async def register_guide(db: Session, user_id: int, data: GuideCreateSchema) -> Guide:
-    existing = db.query(Guide).filter(Guide.user_id == user_id).first()
+async def register_guide(db: AsyncSession, user_id: UUID, data: GuideCreateSchema) -> dict:
+    result = await db.execute(select(Guide).where(Guide.user_id == user_id))
+    existing = result.scalar_one_or_none()
     if existing:
         raise HTTPException(status_code=409, detail="Guide profile already exists")
+
     guide = Guide(
         user_id=user_id,
-        partner_id=1,
         full_name=data.full_name,
         bio=data.bio,
         city=data.city,
@@ -117,133 +198,150 @@ async def register_guide(db: Session, user_id: int, data: GuideCreateSchema) -> 
         experience_years=data.experience_years,
         price_per_day=data.price_per_day,
         price_per_half_day=data.price_per_half_day,
-        certifications=data.certifications,
-        destinations=data.destinations,
+        certifications=data.certifications or [],
+        destinations=data.destinations or [],
     )
     db.add(guide)
-    db.commit()
-    db.refresh(guide)
-    return guide
+    await db.commit()
+    await db.refresh(guide)
+    return _guide_to_dict(guide)
 
 
-async def update_guide(db: Session, guide_id: int, user_id: int, data: GuideUpdateSchema) -> Guide:
+async def update_guide(db: AsyncSession, guide_id: UUID, user_id: UUID, data: GuideUpdateSchema) -> dict:
     guide = await get_guide_by_id(db, guide_id)
-    if guide.user_id != user_id:
+    if str(guide.user_id) != str(user_id):
         raise HTTPException(status_code=403, detail="Not authorized")
-    update_data = data.dict(exclude_unset=True)
+    update_data = data.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(guide, field, value)
-    db.commit()
-    db.refresh(guide)
-    return guide
+    await db.commit()
+    await db.refresh(guide)
+    return _guide_to_dict(guide)
 
 
-async def update_guide_status(db: Session, guide_id: int, user_id: int, data: GuideStatusUpdateSchema) -> Guide:
+async def update_guide_status(db: AsyncSession, guide_id: UUID, user_id: UUID, data: GuideStatusUpdateSchema) -> dict:
     guide = await get_guide_by_id(db, guide_id)
-    if guide.user_id != user_id:
+    if str(guide.user_id) != str(user_id):
         raise HTTPException(status_code=403, detail="Not authorized")
     guide.status = data.status
-    db.commit()
-    db.refresh(guide)
-    return guide
+    await db.commit()
+    await db.refresh(guide)
+    return _guide_to_dict(guide)
 
 
-async def update_guide_availability(db: Session, guide_id: int, user_id: int, data: GuideAvailabilityUpdateSchema) -> Guide:
+async def update_guide_availability(db: AsyncSession, guide_id: UUID, user_id: UUID, data: GuideAvailabilityUpdateSchema) -> dict:
     guide = await get_guide_by_id(db, guide_id)
-    if guide.user_id != user_id:
+    if str(guide.user_id) != str(user_id):
         raise HTTPException(status_code=403, detail="Not authorized")
     guide.unavailable_dates = data.unavailable_dates
-    db.commit()
-    db.refresh(guide)
-    return guide
+    await db.commit()
+    return {"unavailable_dates": guide.unavailable_dates}
 
 
-# ─── Languages ────────────────────────────────────────────────────────────────
+# ─── Languages ────────────────────────────────────────────────
 
-async def add_language(db: Session, guide_id: int, user_id: int, data: GuideLanguageCreateSchema):
+async def add_language(db: AsyncSession, guide_id: UUID, user_id: UUID, data: GuideLanguageCreateSchema) -> dict:
     guide = await get_guide_by_id(db, guide_id)
-    if guide.user_id != user_id:
+    if str(guide.user_id) != str(user_id):
         raise HTTPException(status_code=403, detail="Not authorized")
-    existing = db.query(GuideLanguage).filter(
-        GuideLanguage.guide_id == guide_id,
-        GuideLanguage.language == data.language
-    ).first()
-    if existing:
+
+    result = await db.execute(
+        select(GuideLanguage).where(
+            GuideLanguage.guide_id == guide_id,
+            GuideLanguage.language == data.language
+        )
+    )
+    if result.scalar_one_or_none():
         raise HTTPException(status_code=409, detail="Language already added")
+
     lang = GuideLanguage(guide_id=guide_id, language=data.language, proficiency=data.proficiency)
     db.add(lang)
-    db.commit()
-    db.refresh(lang)
-    return lang
+    await db.commit()
+    await db.refresh(lang)
+    return {"id": str(lang.id), "language": lang.language, "proficiency": lang.proficiency.value}
 
 
-async def remove_language(db: Session, guide_id: int, language_id: int, user_id: int):
+async def remove_language(db: AsyncSession, guide_id: UUID, language_id: UUID, user_id: UUID) -> dict:
     guide = await get_guide_by_id(db, guide_id)
-    if guide.user_id != user_id:
+    if str(guide.user_id) != str(user_id):
         raise HTTPException(status_code=403, detail="Not authorized")
-    lang = db.query(GuideLanguage).filter(
-        GuideLanguage.id == language_id,
-        GuideLanguage.guide_id == guide_id
-    ).first()
+
+    result = await db.execute(
+        select(GuideLanguage).where(
+            GuideLanguage.id == language_id,
+            GuideLanguage.guide_id == guide_id
+        )
+    )
+    lang = result.scalar_one_or_none()
     if not lang:
         raise HTTPException(status_code=404, detail="Language not found")
-    db.delete(lang)
-    db.commit()
+
+    await db.delete(lang)
+    await db.commit()
     return {"message": "Language removed"}
 
 
-# ─── Specializations ──────────────────────────────────────────────────────────
+# ─── Specializations ──────────────────────────────────────────
 
-async def add_specialization(db: Session, guide_id: int, user_id: int, data: GuideSpecializationCreateSchema):
+async def add_specialization(db: AsyncSession, guide_id: UUID, user_id: UUID, data: GuideSpecializationCreateSchema) -> dict:
     guide = await get_guide_by_id(db, guide_id)
-    if guide.user_id != user_id:
+    if str(guide.user_id) != str(user_id):
         raise HTTPException(status_code=403, detail="Not authorized")
-    existing = db.query(GuideSpecialization).filter(
-        GuideSpecialization.guide_id == guide_id,
-        GuideSpecialization.specialization == data.specialization
-    ).first()
-    if existing:
+
+    result = await db.execute(
+        select(GuideSpecialization).where(
+            GuideSpecialization.guide_id == guide_id,
+            GuideSpecialization.specialization == data.specialization
+        )
+    )
+    if result.scalar_one_or_none():
         raise HTTPException(status_code=409, detail="Specialization already added")
+
     spec = GuideSpecialization(guide_id=guide_id, specialization=data.specialization)
     db.add(spec)
-    db.commit()
-    db.refresh(spec)
-    return spec
+    await db.commit()
+    await db.refresh(spec)
+    return {"id": str(spec.id), "specialization": spec.specialization.value}
 
 
-async def remove_specialization(db: Session, guide_id: int, spec_id: int, user_id: int):
+async def remove_specialization(db: AsyncSession, guide_id: UUID, spec_id: UUID, user_id: UUID) -> dict:
     guide = await get_guide_by_id(db, guide_id)
-    if guide.user_id != user_id:
+    if str(guide.user_id) != str(user_id):
         raise HTTPException(status_code=403, detail="Not authorized")
-    spec = db.query(GuideSpecialization).filter(
-        GuideSpecialization.id == spec_id,
-        GuideSpecialization.guide_id == guide_id
-    ).first()
+
+    result = await db.execute(
+        select(GuideSpecialization).where(
+            GuideSpecialization.id == spec_id,
+            GuideSpecialization.guide_id == guide_id
+        )
+    )
+    spec = result.scalar_one_or_none()
     if not spec:
         raise HTTPException(status_code=404, detail="Specialization not found")
-    db.delete(spec)
-    db.commit()
+
+    await db.delete(spec)
+    await db.commit()
     return {"message": "Specialization removed"}
 
 
-# ─── Documents ────────────────────────────────────────────────────────────────
+# ─── Documents ────────────────────────────────────────────────
 
-async def upload_document(db: Session, guide_id: int, user_id: int, document_type: str, file_url: str):
+async def upload_document(db: AsyncSession, guide_id: UUID, user_id: UUID, document_type: str, file_url: str) -> dict:
     guide = await get_guide_by_id(db, guide_id)
-    if guide.user_id != user_id:
+    if str(guide.user_id) != str(user_id):
         raise HTTPException(status_code=403, detail="Not authorized")
+
     doc = GuideDocument(guide_id=guide_id, document_type=document_type, file_url=file_url)
     db.add(doc)
-    db.commit()
-    db.refresh(doc)
-    return doc
+    await db.commit()
+    await db.refresh(doc)
+    return {"id": str(doc.id), "document_type": doc.document_type, "file_url": doc.file_url}
 
 
-# ─── Bookings ─────────────────────────────────────────────────────────────────
+# ─── Bookings ─────────────────────────────────────────────────
 
-async def get_guide_bookings(db: Session, guide_id: int, user_id: int, status: str = None, page: int = 1, limit: int = 20) -> dict:
+async def get_guide_bookings(db: AsyncSession, guide_id: UUID, user_id: UUID, status: str = None, page: int = 1, limit: int = 20) -> dict:
     guide = await get_guide_by_id(db, guide_id)
-    if guide.user_id != user_id:
+    if str(guide.user_id) != str(user_id):
         raise HTTPException(status_code=403, detail="Not authorized")
-    # TODO: uncomment when LEV151 completes Booking model
     return {"data": [], "total": 0, "page": page, "pages": 0}
