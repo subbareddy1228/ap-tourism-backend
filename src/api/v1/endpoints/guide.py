@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/guides", tags=["Guides"])
 
 
-def success(data, message: str = "") -> dict:
+async def success(data, message: str = "") -> dict:
     return {"success": True, "data": data, "message": message}
 
 
