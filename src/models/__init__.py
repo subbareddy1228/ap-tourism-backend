@@ -7,3 +7,5 @@ from src.models.temple import Temple, TempleEvent, TempleReview
 from src.models.darshan import DarshanType, DarshanSlot, DarshanBooking, PoojaService, PoojaBooking, PrasadamItem, PrasadamOrder
 
 from src.models.hotel import Hotel, HotelRoom, HotelImage, HotelAmenity
+
+from src.models.vehicle import Vehicle, VehicleDocument, Driver, VehicleReview
