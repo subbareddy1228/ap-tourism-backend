@@ -54,11 +54,20 @@ def create_refresh_token(subject: Union[str, int], role: str, expires_delta=None
     return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
  
  
-def decode_token(token: str) -> Optional[dict]:
-    """Decode JWT. Returns payload or None if invalid/expired."""
+from jose import jwt, JWTError
+from src.core.config import settings
+
+
+def decode_token(token: str) -> dict | None:
     try:
-        return jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        payload = jwt.decode(
+            token,
+            settings.SECRET_KEY,
+            algorithms=[settings.ALGORITHM]
+        )
+        return payload
     except JWTError:
         return None
+ 
  
  

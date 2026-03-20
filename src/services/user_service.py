@@ -337,7 +337,7 @@ async def send_phone_verification_otp(current_user: User):
             detail="Phone is already verified"
         )
 
-    otp = generate_otp()
+    otp = await generate_otp()
 
     await store_otp(current_user.phone, otp, purpose="verify_phone")
 
