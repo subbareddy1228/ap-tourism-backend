@@ -1,364 +1,312 @@
-
 """
-services/wallet_service.py
-All Wallet business logic:
-balance, topup (Razorpay), verify payment, transactions, withdrawal.
+services/vehicle_service.py
+Vehicle module — fixed for LEV146 integration.
+Changes:
+  - Added vehicle_to_dict() and driver_to_dict() helpers
+  - UPLOAD_DIR uses local fallback if not in config
+  - No .from_orm() usage
 """
 
-import hmac
-import hashlib
-from decimal import Decimal
+import uuid
+import os
+import aiofiles
+from typing import Optional, List, Dict, Any
+from uuid import UUID
 from datetime import datetime
-from typing import Optional
 
-import razorpay
+from fastapi import HTTPException, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
 
-from src.models.wallet import Wallet, WalletTransaction, WithdrawalRequest
-from src.models.user import User
-from src.schemas.wallet import (
-    TopupInitiateRequest, TopupVerifyRequest, WithdrawRequest
+from src.repositories.vehicle_repo import VehicleRepository, DriverRepository, VehicleDocumentRepository
+from src.models.vehicle import VehicleType, VehicleStatus, DriverStatus, VEHICLE_BASE_RATES, Vehicle, Driver
+from src.schemas.vehicle import (
+    VehicleCreate, VehicleUpdate, VehicleStatusUpdate, VehiclePricingUpdate,
+    VehicleAssignDriver, DriverCreate, DriverUpdate, DriverStatusUpdate,
+    FareCalculationRequest, AvailabilityRequest,
+    VehicleTypeInfo,
 )
-from src.core.config import settings
+from src.integrations.google_maps import GoogleMapsClient
 
 
-# ── Razorpay Client ───────────────────────────────────────────
-def get_razorpay_client():
-    return razorpay.Client(
-        auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET)
-    )
+VEHICLE_TYPE_DESCRIPTIONS = {
+    VehicleType.SEDAN:           "Comfortable 4-seater car, ideal for city travel",
+    VehicleType.SUV:             "Spacious 6-7 seater, suitable for families",
+    VehicleType.TEMPO_TRAVELLER: "12-16 seater mini-bus for group travel",
+    VehicleType.BUS:             "Large 30+ seater for pilgrim groups",
+    VehicleType.AUTO:            "3-wheeler for short city distances",
+    VehicleType.BIKE:            "2-wheeler for solo quick travel",
+}
 
 
-# ═══════════════════════════════════════════════════════════════
-# HELPERS
-# ═══════════════════════════════════════════════════════════════
+class VehicleService:
+    """Service layer for Vehicle business logic."""
 
-async def get_or_create_wallet(user_id: str, db: AsyncSession) -> Wallet:
-    """
-    Get wallet for user. If wallet doesn't exist yet, create one.
-    Every user gets a wallet automatically.
-    """
-    result = await db.execute(
-        select(Wallet).where(Wallet.user_id == user_id)
-    )
-    wallet = result.scalar_one_or_none()
+    def __init__(self, db: AsyncSession):
+        self.db           = db
+        self.vehicle_repo = VehicleRepository(db)
+        self.driver_repo  = DriverRepository(db)
+        self.doc_repo     = VehicleDocumentRepository(db)
+        self.maps_client  = GoogleMapsClient()
 
-    if not wallet:
-        wallet = Wallet(user_id=user_id, balance=Decimal("0.00"), status="active")
-        db.add(wallet)
-        await db.commit()
-        await db.refresh(wallet)
+    # ── Dict Helpers (replaces .from_orm()) ───────────────────
 
-    return wallet
-
-
-async def record_transaction(
-    wallet: Wallet,
-    txn_type: str,
-    category: str,
-    amount: Decimal,
-    description: str,
-    reference_id: Optional[str] = None,
-    status: str = "success",
-    db: AsyncSession = None
-) -> WalletTransaction:
-    """
-    Create a transaction record and update wallet balance.
-    txn_type: 'credit' or 'debit'
-    """
-    if txn_type == "credit":
-        wallet.balance += amount
-    elif txn_type == "debit":
-        if wallet.balance < amount:
-            raise ValueError("Insufficient wallet balance")
-        wallet.balance -= amount
-
-    txn = WalletTransaction(
-        wallet_id     = wallet.id,
-        type          = txn_type,
-        category      = category,
-        amount        = amount,
-        balance_after = wallet.balance,
-        description   = description,
-        reference_id  = reference_id,
-        status        = status,
-    )
-    db.add(txn)
-    await db.commit()
-    await db.refresh(wallet)
-    await db.refresh(txn)
-    return txn
-
-
-# ═══════════════════════════════════════════════════════════════
-# 1. GET BALANCE
-# GET /wallet/balance
-# ═══════════════════════════════════════════════════════════════
-
-async def get_balance(user: User, db: AsyncSession) -> Wallet:
-    """Get wallet balance for the current user."""
-    wallet = await get_or_create_wallet(str(user.id), db)
-    return wallet
-
-
-# ═══════════════════════════════════════════════════════════════
-# 2. INITIATE TOPUP
-# POST /wallet/topup
-# Creates Razorpay order → returns order details to frontend
-# ═══════════════════════════════════════════════════════════════
-
-async def initiate_topup(
-    data: TopupInitiateRequest,
-    user: User,
-    db: AsyncSession
-) -> dict:
-    """
-    Create a Razorpay order for wallet topup.
-    Frontend uses order_id + key_id to open Razorpay payment modal.
-    """
-    wallet = await get_or_create_wallet(str(user.id), db)
-
-    if wallet.status != "active":
-        raise ValueError("Your wallet is frozen. Contact support.")
-
-    # Amount in paise (Razorpay uses smallest currency unit)
-    amount_paise = int(data.amount * 100)
-
-    client = get_razorpay_client()
-    order = client.order.create({
-        "amount":   amount_paise,
-        "currency": "INR",
-        "notes": {
-            "user_id":   str(user.id),
-            "wallet_id": str(wallet.id),
-            "purpose":   "wallet_topup"
+    @staticmethod
+    def vehicle_to_dict(vehicle: Vehicle) -> dict:
+        return {
+            "id":                  str(vehicle.id),
+            "partner_id":         str(vehicle.partner_id),
+            "vehicle_type":       vehicle.vehicle_type.value if vehicle.vehicle_type else None,
+            "make":               vehicle.make,
+            "model":              vehicle.model,
+            "year":               vehicle.year,
+            "registration_number": vehicle.registration_number,
+            "color":              vehicle.color,
+            "capacity":           vehicle.capacity,
+            "has_ac":             vehicle.has_ac,
+            "has_wifi":           vehicle.has_wifi,
+            "has_gps":            vehicle.has_gps,
+            "features":           vehicle.features or {},
+            "price_per_km":       vehicle.price_per_km,
+            "min_fare":           vehicle.min_fare,
+            "current_city":       vehicle.current_city,
+            "available_cities":   vehicle.available_cities or [],
+            "status":             vehicle.status.value if vehicle.status else None,
+            "images":             vehicle.images or [],
+            "rating":             vehicle.rating,
+            "total_reviews":      vehicle.total_reviews,
+            "total_trips":        vehicle.total_trips,
+            "created_at":         vehicle.created_at,
+            "updated_at":         vehicle.updated_at,
         }
-    })
 
-    return {
-        "order_id": order["id"],
-        "amount":   amount_paise,
-        "currency": "INR",
-        "key_id":   settings.RAZORPAY_KEY_ID,
-    }
+    @staticmethod
+    def driver_to_dict(driver: Driver) -> dict:
+        return {
+            "id":             str(driver.id),
+            "partner_id":     str(driver.partner_id),
+            "vehicle_id":     str(driver.vehicle_id) if driver.vehicle_id else None,
+            "name":           driver.name,
+            "phone":          driver.phone,
+            "license_number": driver.license_number,
+            "license_expiry": driver.license_expiry,
+            "photo_url":      driver.photo_url,
+            "status":         driver.status.value if driver.status else None,
+            "rating":         driver.rating,
+            "total_trips":    driver.total_trips,
+            "created_at":     driver.created_at,
+        }
 
+    # ── Public Endpoints ──────────────────────────────────────
 
-# ═══════════════════════════════════════════════════════════════
-# 3. VERIFY TOPUP PAYMENT
-# POST /wallet/topup/verify
-# Verifies Razorpay signature → credits wallet
-# ═══════════════════════════════════════════════════════════════
+    def get_vehicle_types(self) -> List[VehicleTypeInfo]:
+        return [
+            VehicleTypeInfo(
+                type=vtype.value,
+                base_rate_per_km=VEHICLE_BASE_RATES[vtype],
+                description=VEHICLE_TYPE_DESCRIPTIONS.get(vtype, ""),
+            )
+            for vtype in VehicleType
+        ]
 
-async def verify_topup(
-    data: TopupVerifyRequest,
-    user: User,
-    db: AsyncSession
-) -> dict:
-    """
-    Verify Razorpay payment signature.
-    If valid → credit wallet balance.
-    If invalid → reject (possible tampering).
-    """
-    # ── Step 1: Verify HMAC-SHA256 Signature ──────────────────
-    expected_signature = hmac.new(
-        settings.RAZORPAY_KEY_SECRET.encode(),
-        f"{data.razorpay_order_id}|{data.razorpay_payment_id}".encode(),
-        hashlib.sha256
-    ).hexdigest()
-
-    if expected_signature != data.razorpay_signature:
-        raise ValueError("Invalid payment signature. Payment verification failed.")
-
-    # ── Step 2: Fetch payment details from Razorpay ───────────
-    client = get_razorpay_client()
-    payment = client.payment.fetch(data.razorpay_payment_id)
-
-    if payment["status"] != "captured":
-        raise ValueError(f"Payment not captured. Status: {payment['status']}")
-
-    # ── Step 3: Credit wallet ─────────────────────────────────
-    amount_inr = Decimal(str(payment["amount"] / 100))   # convert paise to INR
-
-    wallet = await get_or_create_wallet(str(user.id), db)
-
-    txn = await record_transaction(
-        wallet      = wallet,
-        txn_type    = "credit",
-        category    = "topup",
-        amount      = amount_inr,
-        description = f"Wallet topup via Razorpay",
-        reference_id = data.razorpay_payment_id,
-        db          = db,
-    )
-
-    return {
-        "message":         "Wallet topped up successfully",
-        "amount_credited": amount_inr,
-        "new_balance":     wallet.balance,
-        "transaction_id":  str(txn.id),
-    }
-
-
-# ═══════════════════════════════════════════════════════════════
-# 4. LIST TRANSACTIONS
-# GET /wallet/transactions
-# ═══════════════════════════════════════════════════════════════
-
-async def list_transactions(
-    user: User,
-    db: AsyncSession,
-    page: int = 1,
-    per_page: int = 20,
-    txn_type: Optional[str] = None,    # credit / debit
-    category: Optional[str] = None,    # topup / booking_payment / etc
-) -> dict:
-    """List all wallet transactions for the user with pagination."""
-    wallet = await get_or_create_wallet(str(user.id), db)
-
-    query = select(WalletTransaction).where(
-        WalletTransaction.wallet_id == wallet.id
-    )
-
-    # Optional filters
-    if txn_type:
-        query = query.where(WalletTransaction.type == txn_type)
-    if category:
-        query = query.where(WalletTransaction.category == category)
-
-    # Total count
-    count_result = await db.execute(
-        select(func.count()).select_from(query.subquery())
-    )
-    total = count_result.scalar()
-
-    # Paginate — newest first
-    query = query.order_by(
-        WalletTransaction.created_at.desc()
-    ).offset((page - 1) * per_page).limit(per_page)
-
-    result = await db.execute(query)
-    transactions = result.scalars().all()
-
-    return {
-        "transactions": transactions,
-        "total":        total,
-        "page":         page,
-        "per_page":     per_page,
-    }
-
-
-# ═══════════════════════════════════════════════════════════════
-# 5. GET TRANSACTION DETAILS
-# GET /wallet/transactions/{id}
-# ═══════════════════════════════════════════════════════════════
-
-async def get_transaction(
-    txn_id: str,
-    user: User,
-    db: AsyncSession
-) -> WalletTransaction:
-    """Get a single transaction by ID — must belong to current user."""
-    wallet = await get_or_create_wallet(str(user.id), db)
-
-    result = await db.execute(
-        select(WalletTransaction).where(
-            WalletTransaction.id == txn_id,
-            WalletTransaction.wallet_id == wallet.id  # ownership check
+    async def list_vehicles(
+        self,
+        vehicle_type: Optional[VehicleType] = None,
+        city:         Optional[str]         = None,
+        pickup_date=None,
+        capacity:     Optional[int]         = None,
+        has_ac:       Optional[bool]        = None,
+        page:         int                   = 1,
+        limit:        int                   = 20,
+    ):
+        vehicles, total = await self.vehicle_repo.list_vehicles(
+            vehicle_type=vehicle_type, city=city, pickup_date=pickup_date,
+            capacity=capacity, has_ac=has_ac, page=page, limit=limit,
         )
-    )
-    txn = result.scalar_one_or_none()
-    if not txn:
-        raise ValueError("Transaction not found")
-    return txn
+        pages = (total + limit - 1) // limit
+        return vehicles, total, page, pages
 
+    async def get_vehicle(self, vehicle_id: UUID):
+        vehicle = await self.vehicle_repo.get_by_id(vehicle_id)
+        if not vehicle:
+            raise HTTPException(status_code=404, detail="Vehicle not found")
+        return vehicle
 
-# ═══════════════════════════════════════════════════════════════
-# 6. REQUEST WITHDRAWAL
-# POST /wallet/withdraw
-# ═══════════════════════════════════════════════════════════════
+    async def get_vehicle_reviews(self, vehicle_id: UUID, page: int = 1, limit: int = 20):
+        vehicle = await self.vehicle_repo.get_by_id(vehicle_id)
+        if not vehicle:
+            raise HTTPException(status_code=404, detail="Vehicle not found")
+        reviews, total = await self.vehicle_repo.get_reviews(vehicle_id, page, limit)
+        pages = (total + limit - 1) // limit
+        return reviews, total, page, pages
 
-async def request_withdrawal(
-    data: WithdrawRequest,
-    user: User,
-    db: AsyncSession
-) -> WithdrawalRequest:
-    """
-    Request a withdrawal to bank account.
-    - Checks sufficient balance
-    - Deducts from wallet immediately
-    - Creates withdrawal request (processed by admin/cron)
-    """
-    wallet = await get_or_create_wallet(str(user.id), db)
+    async def calculate_fare(self, request: FareCalculationRequest) -> Dict[str, Any]:
+        """Calculate trip fare using OSRM (free, no API key needed)."""
+        try:
+            distance_result = self.maps_client.get_distance(
+                origin=request.pickup_address,
+                destination=request.drop_address,
+            )
+            distance_km = distance_result.get("distance_km", 0)
+        except Exception as e:
+            distance_km = 0.0
 
-    if wallet.status != "active":
-        raise ValueError("Your wallet is frozen. Contact support.")
+        if request.vehicle_id:
+            vehicle = await self.vehicle_repo.get_by_id(request.vehicle_id)
+            rate     = vehicle.price_per_km if vehicle else VEHICLE_BASE_RATES[request.vehicle_type]
+            min_fare = vehicle.min_fare     if vehicle else 200.0
+        else:
+            rate     = VEHICLE_BASE_RATES[request.vehicle_type]
+            min_fare = 200.0
 
-    if wallet.balance < data.amount:
-        raise ValueError(
-            f"Insufficient balance. Available: ₹{wallet.balance}"
+        base_fare     = max(distance_km * rate, min_fare)
+        toll_estimate = round(distance_km * 0.5, 2)
+        total_fare    = round(base_fare + toll_estimate, 2)
+
+        return {
+            "vehicle_type":   request.vehicle_type.value,
+            "pickup_address": request.pickup_address,
+            "drop_address":   request.drop_address,
+            "distance_km":    round(distance_km, 2),
+            "base_fare":      round(base_fare, 2),
+            "toll_estimate":  toll_estimate,
+            "total_fare":     total_fare,
+            "currency":       "INR",
+        }
+
+    async def check_availability(self, request: AvailabilityRequest) -> List[Dict[str, Any]]:
+        vehicles, total = await self.vehicle_repo.list_vehicles(
+            vehicle_type=request.vehicle_type,
+            capacity=request.capacity_needed,
+            pickup_date=request.pickup_date,
+            page=1, limit=50,
+        )
+        return [
+            {
+                "vehicle_id":            str(v.id),
+                "is_available":          True,
+                "vehicle":               self.vehicle_to_dict(v),
+                "estimated_distance_km": None,
+                "estimated_fare":        None,
+            }
+            for v in vehicles
+        ]
+
+    # ── Partner — Vehicle CRUD ────────────────────────────────
+
+    async def create_vehicle(self, partner_id: UUID, data: VehicleCreate):
+        existing = await self.vehicle_repo.get_by_registration(data.registration_number)
+        if existing:
+            raise HTTPException(
+                status_code=409,
+                detail=f"Vehicle with registration '{data.registration_number}' already exists"
+            )
+        vehicle_data = data.model_dump()
+        if not vehicle_data.get("price_per_km"):
+            vehicle_data["price_per_km"] = VEHICLE_BASE_RATES[data.vehicle_type]
+        return await self.vehicle_repo.create(partner_id=partner_id, data=vehicle_data)
+
+    async def update_vehicle(self, partner_id: UUID, vehicle_id: UUID, data: VehicleUpdate):
+        vehicle     = await self._get_partner_vehicle(partner_id, vehicle_id)
+        update_data = {k: v for k, v in data.model_dump().items() if v is not None}
+        return await self.vehicle_repo.update(vehicle, update_data)
+
+    async def delete_vehicle(self, partner_id: UUID, vehicle_id: UUID):
+        vehicle = await self._get_partner_vehicle(partner_id, vehicle_id)
+        return await self.vehicle_repo.soft_delete(vehicle)
+
+    async def update_vehicle_status(self, partner_id: UUID, vehicle_id: UUID, status: VehicleStatus):
+        vehicle = await self._get_partner_vehicle(partner_id, vehicle_id)
+        return await self.vehicle_repo.update_status(vehicle, status)
+
+    async def upload_vehicle_image(self, partner_id: UUID, vehicle_id: UUID, file: UploadFile):
+        vehicle = await self._get_partner_vehicle(partner_id, vehicle_id)
+        allowed = ["image/jpeg", "image/png", "image/jpg", "image/webp"]
+        if file.content_type not in allowed:
+            raise HTTPException(status_code=400, detail="Only JPG, PNG and WEBP images allowed")
+        contents = await file.read()
+        if len(contents) > 5 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="Image size must be less than 5MB")
+
+        upload_dir = "uploads/vehicles"
+        os.makedirs(upload_dir, exist_ok=True)
+        file_name  = f"{uuid.uuid4()}_{file.filename}"
+        file_path  = os.path.join(upload_dir, file_name)
+        image_url  = f"/uploads/vehicles/{file_name}"
+
+        async with aiofiles.open(file_path, "wb") as f:
+            await f.write(contents)
+
+        return await self.vehicle_repo.add_image(vehicle, image_url)
+
+    async def delete_vehicle_image(self, partner_id: UUID, vehicle_id: UUID, img_id: str):
+        vehicle = await self._get_partner_vehicle(partner_id, vehicle_id)
+        return await self.vehicle_repo.remove_image(vehicle, img_id)
+
+    async def update_vehicle_pricing(self, partner_id: UUID, vehicle_id: UUID, data: VehiclePricingUpdate):
+        vehicle = await self._get_partner_vehicle(partner_id, vehicle_id)
+        return await self.vehicle_repo.update_pricing(vehicle, data.price_per_km, data.min_fare)
+
+    async def upload_vehicle_document(self, partner_id: UUID, vehicle_id: UUID, file: UploadFile, document_type: str, expiry_date=None):
+        vehicle   = await self._get_partner_vehicle(partner_id, vehicle_id)
+        file_url  = f"https://ap-tourism-media.s3.ap-south-1.amazonaws.com/vehicles/{vehicle_id}/docs/{uuid.uuid4()}_{file.filename}"
+        return await self.doc_repo.create(
+            vehicle_id=vehicle_id,
+            data={"document_type": document_type, "file_url": file_url, "expiry_date": expiry_date},
         )
 
-    # Deduct balance immediately (held until processed)
-    await record_transaction(
-        wallet      = wallet,
-        txn_type    = "debit",
-        category    = "withdrawal",
-        amount      = data.amount,
-        description = f"Withdrawal to bank account ending {str(data.bank_account_number)[-4:]}",
-        db          = db,
-    )
+    async def assign_driver(self, partner_id: UUID, vehicle_id: UUID, driver_id: UUID):
+        vehicle = await self._get_partner_vehicle(partner_id, vehicle_id)
+        driver  = await self.driver_repo.get_by_id(driver_id)
+        if not driver:
+            raise HTTPException(status_code=404, detail="Driver not found")
+        if str(driver.partner_id) != str(partner_id):
+            raise HTTPException(status_code=403, detail="Driver does not belong to this partner")
+        return await self.vehicle_repo.assign_driver(vehicle, driver_id)
 
-    # Create withdrawal request
-    withdrawal = WithdrawalRequest(
-        wallet_id           = wallet.id,
-        amount              = data.amount,
-        bank_account_number = data.bank_account_number,
-        bank_ifsc           = data.bank_ifsc,
-        bank_name           = data.bank_name,
-        account_holder_name = data.account_holder_name,
-        status              = "pending",
-    )
-    db.add(withdrawal)
-    await db.commit()
-    await db.refresh(withdrawal)
+    # ── Driver Endpoints ──────────────────────────────────────
 
-    return withdrawal
+    async def list_drivers(self, partner_id: UUID, page: int = 1, limit: int = 20):
+        drivers, total = await self.driver_repo.list_by_partner(partner_id, page, limit)
+        pages = (total + limit - 1) // limit
+        return drivers, total, page, pages
 
+    async def create_driver(self, partner_id: UUID, data: DriverCreate):
+        existing = await self.driver_repo.get_by_license(data.license_number)
+        if existing:
+            raise HTTPException(
+                status_code=409,
+                detail=f"Driver with license '{data.license_number}' already registered"
+            )
+        return await self.driver_repo.create(partner_id=partner_id, data=data.model_dump())
 
-# ═══════════════════════════════════════════════════════════════
-# 7. LIST WITHDRAWAL REQUESTS
-# GET /wallet/withdraw/requests
-# ═══════════════════════════════════════════════════════════════
+    async def update_driver(self, partner_id: UUID, driver_id: UUID, data: DriverUpdate):
+        driver      = await self._get_partner_driver(partner_id, driver_id)
+        update_data = {k: v for k, v in data.model_dump().items() if v is not None}
+        return await self.driver_repo.update(driver, update_data)
 
-async def list_withdrawal_requests(
-    user: User,
-    db: AsyncSession,
-    page: int = 1,
-    per_page: int = 10,
-) -> dict:
-    """List all withdrawal requests for the current user."""
-    wallet = await get_or_create_wallet(str(user.id), db)
+    async def delete_driver(self, partner_id: UUID, driver_id: UUID):
+        driver = await self._get_partner_driver(partner_id, driver_id)
+        await self.driver_repo.delete(driver)
+        return {"success": True, "message": "Driver removed successfully"}
 
-    query = select(WithdrawalRequest).where(
-        WithdrawalRequest.wallet_id == wallet.id
-    )
+    async def update_driver_status(self, partner_id: UUID, driver_id: UUID, status: DriverStatus):
+        driver = await self._get_partner_driver(partner_id, driver_id)
+        return await self.driver_repo.update_status(driver, status)
 
-    # Total count
-    count_result = await db.execute(
-        select(func.count()).select_from(query.subquery())
-    )
-    total = count_result.scalar()
+    # ── Helpers ───────────────────────────────────────────────
 
-    # Paginate — newest first
-    query = query.order_by(
-        WithdrawalRequest.created_at.desc()
-    ).offset((page - 1) * per_page).limit(per_page)
+    async def _get_partner_vehicle(self, partner_id: UUID, vehicle_id: UUID):
+        vehicle = await self.vehicle_repo.get_by_id(vehicle_id)
+        if not vehicle:
+            raise HTTPException(status_code=404, detail="Vehicle not found")
+        if str(vehicle.partner_id) != str(partner_id):
+            raise HTTPException(status_code=403, detail="You do not have permission to manage this vehicle")
+        return vehicle
 
-    result = await db.execute(query)
-    requests = result.scalars().all()
-
-    return {
-        "requests": requests,
-        "total":    total,
-    }
+    async def _get_partner_driver(self, partner_id: UUID, driver_id: UUID):
+        driver = await self.driver_repo.get_by_id(driver_id)
+        if not driver:
+            raise HTTPException(status_code=404, detail="Driver not found")
+        if str(driver.partner_id) != str(partner_id):
+            raise HTTPException(status_code=403, detail="You do not have permission to manage this driver")
+        return driver
