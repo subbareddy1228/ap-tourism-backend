@@ -9,3 +9,5 @@ from src.models.darshan import DarshanType, DarshanSlot, DarshanBooking, PoojaSe
 from src.models.hotel import Hotel, HotelRoom, HotelImage, HotelAmenity
 
 from src.models.vehicle import Vehicle, VehicleDocument, Driver, VehicleReview
+
+from src.models.guide import Guide, GuideLanguage, GuideSpecialization, GuideDocument
