@@ -16,7 +16,7 @@ from src.schemas.user import (
 from src.common.responses import APIResponse
 from src.services import user_service
 
-router = APIRouter(prefix="/user", tags=["Users"])
+router = APIRouter(prefix="/users", tags=["Users"])
 
 
 # ══════════════════ PROFILE ══════════════════

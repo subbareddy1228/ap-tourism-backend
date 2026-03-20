@@ -52,6 +52,10 @@ class Settings(BaseSettings):
     RAZORPAY_KEY_ID:     str = ""
     RAZORPAY_KEY_SECRET: str = ""
 
+    # ── Gmail SMTP ────────────────────────────────────────────
+    GMAIL_SENDER:       str = ""
+    GMAIL_APP_PASSWORD: str = ""
+
     class Config:
         env_file = ".env"
         case_sensitive = True
