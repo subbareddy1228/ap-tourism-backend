@@ -11,9 +11,10 @@ from src.schemas.package import PackageUpdate
 # HELPER
 # ─────────────────────────────────────────
 
-def _is_uuid(value: str) -> bool:
+async def _is_uuid(value: str) -> bool:
     pattern = r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
     return bool(re.match(pattern, value.lower()))
+
 
 
 # ----------------------------------
