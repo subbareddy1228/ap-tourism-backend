@@ -161,6 +161,7 @@ async def verify_topup(
     If invalid → reject (possible tampering).
     """
     # ── Step 1: Verify HMAC-SHA256 Signature ──────────────────
+    
     expected_signature = hmac.new(
         settings.RAZORPAY_KEY_SECRET.encode(),
         f"{data.razorpay_order_id}|{data.razorpay_payment_id}".encode(),

@@ -17,8 +17,13 @@ from src.models.hotel import Hotel, HotelRoom, HotelImage, HotelAmenity
 # ══════════════════ HOTEL ══════════════════
 
 async def get_hotel_by_id(db: AsyncSession, hotel_id: str) -> Hotel:
+    from sqlalchemy.orm import selectinload
     result = await db.execute(
-        select(Hotel).where(Hotel.id == hotel_id)
+        select(Hotel).options(
+            selectinload(Hotel.rooms),
+            selectinload(Hotel.images),
+            selectinload(Hotel.amenities),
+        ).where(Hotel.id == hotel_id)
     )
     hotel = result.scalar_one_or_none()
     if not hotel:
@@ -39,8 +44,13 @@ async def get_hotel_by_id_and_partner(db: AsyncSession, hotel_id: str, partner_i
 
 
 async def get_hotels_by_partner(db: AsyncSession, partner_id: str) -> List[Hotel]:
+    from sqlalchemy.orm import selectinload
     result = await db.execute(
-        select(Hotel)
+        select(Hotel).options(
+            selectinload(Hotel.rooms),
+            selectinload(Hotel.images),
+            selectinload(Hotel.amenities),
+        )
         .where(Hotel.partner_id == partner_id)
         .order_by(Hotel.created_at.desc())
     )
@@ -57,7 +67,12 @@ async def get_active_hotels(
     page: int = 1,
     limit: int = 20,
 ) -> List[Hotel]:
-    query = select(Hotel).where(
+    from sqlalchemy.orm import selectinload
+    query = select(Hotel).options(
+        selectinload(Hotel.rooms),
+        selectinload(Hotel.images),
+        selectinload(Hotel.amenities),
+    ).where(
         Hotel.is_active == True,
         Hotel.status == "ACTIVE"
     )
@@ -77,7 +92,6 @@ async def get_active_hotels(
 
     result = await db.execute(query)
     return result.scalars().all()
-
 
 async def create_hotel(db: AsyncSession, hotel: Hotel) -> Hotel:
     db.add(hotel)
