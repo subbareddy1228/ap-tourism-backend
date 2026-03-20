@@ -1,9 +1,9 @@
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.core.database import get_db
+from src.api.deps.database import get_db
 from src.models.package import PackageType
 from src.schemas.package import PackageCreate, PackageUpdate
 from src.services.package_service import (
@@ -25,7 +25,6 @@ router = APIRouter(prefix="/packages", tags=["Packages"])
 # ---------------------------------------
 # GET ALL PACKAGES
 # GET /api/v1/packages/
-# Filters: type, destination, duration, budget
 # ---------------------------------------
 @router.get("/")
 async def list_packages(
@@ -36,7 +35,7 @@ async def list_packages(
     max_price: Optional[float] = Query(None, description="Maximum price"),
     page: int = Query(1, ge=1, description="Page number"),
     limit: int = Query(10, ge=1, le=100, description="Items per page"),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
     return await get_all_packages(
         db,
@@ -55,7 +54,7 @@ async def list_packages(
 # GET /api/v1/packages/featured
 # ---------------------------------------
 @router.get("/featured")
-async def list_featured_packages(db: Session = Depends(get_db)):
+async def list_featured_packages(db: AsyncSession = Depends(get_db)):
     return await get_featured_packages_list(db)
 
 
@@ -64,7 +63,7 @@ async def list_featured_packages(db: Session = Depends(get_db)):
 # GET /api/v1/packages/popular
 # ---------------------------------------
 @router.get("/popular")
-async def list_popular_packages(db: Session = Depends(get_db)):
+async def list_popular_packages(db: AsyncSession = Depends(get_db)):
     return await get_popular_packages_list(db)
 
 
@@ -77,7 +76,7 @@ async def list_packages_by_duration(
     days: int,
     page: int = Query(1, ge=1),
     limit: int = Query(10, ge=1, le=100),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
     return await get_packages_duration(db, days=days, page=page, limit=limit)
 
@@ -85,8 +84,6 @@ async def list_packages_by_duration(
 # ---------------------------------------
 # GET PACKAGES BY BUDGET
 # GET /api/v1/packages/by-budget
-# ?range=budget | standard | premium
-# ?min=5000&max=15000 (optional custom range)
 # ---------------------------------------
 @router.get("/by-budget")
 async def list_packages_by_budget(
@@ -95,7 +92,7 @@ async def list_packages_by_budget(
     max: Optional[float] = Query(None, description="Custom max price"),
     page: int = Query(1, ge=1),
     limit: int = Query(10, ge=1, le=100),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
     return await get_packages_budget(
         db,
@@ -113,7 +110,7 @@ async def list_packages_by_budget(
 # NOTE: must be before /{value}
 # ---------------------------------------
 @router.get("/{package_id}/images")
-async def retrieve_package_images(package_id: str, db: Session = Depends(get_db)):
+async def retrieve_package_images(package_id: str, db: AsyncSession = Depends(get_db)):
     return await get_package_images_list(db, package_id)
 
 
@@ -127,7 +124,7 @@ async def retrieve_package_reviews(
     package_id: str,
     page: int = Query(1, ge=1),
     limit: int = Query(10, ge=1, le=100),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
     return await get_package_reviews_list(db, package_id=package_id, page=page, limit=limit)
 
@@ -138,7 +135,7 @@ async def retrieve_package_reviews(
 # NOTE: always last
 # ---------------------------------------
 @router.get("/{package_id}")
-async def retrieve_package(package_id: str, db: Session = Depends(get_db)):
+async def retrieve_package(package_id: str, db: AsyncSession = Depends(get_db)):
     return await get_package_details(db, package_id)
 
 
@@ -149,7 +146,7 @@ async def retrieve_package(package_id: str, db: Session = Depends(get_db)):
 @router.post("/")
 async def create_package(
     data: PackageCreate,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
     return await create_new_package(db, data)
 
@@ -162,6 +159,6 @@ async def create_package(
 async def update_package(
     package_id: str,
     data: PackageUpdate,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
     return await update_existing_package(db, package_id, data)
