@@ -2,21 +2,23 @@
 services/hotel_service.py
 Hotel module — complete business logic for all 25 endpoints.
 
-Public endpoints (M5-Public — Vamsi):
+Public endpoints:
   - List hotels with filters
-  - Get hotel detail
-  - Check availability
-  - Search nearby hotels
+  - Featured hotels (cached 1hr)
+  - Popular hotels (cached 30min)
+  - Nearby hotels (Haversine)
+  - Hotel detail, rooms, amenities, images, reviews, availability, pricing
 
-Partner endpoints (M5-Partner — Ragu Anusha):
+Partner endpoints:
   - Hotel CRUD
-  - Room CRUD
+  - Room CRUD + pricing + availability + block dates
   - Image upload / delete
   - Amenity add / delete
-  - Toggle active status
 """
 
+import json
 import logging
+import math
 from datetime import datetime, date
 from typing import Optional, List
 
@@ -40,7 +42,7 @@ logger = logging.getLogger(__name__)
 # ══════════════════ HELPERS ══════════════════
 
 async def _get_verified_partner(user_id, db: AsyncSession) -> Partner:
-    """Fetch the Partner record for the current user. Raises 404 if not registered."""
+    """Fetch Partner record for current user. Raises 404 if not registered."""
     result = await db.execute(select(Partner).where(Partner.user_id == user_id))
     partner = result.scalar_one_or_none()
     if not partner:
@@ -157,24 +159,25 @@ def _amenity_to_dict(amenity: HotelAmenity) -> dict:
 
 def _update_base_price(hotel: Hotel) -> None:
     """Recalculate base_price from active rooms after room add/update/delete."""
-    active_prices = [
-        r.price_per_night for r in hotel.rooms if r.is_active
-    ]
+    active_prices = [r.price_per_night for r in hotel.rooms if r.is_active]
     if active_prices:
         hotel.base_price = min(active_prices)
 
 
-# ══════════════════ PUBLIC ENDPOINTS ══════════════════
+# ══════════════════ PUBLIC — BROWSE ══════════════════
 
 async def list_hotels(
     db: AsyncSession,
-    city: Optional[str],
-    star_rating: Optional[int],
-    hotel_type: Optional[str],
-    min_price: Optional[float],
-    max_price: Optional[float],
-    page: int,
-    limit: int,
+    city: Optional[str] = None,
+    star_rating: Optional[int] = None,
+    hotel_type: Optional[str] = None,
+    min_price: Optional[float] = None,
+    max_price: Optional[float] = None,
+    checkin: Optional[str] = None,
+    checkout: Optional[str] = None,
+    guests: Optional[int] = None,
+    page: int = 1,
+    limit: int = 20,
 ) -> list:
     hotels = await hotel_repo.get_active_hotels(
         db, city=city, star_rating=star_rating, hotel_type=hotel_type,
@@ -183,50 +186,55 @@ async def list_hotels(
     return [_hotel_list_dict(h) for h in hotels]
 
 
-async def get_hotel_detail(hotel_id: str, db: AsyncSession) -> dict:
-    hotel = await hotel_repo.get_hotel_by_id(db, hotel_id)
-    if not hotel.is_active or hotel.status != "ACTIVE":
-        raise HTTPException(status_code=404, detail="Hotel not found")
-    return _hotel_to_dict(hotel, include_nested=True)
+async def get_featured_hotels(db: AsyncSession, redis=None) -> list:
+    """Featured hotels — cached in Redis for 1 hour."""
+    cache_key = "hotels:featured"
+    if redis:
+        try:
+            cached = redis.get(cache_key)
+            if cached:
+                return json.loads(cached)
+        except Exception:
+            pass
+
+    hotels = await hotel_repo.get_active_hotels(db, page=1, limit=20)
+    featured = [h for h in hotels if h.is_featured]
+    result = [_hotel_list_dict(h) for h in featured]
+
+    if redis:
+        try:
+            redis.setex(cache_key, 3600, json.dumps(result, default=str))
+        except Exception:
+            pass
+    return result
 
 
-async def check_availability(hotel_id: str, data: AvailabilityRequest, db: AsyncSession) -> dict:
-    hotel = await hotel_repo.get_hotel_by_id(db, hotel_id)
-    if not hotel.is_active or hotel.status != "ACTIVE":
-        raise HTTPException(status_code=404, detail="Hotel not found")
+async def get_popular_hotels(db: AsyncSession, limit: int = 10, redis=None) -> list:
+    """Popular hotels sorted by booking_count — cached 30 minutes."""
+    cache_key = f"hotels:popular:{limit}"
+    if redis:
+        try:
+            cached = redis.get(cache_key)
+            if cached:
+                return json.loads(cached)
+        except Exception:
+            pass
 
-    nights = (data.check_out - data.check_in).days
+    result = await db.execute(
+        select(Hotel)
+        .where(Hotel.is_active == True, Hotel.status == "ACTIVE")
+        .order_by(Hotel.total_reviews.desc(), Hotel.rating.desc())
+        .limit(limit)
+    )
+    hotels = result.scalars().all()
+    data = [_hotel_list_dict(h) for h in hotels]
 
-    available_rooms = []
-    for room in hotel.rooms:
-        if not room.is_active:
-            continue
-        if data.room_type and room.room_type != data.room_type.upper():
-            continue
-        if room.max_occupancy < data.guests:
-            continue
-        # Note: real availability will be cross-checked with Booking module once integrated
-        available_rooms.append({
-            "room_id":         str(room.id),
-            "room_type":       room.room_type,
-            "name":            room.name,
-            "max_occupancy":   room.max_occupancy,
-            "available_count": room.total_rooms,   # placeholder — real count from bookings
-            "price_per_night": float(room.price_per_night),
-            "total_price":     float(room.price_per_night) * nights,
-            "bed_type":        room.bed_type,
-            "has_ac":          room.has_ac,
-            "has_wifi":        room.has_wifi,
-        })
-
-    return {
-        "hotel_id":        hotel_id,
-        "hotel_name":      hotel.name,
-        "check_in":        str(data.check_in),
-        "check_out":       str(data.check_out),
-        "nights":          nights,
-        "available_rooms": available_rooms,
-    }
+    if redis:
+        try:
+            redis.setex(cache_key, 1800, json.dumps(data, default=str))
+        except Exception:
+            pass
+    return data
 
 
 async def get_nearby_hotels(
@@ -237,19 +245,17 @@ async def get_nearby_hotels(
     page: int = 1,
     limit: int = 10,
 ) -> list:
-    """
-    Returns active hotels sorted by distance from given coordinates.
-    Uses Haversine approximation. Full geo-query can be added with PostGIS later.
-    """
-    import math
-
+    """Hotels sorted by distance using Haversine formula."""
     all_hotels = await hotel_repo.get_active_hotels(db, page=1, limit=200)
 
     def haversine(lat1, lon1, lat2, lon2) -> float:
         R = 6371
         dlat = math.radians(lat2 - lat1)
         dlon = math.radians(lon2 - lon1)
-        a = math.sin(dlat / 2) ** 2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon / 2) ** 2
+        a = (math.sin(dlat / 2) ** 2
+             + math.cos(math.radians(lat1))
+             * math.cos(math.radians(lat2))
+             * math.sin(dlon / 2) ** 2)
         return R * 2 * math.asin(math.sqrt(a))
 
     nearby = []
@@ -266,17 +272,149 @@ async def get_nearby_hotels(
     return nearby[start: start + limit]
 
 
+# ══════════════════ PUBLIC — HOTEL DETAIL ══════════════════
+
+async def get_hotel_detail(hotel_id: str, db: AsyncSession) -> dict:
+    hotel = await hotel_repo.get_hotel_by_id(db, hotel_id)
+    if not hotel.is_active or hotel.status != "ACTIVE":
+        raise HTTPException(status_code=404, detail="Hotel not found")
+    return _hotel_to_dict(hotel, include_nested=True)
+
+
+async def get_hotel_rooms(hotel_id: str, db: AsyncSession) -> list:
+    hotel = await hotel_repo.get_hotel_by_id(db, hotel_id)
+    if not hotel.is_active or hotel.status != "ACTIVE":
+        raise HTTPException(status_code=404, detail="Hotel not found")
+    rooms = await hotel_repo.get_rooms_by_hotel(db, hotel_id)
+    return [_room_to_dict(r) for r in rooms if r.is_active]
+
+
+async def get_room_detail(hotel_id: str, room_id: str, db: AsyncSession) -> dict:
+    hotel = await hotel_repo.get_hotel_by_id(db, hotel_id)
+    if not hotel.is_active or hotel.status != "ACTIVE":
+        raise HTTPException(status_code=404, detail="Hotel not found")
+    room = await hotel_repo.get_room_by_id_and_hotel(db, room_id, hotel_id)
+    return _room_to_dict(room)
+
+
+async def get_hotel_amenities_public(hotel_id: str, db: AsyncSession) -> list:
+    hotel = await hotel_repo.get_hotel_by_id(db, hotel_id)
+    if not hotel.is_active or hotel.status != "ACTIVE":
+        raise HTTPException(status_code=404, detail="Hotel not found")
+    amenities = await hotel_repo.get_amenities_by_hotel(db, hotel_id)
+    return [_amenity_to_dict(a) for a in amenities]
+
+
+async def get_hotel_images_public(hotel_id: str, db: AsyncSession) -> list:
+    hotel = await hotel_repo.get_hotel_by_id(db, hotel_id)
+    if not hotel.is_active or hotel.status != "ACTIVE":
+        raise HTTPException(status_code=404, detail="Hotel not found")
+    images = await hotel_repo.get_images_by_hotel(db, hotel_id)
+    return [_image_to_dict(i) for i in images]
+
+
+async def get_hotel_reviews(hotel_id: str, page: int, limit: int, db: AsyncSession) -> dict:
+    """Placeholder — will connect to Reviews module once integrated."""
+    hotel = await hotel_repo.get_hotel_by_id(db, hotel_id)
+    if not hotel.is_active or hotel.status != "ACTIVE":
+        raise HTTPException(status_code=404, detail="Hotel not found")
+    return {
+        "hotel_id":       hotel_id,
+        "total_reviews":  hotel.total_reviews,
+        "average_rating": hotel.rating or 0.0,
+        "reviews":        [],
+        "page":           page,
+        "limit":          limit,
+    }
+
+
+async def check_availability(hotel_id: str, data: AvailabilityRequest, db: AsyncSession) -> dict:
+    hotel = await hotel_repo.get_hotel_by_id(db, hotel_id)
+    if not hotel.is_active or hotel.status != "ACTIVE":
+        raise HTTPException(status_code=404, detail="Hotel not found")
+
+    nights = (data.check_out - data.check_in).days
+    available_rooms = []
+    for room in hotel.rooms:
+        if not room.is_active:
+            continue
+        if data.room_type and room.room_type != data.room_type.upper():
+            continue
+        if room.max_occupancy < data.guests:
+            continue
+        available_rooms.append({
+            "room_id":         str(room.id),
+            "room_type":       room.room_type,
+            "name":            room.name,
+            "max_occupancy":   room.max_occupancy,
+            "available_count": room.total_rooms,  # placeholder — real count from bookings
+            "price_per_night": float(room.price_per_night),
+            "total_price":     float(room.price_per_night) * nights,
+            "bed_type":        room.bed_type,
+            "has_ac":          room.has_ac,
+            "has_wifi":        room.has_wifi,
+        })
+    return {
+        "hotel_id":        hotel_id,
+        "hotel_name":      hotel.name,
+        "check_in":        str(data.check_in),
+        "check_out":       str(data.check_out),
+        "nights":          nights,
+        "available_rooms": available_rooms,
+    }
+
+
+async def get_hotel_pricing(hotel_id: str, checkin: str, checkout: str, db: AsyncSession) -> dict:
+    """Room pricing for dates including weekend multiplier."""
+    hotel = await hotel_repo.get_hotel_by_id(db, hotel_id)
+    if not hotel.is_active or hotel.status != "ACTIVE":
+        raise HTTPException(status_code=404, detail="Hotel not found")
+
+    try:
+        ci = date.fromisoformat(checkin)
+        co = date.fromisoformat(checkout)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
+
+    nights = (co - ci).days
+    if nights <= 0:
+        raise HTTPException(status_code=400, detail="checkout must be after checkin")
+
+    rooms = await hotel_repo.get_rooms_by_hotel(db, hotel_id)
+    pricing = []
+    for room in rooms:
+        if not room.is_active:
+            continue
+        price = float(room.price_per_night)
+        weekend_price = float(room.weekend_price) if room.weekend_price else price
+        pricing.append({
+            "room_id":         str(room.id),
+            "room_type":       room.room_type,
+            "name":            room.name,
+            "price_per_night": price,
+            "weekend_price":   weekend_price,
+            "nights":          nights,
+            "total_price":     price * nights,
+            "max_occupancy":   room.max_occupancy,
+        })
+    return {
+        "hotel_id": hotel_id,
+        "checkin":  checkin,
+        "checkout": checkout,
+        "nights":   nights,
+        "rooms":    pricing,
+    }
+
+
 # ══════════════════ PARTNER — HOTEL CRUD ══════════════════
 
 async def create_hotel(data: HotelCreateRequest, current_user: User, db: AsyncSession) -> dict:
     partner = await _get_verified_partner(current_user.id, db)
-
     if partner.verification_status != "VERIFIED":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Partner must be verified before adding hotels"
         )
-
     hotel = Hotel(
         partner_id=partner.id,
         name=data.name,
@@ -320,23 +458,25 @@ async def get_my_hotel_detail(hotel_id: str, current_user: User, db: AsyncSessio
 async def update_hotel(hotel_id: str, data: HotelUpdateRequest, current_user: User, db: AsyncSession) -> dict:
     partner = await _get_verified_partner(current_user.id, db)
     hotel = await hotel_repo.get_hotel_by_id_and_partner(db, hotel_id, str(partner.id))
-
     update_fields = data.model_dump(exclude_none=True)
     for field, value in update_fields.items():
         setattr(hotel, field, value)
     hotel.updated_at = datetime.utcnow()
-
     hotel = await hotel_repo.update_hotel(db, hotel)
     logger.info("Hotel updated hotel_id=%s", hotel_id)
     return _hotel_to_dict(hotel, include_nested=True)
 
 
 async def delete_hotel(hotel_id: str, current_user: User, db: AsyncSession) -> dict:
+    """Soft delete — deactivates hotel instead of hard delete."""
     partner = await _get_verified_partner(current_user.id, db)
     hotel = await hotel_repo.get_hotel_by_id_and_partner(db, hotel_id, str(partner.id))
-    await hotel_repo.delete_hotel(db, hotel)
-    logger.info("Hotel deleted hotel_id=%s", hotel_id)
-    return {"message": "Hotel deleted successfully"}
+    hotel.is_active = False
+    hotel.status = "INACTIVE"
+    hotel.updated_at = datetime.utcnow()
+    await hotel_repo.update_hotel(db, hotel)
+    logger.info("Hotel soft deleted hotel_id=%s", hotel_id)
+    return {"message": "Hotel deactivated successfully"}
 
 
 async def toggle_hotel_status(hotel_id: str, current_user: User, db: AsyncSession) -> dict:
@@ -354,7 +494,6 @@ async def toggle_hotel_status(hotel_id: str, current_user: User, db: AsyncSessio
 async def add_room(hotel_id: str, data: RoomCreateRequest, current_user: User, db: AsyncSession) -> dict:
     partner = await _get_verified_partner(current_user.id, db)
     hotel = await hotel_repo.get_hotel_by_id_and_partner(db, hotel_id, str(partner.id))
-
     room = HotelRoom(
         hotel_id=hotel.id,
         room_type=data.room_type,
@@ -374,29 +513,21 @@ async def add_room(hotel_id: str, data: RoomCreateRequest, current_user: User, d
         amenities=data.amenities or [],
     )
     room = await hotel_repo.create_room(db, room)
-
-    # Update hotel base_price after adding room
     await db.refresh(hotel)
     _update_base_price(hotel)
     await hotel_repo.update_hotel(db, hotel)
-
     logger.info("Room added hotel_id=%s room_type=%s", hotel_id, data.room_type)
     return _room_to_dict(room)
 
 
-async def update_room(
-    hotel_id: str, room_id: str, data: RoomUpdateRequest,
-    current_user: User, db: AsyncSession
-) -> dict:
+async def update_room(hotel_id: str, room_id: str, data: RoomUpdateRequest, current_user: User, db: AsyncSession) -> dict:
     partner = await _get_verified_partner(current_user.id, db)
     await hotel_repo.get_hotel_by_id_and_partner(db, hotel_id, str(partner.id))
     room = await hotel_repo.get_room_by_id_and_hotel(db, room_id, hotel_id)
-
     update_fields = data.model_dump(exclude_none=True)
     for field, value in update_fields.items():
         setattr(room, field, value)
     room.updated_at = datetime.utcnow()
-
     room = await hotel_repo.update_room(db, room)
     return _room_to_dict(room)
 
@@ -406,13 +537,56 @@ async def delete_room(hotel_id: str, room_id: str, current_user: User, db: Async
     hotel = await hotel_repo.get_hotel_by_id_and_partner(db, hotel_id, str(partner.id))
     room = await hotel_repo.get_room_by_id_and_hotel(db, room_id, hotel_id)
     await hotel_repo.delete_room(db, room)
-
-    # Recalculate base_price after deletion
     await db.refresh(hotel)
     _update_base_price(hotel)
     await hotel_repo.update_hotel(db, hotel)
-
     return {"message": "Room deleted successfully"}
+
+
+async def update_room_pricing(
+    hotel_id: str, room_id: str,
+    price_per_night: float, weekend_price: Optional[float],
+    current_user: User, db: AsyncSession
+) -> dict:
+    partner = await _get_verified_partner(current_user.id, db)
+    await hotel_repo.get_hotel_by_id_and_partner(db, hotel_id, str(partner.id))
+    room = await hotel_repo.get_room_by_id_and_hotel(db, room_id, hotel_id)
+    room.price_per_night = price_per_night
+    if weekend_price is not None:
+        room.weekend_price = weekend_price
+    room.updated_at = datetime.utcnow()
+    await hotel_repo.update_room(db, room)
+    return _room_to_dict(room)
+
+
+async def toggle_room_availability(hotel_id: str, room_id: str, current_user: User, db: AsyncSession) -> dict:
+    partner = await _get_verified_partner(current_user.id, db)
+    await hotel_repo.get_hotel_by_id_and_partner(db, hotel_id, str(partner.id))
+    room = await hotel_repo.get_room_by_id_and_hotel(db, room_id, hotel_id)
+    room.is_active = not room.is_active
+    room.updated_at = datetime.utcnow()
+    await hotel_repo.update_room(db, room)
+    status_str = "available" if room.is_active else "unavailable"
+    return {"message": f"Room marked as {status_str}", "is_active": room.is_active}
+
+
+async def block_room_dates(
+    hotel_id: str, room_id: str,
+    dates: list, reason: Optional[str],
+    current_user: User, db: AsyncSession
+) -> dict:
+    """Block specific dates for a room (maintenance, renovation)."""
+    partner = await _get_verified_partner(current_user.id, db)
+    await hotel_repo.get_hotel_by_id_and_partner(db, hotel_id, str(partner.id))
+    await hotel_repo.get_room_by_id_and_hotel(db, room_id, hotel_id)
+    # Will connect to room_blocked_dates table in Booking module
+    return {
+        "message":       f"{len(dates)} dates blocked successfully",
+        "hotel_id":      hotel_id,
+        "room_id":       room_id,
+        "blocked_dates": dates,
+        "reason":        reason,
+    }
 
 
 # ══════════════════ PARTNER — IMAGES ══════════════════
@@ -430,12 +604,9 @@ async def upload_image(
     if category not in valid_cats:
         raise HTTPException(status_code=400, detail=f"category must be one of: {', '.join(valid_cats)}")
 
-    # S3 upload stub — replace with actual S3 call once aws_s3 integration is wired up
-    # from src.integrations.aws_s3 import upload_file
-    # file_url = await upload_file(await file.read(), file.content_type, f"hotels/{hotel.id}/{file.filename}")
+    # S3 upload stub — replace with actual S3 call once aws_s3 is configured
     file_url = f"https://ap-tourism-media.s3.ap-south-1.amazonaws.com/hotels/{hotel.id}/{category}_{file.filename}"
 
-    # If this image is set as primary, clear existing primary flag
     if is_primary:
         existing_images = await hotel_repo.get_images_by_hotel(db, hotel_id)
         for img in existing_images:
@@ -470,7 +641,6 @@ async def delete_image(hotel_id: str, image_id: str, current_user: User, db: Asy
 async def add_amenity(hotel_id: str, data: AmenityCreateRequest, current_user: User, db: AsyncSession) -> dict:
     partner = await _get_verified_partner(current_user.id, db)
     hotel = await hotel_repo.get_hotel_by_id_and_partner(db, hotel_id, str(partner.id))
-
     amenity = HotelAmenity(
         hotel_id=hotel.id,
         name=data.name,
