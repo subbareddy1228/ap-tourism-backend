@@ -27,3 +27,8 @@ class UserStatus(str, Enum):
     INACTIVE  = "inactive"
     SUSPENDED = "suspended"
     DELETED   = "deleted"
+
+class PackageType(str, Enum):
+    PILGRIMAGE = "PILGRIMAGE"
+    LEISURE = "LEISURE"
+    ADVENTURE = "ADVENTURE"
