@@ -8,7 +8,7 @@ Changes:
   - prefix /payments (not /payment) — consistent with LEV146 naming
 """
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.database import get_db
@@ -179,14 +179,27 @@ async def pay_later_apply(
     return await apply_pay_later(db, data)
 
 
+from src.integrations.razorpay import verify_webhook_signature as rzp_verify_webhook
+
 # ─── POST /webhook/razorpay (no auth) ─────────
 @router.post("/webhook/razorpay", summary="Razorpay webhook")
 async def razorpay_webhook(
-    payload: WebhookPayload,
+    request: Request,
     db: AsyncSession = Depends(get_db),
 ):
-    """Called by Razorpay on payment events. No auth required."""
-    return await handle_webhook(db, payload.dict())
+    """
+    Called by Razorpay on payment events.
+    Verifies X-Razorpay-Signature before processing.
+    """
+    raw_body = await request.body()
+    signature = request.headers.get("X-Razorpay-Signature", "")
+
+    if not rzp_verify_webhook(raw_body, signature):
+        raise HTTPException(status_code=400, detail="Invalid webhook signature.")
+
+    import json
+    payload = json.loads(raw_body)
+    return await handle_webhook(db, payload)
 
 
 # ─── GET /{transaction_id} ────────────────────

@@ -105,7 +105,7 @@ async def register_user(data: RegisterRequest, db: AsyncSession) -> dict:
 
 async def send_otp(phone: str, purpose: str) -> dict:
 
-    otp = await generate_otp()
+    otp = generate_otp()
 
     await store_otp(phone, otp, purpose=purpose)
     await send_sms_otp(phone, otp)

@@ -102,30 +102,45 @@ class DarshanBooking(Base):
 
     booking_id = Column(
         UUID(as_uuid=True),
-        ForeignKey("bookings.id"),
+        ForeignKey("bookings.id", ondelete="CASCADE"),
         nullable=False,
         unique=True,
-        index=True,
+        index=True
     )
 
-    temple_id = Column(UUID(as_uuid=True), nullable=False, index=True)
-    darshan_slot_id = Column(UUID(as_uuid=True), nullable=False, index=True)
-    darshan_type_id = Column(UUID(as_uuid=True), nullable=False, index=True)
+    temple_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("temples.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
+
+    darshan_slot_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("darshan_slots.id", ondelete="CASCADE"),
+        nullable=False
+    )
+
+    darshan_type_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("darshan_types.id", ondelete="CASCADE"),
+        nullable=False
+    )
 
     darshan_date = Column(Date, nullable=False)
     darshan_time = Column(Time, nullable=False)
 
     num_persons = Column(Integer, nullable=False)
-    price_per_person = Column(Numeric(10, 2), nullable=False)
-    total_price = Column(Numeric(10, 2), nullable=False)
+
+    price_per_person = Column(Numeric(10,2), nullable=False)
+    total_price = Column(Numeric(10,2), nullable=False)
 
     devotee_details = Column(JSONB, nullable=False)
+
     ticket_number = Column(String(50), unique=True)
 
-    booking = relationship("Booking", back_populates="darshan_booking", uselist=False)
-
-    slot = relationship("DarshanSlot", back_populates="bookings")
-
+    booking = relationship("Booking", back_populates="darshan_booking")
+    temple = relationship("Temple", back_populates="darshan_bookings")
 
 # ─────────────────────────────────────────────
 # Pooja Service
@@ -193,6 +208,13 @@ class PoojaBooking(Base):
     __tablename__ = "pooja_bookings"
 
     id                = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    booking_id = Column(
+    UUID(as_uuid=True),
+    ForeignKey("bookings.id", ondelete="CASCADE"),
+    nullable=False,
+    unique=True,
+    index=True
+)
     temple_id         = Column(UUID(as_uuid=True), ForeignKey("temples.id", ondelete="CASCADE"), nullable=False, index=True)
     pooja_service_id  = Column(UUID(as_uuid=True), ForeignKey("pooja_services.id", ondelete="CASCADE"), nullable=False)
     slot_id           = Column(UUID(as_uuid=True), ForeignKey("pooja_slots.id", ondelete="CASCADE"), nullable=True)
@@ -212,6 +234,13 @@ class PoojaBooking(Base):
     temple        = relationship("Temple",       back_populates="pooja_bookings")
     pooja_service = relationship("PoojaService", back_populates="bookings")
     slot          = relationship("PoojaSlot",    back_populates="bookings")
+    booking_id = Column(
+    UUID(as_uuid=True),
+    ForeignKey("bookings.id", ondelete="CASCADE"),
+    nullable=False,
+    unique=True,
+    index=True
+)
 
 
 # ─────────────────────────────────────────────

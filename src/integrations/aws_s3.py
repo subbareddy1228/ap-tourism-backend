@@ -53,7 +53,7 @@ async def upload_avatar(
         async with _s3_client() as s3:
 
             await s3.put_object(
-                Bucket=settings.AWS_S3_BUCKET,
+                Bucket=settings.AWS_BUCKET_NAME,
                 Key=key,
                 Body=file_bytes,
                 ContentType=content_type,
@@ -61,7 +61,7 @@ async def upload_avatar(
             )
 
         url = (
-            f"https://{settings.AWS_S3_BUCKET}.s3."
+            f"https://{settings.AWS_BUCKET_NAME}.s3."
             f"{settings.AWS_REGION}.amazonaws.com/{key}"
         )
 
@@ -88,7 +88,7 @@ async def delete_avatar(avatar_url: str) -> None:
     try:
 
         prefix = (
-            f"https://{settings.AWS_S3_BUCKET}.s3."
+            f"https://{settings.AWS_BUCKET_NAME}.s3."
             f"{settings.AWS_REGION}.amazonaws.com/"
         )
 
@@ -99,7 +99,7 @@ async def delete_avatar(avatar_url: str) -> None:
             async with _s3_client() as s3:
 
                 await s3.delete_object(
-                    Bucket=settings.AWS_S3_BUCKET,
+                    Bucket=settings.AWS_BUCKET_NAME,
                     Key=key,
                 )
 

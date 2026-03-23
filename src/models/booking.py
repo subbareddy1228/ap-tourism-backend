@@ -45,6 +45,13 @@ class Booking(Base):
     __tablename__ = "bookings"
 
     id             = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    booking_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("bookings.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True
+    )
+
     booking_number = Column(String(20), unique=True, nullable=False)   # e.g. APT-20260306-0001
     user_id        = Column(UUID(as_uuid=True), nullable=False)        # FK → users.id (M2)
 
@@ -86,6 +93,11 @@ class Booking(Base):
     prasadam_orders = relationship("PrasadamOrder",   back_populates="booking")
     travelers       = relationship("BookingTraveler", back_populates="booking")
     addons          = relationship("BookingAddon",    back_populates="booking")
+    pooja_booking = relationship(
+    "PoojaBooking",
+    back_populates="booking",
+    uselist=False
+)
 
     # ── indexes ──
     # Composite indexes cover user_id + status/type/dates — no separate index=True needed

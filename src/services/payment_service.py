@@ -1,7 +1,4 @@
-import hashlib
-import hmac
 import logging
-import uuid
 from datetime import datetime, timedelta
 from typing import Optional
 from uuid import UUID
@@ -23,6 +20,12 @@ from src.schemas.payment import (
     PayLaterApplyRequest, PayLaterApplyResponse,
 )
 from src.core.config import settings
+from src.integrations.razorpay import (
+    create_order as rzp_create_order,
+    verify_payment_signature as rzp_verify_signature,
+    create_refund as rzp_create_refund,
+    get_refund_status as rzp_get_refund_status,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +63,14 @@ def get_payment_methods() -> PaymentMethodsResponse:
 
 async def initiate_payment(db: AsyncSession, data: InitiatePaymentRequest) -> InitiatePaymentResponse:
     try:
-        razorpay_order_id = f"order_{uuid.uuid4().hex[:16]}"
+        # Create a real Razorpay order — returns order_id used by frontend checkout
+        order = rzp_create_order(
+            amount_inr=float(data.amount),
+            booking_id=str(data.booking_id),
+            notes=data.notes or {},
+        )
+        razorpay_order_id = order["id"]
+
         now = datetime.utcnow()
         txn = Transaction(
             booking_id        = data.booking_id,
@@ -78,15 +88,19 @@ async def initiate_payment(db: AsyncSession, data: InitiatePaymentRequest) -> In
         db.add(txn)
         await db.commit()
         await db.refresh(txn)
+
         return InitiatePaymentResponse(
-            success=True, transaction_id=txn.id,
+            success=True,
+            transaction_id=txn.id,
             razorpay_order_id=razorpay_order_id,
-            amount=data.amount, currency=data.currency,
+            razorpay_key_id=settings.RAZORPAY_KEY_ID,   # frontend needs this for checkout
+            amount=data.amount,
+            currency=data.currency,
             message="Payment initiated successfully.",
         )
     except Exception as e:
         await db.rollback()
-        logger.error(f"Initiate error: {e}")
+        logger.error("Initiate payment failed booking_id=%s error=%s", data.booking_id, str(e))
         return InitiatePaymentResponse(success=False, amount=data.amount, message=f"Failed: {str(e)}")
 
 
@@ -100,19 +114,25 @@ async def verify_payment(db: AsyncSession, data: VerifyPaymentRequest) -> Verify
     if not txn:
         return VerifyPaymentResponse(success=False, status="not_found", message="Transaction not found.")
 
-    body     = f"{data.razorpay_order_id}|{data.razorpay_payment_id}"
-    expected = hmac.new(settings.RAZORPAY_KEY_SECRET.encode(), body.encode(), hashlib.sha256).hexdigest()
-    is_valid = hmac.compare_digest(expected, data.razorpay_signature)
+    # Use integration layer — keeps signature logic in one place
+    is_valid = rzp_verify_signature(
+        razorpay_order_id=data.razorpay_order_id,
+        razorpay_payment_id=data.razorpay_payment_id,
+        razorpay_signature=data.razorpay_signature,
+    )
     now = datetime.utcnow()
 
     if is_valid:
-        txn.status = "SUCCESS"; txn.razorpay_payment_id = data.razorpay_payment_id
+        txn.status = "SUCCESS"
+        txn.razorpay_payment_id = data.razorpay_payment_id
         txn.razorpay_signature = data.razorpay_signature
-        txn.completed_at = now; txn.updated_at = now
+        txn.completed_at = now
+        txn.updated_at = now
         await db.commit()
         return VerifyPaymentResponse(success=True, transaction_id=txn.id, status="SUCCESS", message="Payment verified.")
     else:
-        txn.status = "FAILED"; txn.updated_at = now
+        txn.status = "FAILED"
+        txn.updated_at = now
         await db.commit()
         return VerifyPaymentResponse(success=False, transaction_id=txn.id, status="FAILED", message="Signature verification failed.")
 
@@ -217,19 +237,37 @@ async def request_refund(db: AsyncSession, data: RefundRequest) -> RefundRespons
         return RefundResponse(success=False, message="Transaction not found.")
     if str(txn.status) != "SUCCESS":
         return RefundResponse(success=False, message="Only successful transactions can be refunded.")
+    if not txn.razorpay_payment_id:
+        return RefundResponse(success=False, message="No Razorpay payment ID on record — cannot refund.")
+
+    refund_amount = data.amount or float(txn.amount)
+
     try:
+        # Call real Razorpay refund API
+        rzp_refund = rzp_create_refund(
+            razorpay_payment_id=txn.razorpay_payment_id,
+            amount_inr=refund_amount,
+            notes={"reason": data.reason or "Customer request"},
+        )
+
         refund = Refund(
-            transaction_id = txn.id,
-            user_id        = data.user_id,
-            amount         = data.amount or float(txn.amount),
-            status         = "pending",
-            reason         = data.reason,
+            transaction_id     = txn.id,
+            user_id            = data.user_id,
+            amount             = refund_amount,
+            status             = rzp_refund.get("status", "pending"),
+            reason             = data.reason,
+            razorpay_refund_id = rzp_refund.get("id"),   # store for status polling
         )
         db.add(refund)
-        txn.status = "REFUNDED"; txn.updated_at = datetime.utcnow()
+        txn.status = "REFUNDED"
+        txn.updated_at = datetime.utcnow()
         await db.commit()
         await db.refresh(refund)
-        return RefundResponse(success=True, refund=RefundOut.model_validate(refund), message="Refund submitted.")
+        return RefundResponse(success=True, refund=RefundOut.model_validate(refund), message="Refund initiated with Razorpay.")
+
+    except RuntimeError as e:
+        await db.rollback()
+        return RefundResponse(success=False, message=str(e))
     except Exception as e:
         await db.rollback()
         return RefundResponse(success=False, message=f"Refund failed: {str(e)}")
@@ -240,6 +278,18 @@ async def get_refund(db: AsyncSession, refund_id: UUID) -> RefundResponse:
     refund = result.scalar_one_or_none()
     if not refund:
         return RefundResponse(success=False, message="Refund not found.")
+
+    # Poll Razorpay for live status if still pending
+    if refund.status == "pending" and getattr(refund, "razorpay_refund_id", None):
+        try:
+            rzp_data = rzp_get_refund_status(refund.razorpay_refund_id)
+            live_status = rzp_data.get("status", refund.status)
+            if live_status != refund.status:
+                refund.status = live_status
+                await db.commit()
+        except Exception:
+            pass  # best-effort — return cached status on poll failure
+
     return RefundResponse(success=True, refund=RefundOut.model_validate(refund), message="OK")
 
 
