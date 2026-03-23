@@ -207,41 +207,60 @@ class PoojaSlot(Base):
 class PoojaBooking(Base):
     __tablename__ = "pooja_bookings"
 
-    id                = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    booking_id = Column(
-    UUID(as_uuid=True),
-    ForeignKey("bookings.id", ondelete="CASCADE"),
-    nullable=False,
-    unique=True,
-    index=True
-)
-    temple_id         = Column(UUID(as_uuid=True), ForeignKey("temples.id", ondelete="CASCADE"), nullable=False, index=True)
-    pooja_service_id  = Column(UUID(as_uuid=True), ForeignKey("pooja_services.id", ondelete="CASCADE"), nullable=False)
-    slot_id           = Column(UUID(as_uuid=True), ForeignKey("pooja_slots.id", ondelete="CASCADE"), nullable=True)
-    user_id           = Column(UUID(as_uuid=True), nullable=False, index=True)
-    # FIX (W6): safe default
-    booking_reference = Column(String(20), unique=True, nullable=False, default=lambda: _generate_reference("POJ"))
-    num_persons       = Column(Integer, nullable=False, default=1)
-    total_amount      = Column(Float, nullable=False)
-    status            = Column(String(20), default="PENDING", nullable=False)
-    payment_id        = Column(String(100), nullable=True)
-    devotee_name      = Column(String(255), nullable=True)
-    gotram            = Column(String(100), nullable=True)
-    special_requests  = Column(Text, nullable=True)
-    created_at        = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at        = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
-    temple        = relationship("Temple",       back_populates="pooja_bookings")
+    booking_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("bookings.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+        index=True
+    )
+
+    temple_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("temples.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
+
+    pooja_service_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("pooja_services.id", ondelete="CASCADE"),
+        nullable=False
+    )
+
+    slot_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("pooja_slots.id", ondelete="CASCADE"),
+        nullable=True
+    )
+
+    user_id = Column(UUID(as_uuid=True), nullable=False, index=True)
+
+    booking_reference = Column(
+        String(20),
+        unique=True,
+        nullable=False,
+        default=lambda: _generate_reference("POJ")
+    )
+
+    num_persons = Column(Integer, nullable=False, default=1)
+    total_amount = Column(Float, nullable=False)
+    status = Column(String(20), default="PENDING", nullable=False)
+    payment_id = Column(String(100), nullable=True)
+
+    devotee_name = Column(String(255), nullable=True)
+    gotram = Column(String(100), nullable=True)
+    special_requests = Column(Text, nullable=True)
+
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    booking = relationship("Booking", back_populates="pooja_booking")
+    temple = relationship("Temple", back_populates="pooja_bookings")
     pooja_service = relationship("PoojaService", back_populates="bookings")
-    slot          = relationship("PoojaSlot",    back_populates="bookings")
-    booking_id = Column(
-    UUID(as_uuid=True),
-    ForeignKey("bookings.id", ondelete="CASCADE"),
-    nullable=False,
-    unique=True,
-    index=True
-)
-
+    slot = relationship("PoojaSlot", back_populates="bookings")
 
 # ─────────────────────────────────────────────
 # Prasadam Item
