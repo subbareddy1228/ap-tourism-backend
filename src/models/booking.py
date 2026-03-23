@@ -79,7 +79,7 @@ class Booking(Base):
     # ── relationships ──
     hotel_booking   = relationship("HotelBooking",    back_populates="booking", uselist=False)
     vehicle_booking = relationship("VehicleBooking",  back_populates="booking", uselist=False)
-    darshan_booking = relationship("DarshanBooking",  back_populates="booking", uselist=False)
+    darshan_booking = relationship("DarshanBooking", back_populates="booking",  uselist=False)
     package_booking = relationship("PackageBooking",  back_populates="booking", uselist=False)
     guide_booking   = relationship("GuideBooking",    back_populates="booking", uselist=False)
     pooja_booking   = relationship("PoojaBooking",    back_populates="booking", uselist=False)
@@ -165,32 +165,6 @@ class VehicleBooking(Base):
     booking = relationship("Booking", back_populates="vehicle_booking")
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# DARSHAN_BOOKINGS
-# ERD columns verified ✅  |  All 12 columns present
-# ─────────────────────────────────────────────────────────────────────────────
-
-class DarshanBooking(Base):
-    __tablename__ = "darshan_bookings"
-
-    id              = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    booking_id      = Column(UUID(as_uuid=True), ForeignKey("bookings.id"),
-                             nullable=False, unique=True, index=True)
-    temple_id       = Column(UUID(as_uuid=True), nullable=False, index=True)   # FK → temples.id       (M7)
-    darshan_slot_id = Column(UUID(as_uuid=True), nullable=False, index=True)   # FK → darshan_slots.id (M7)
-    darshan_type_id = Column(UUID(as_uuid=True), nullable=False, index=True)   # FK → darshan_types.id (M7)
-
-    darshan_date     = Column(Date,           nullable=False)
-    darshan_time     = Column(Time,           nullable=False)
-    num_persons      = Column(Integer,        nullable=False)
-    price_per_person = Column(Numeric(10, 2), nullable=False)
-    total_price      = Column(Numeric(10, 2), nullable=False)
-
-    devotee_details = Column(JSONB,      nullable=False)   # [{name, age, id_proof_type, id_proof_number}]
-    ticket_number   = Column(String(50), nullable=True, unique=True)
-
-    booking = relationship("Booking", back_populates="darshan_booking")
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # PACKAGE_BOOKINGS
@@ -245,55 +219,6 @@ class GuideBooking(Base):
     locations_to_cover = Column(JSONB,       nullable=True)   # [destination_id, ...]
 
     booking = relationship("Booking", back_populates="guide_booking")
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# POOJA_BOOKINGS
-# ERD columns verified ✅  |  All 10 columns present
-# ─────────────────────────────────────────────────────────────────────────────
-
-class PoojaBooking(Base):
-    __tablename__ = "pooja_bookings"
-
-    id               = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    booking_id       = Column(UUID(as_uuid=True), ForeignKey("bookings.id"),
-                              nullable=False, unique=True, index=True)
-    pooja_service_id = Column(UUID(as_uuid=True), nullable=False, index=True)   # FK → pooja_services.id (M7)
-
-    pooja_date = Column(Date, nullable=False)
-    pooja_time = Column(Time, nullable=True)
-
-    devotee_names        = Column(JSONB,         nullable=False)   # ["name1", "name2"]
-    gothram              = Column(String(100),    nullable=True)
-    nakshatra            = Column(String(100),    nullable=True)
-    special_instructions = Column(Text,           nullable=True)
-    price                = Column(Numeric(10, 2), nullable=False)
-
-    booking = relationship("Booking", back_populates="pooja_booking")
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# PRASADAM_ORDERS
-# ERD columns verified ✅  |  All 9 columns present
-# ─────────────────────────────────────────────────────────────────────────────
-
-class PrasadamOrder(Base):
-    __tablename__ = "prasadam_orders"
-
-    id               = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    booking_id       = Column(UUID(as_uuid=True), ForeignKey("bookings.id"),
-                              nullable=False, index=True)
-    prasadam_item_id = Column(UUID(as_uuid=True), nullable=False, index=True)   # FK → prasadam_items.id (M7)
-
-    quantity            = Column(Integer,        nullable=False, default=1)
-    unit_price          = Column(Numeric(10, 2), nullable=False)
-    total_price         = Column(Numeric(10, 2), nullable=False)
-    delivery_address_id = Column(UUID(as_uuid=True), nullable=True)             # FK → user_addresses.id (M2)
-    delivery_status     = Column(Enum(DeliveryStatus), nullable=False,
-                                 default=DeliveryStatus.PENDING, index=True)
-    tracking_number     = Column(String(100), nullable=True)
-
-    booking = relationship("Booking", back_populates="prasadam_orders")
 
 
 # ─────────────────────────────────────────────────────────────────────────────

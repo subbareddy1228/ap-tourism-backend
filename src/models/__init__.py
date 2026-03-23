@@ -14,4 +14,4 @@ from src.models.guide import Guide, GuideLanguage, GuideSpecialization, GuideDoc
 
 from src.models.destination import Destination
 from .package import Package
-from .booking import booking
+from .booking import Booking

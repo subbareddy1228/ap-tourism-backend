@@ -3,13 +3,14 @@ import random
 import string
 from datetime import datetime, date
 from sqlalchemy import (
-    Column, String, Text, Float, Integer, Boolean,
+    Column, Numeric, String, Text, Float, Integer, Boolean,
     DateTime, Date, Time, ForeignKey, event
 )
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
 from src.core.database import Base
 from sqlalchemy import UniqueConstraint
+from src.models.booking import Booking
 from src.models.temple import Temple
 
 
@@ -99,29 +100,31 @@ class DarshanBooking(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
-    temple_id = Column(UUID(as_uuid=True), ForeignKey("temples.id", ondelete="CASCADE"), nullable=False, index=True)
-    slot_id   = Column(UUID(as_uuid=True), ForeignKey("darshan_slots.id", ondelete="CASCADE"), nullable=False, index=True)
+    booking_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("bookings.id"),
+        nullable=False,
+        unique=True,
+        index=True,
+    )
 
-    user_id = Column(UUID(as_uuid=True), nullable=False, index=True)
+    temple_id = Column(UUID(as_uuid=True), nullable=False, index=True)
+    darshan_slot_id = Column(UUID(as_uuid=True), nullable=False, index=True)
+    darshan_type_id = Column(UUID(as_uuid=True), nullable=False, index=True)
 
-    booking_reference = Column(String(20), unique=True, nullable=False, index=True,
-                               default=lambda: _generate_reference("DRS"))
+    darshan_date = Column(Date, nullable=False)
+    darshan_time = Column(Time, nullable=False)
 
-    num_persons  = Column(Integer, nullable=False, default=1)
-    total_amount = Column(Float, default=0.0, nullable=False)
+    num_persons = Column(Integer, nullable=False)
+    price_per_person = Column(Numeric(10, 2), nullable=False)
+    total_price = Column(Numeric(10, 2), nullable=False)
 
-    status = Column(String(20), default="PENDING", nullable=False)
+    devotee_details = Column(JSONB, nullable=False)
+    ticket_number = Column(String(50), unique=True)
 
-    payment_id = Column(String(100), nullable=True)
-    qr_code    = Column(Text, nullable=True)
+    booking = relationship("Booking", back_populates="darshan_booking", uselist=False)
 
-    pilgrim_details = Column(JSONB, server_default=text("'[]'"))
-
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
-
-    temple = relationship("Temple", back_populates="darshan_bookings")
-    slot   = relationship("DarshanSlot", back_populates="bookings")
+    slot = relationship("DarshanSlot", back_populates="bookings")
 
 
 # ─────────────────────────────────────────────

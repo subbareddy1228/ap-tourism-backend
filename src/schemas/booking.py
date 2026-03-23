@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from datetime import date, time, datetime
 from decimal import Decimal
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
@@ -81,33 +81,50 @@ class PaymentInfoSchema(BaseModel):
 # ─────────────────────────────────────────────────────────────────────────────
 
 class CartItemAddRequest(BaseModel):
-    """POST /cart/add
-    Excel: Add item to cart — {entity_type, entity_id, date, guests, options}.
-    Validate availability first.
-    """
-    entity_type: BookingType    = Field(..., description="hotel | vehicle | darshan | package | guide")
-    entity_id:   UUID           = Field(..., description="ID of the hotel / vehicle / temple / package / guide")
-    date:        date           = Field(..., description="Travel / check-in / darshan date")
-    guests:      int            = Field(1, ge=1, le=50)
-    options:     Optional[dict] = Field(None, description="room_id | slot_id | trip_type | etc.")
+    """POST /cart/add"""
 
+    entity_type: BookingType = Field(
+        ...,
+        description="hotel | vehicle | darshan | package | guide"
+    )
+
+    entity_id: UUID = Field(
+        ...,
+        description="ID of the hotel / vehicle / temple / package / guide"
+    )
+
+    travel_date: date = Field(
+        ...,
+        description="Travel / check-in / darshan date"
+    )
+
+    guests: int = Field(
+        default=1,
+        ge=1,
+        le=50
+    )
+
+    options: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Additional service options (room_id, slot_id, trip_type etc.)"
+    )
 
 class CartItemUpdateRequest(BaseModel):
     """PUT /cart/{item_id}
     Excel: Update cart item such as dates or guests count.
     """
-    date:    Optional[date] = None
+    travel_date: Optional[date] = None
     guests:  Optional[int]  = Field(None, ge=1, le=50)
-    options: Optional[dict] = None
+    options: Optional[Dict[str, Any]] = None
 
 
 class CartItemResponse(BaseModel):
     item_id:     str           # Redis key fragment — str is correct (Redis keys are strings)
     entity_type: BookingType
     entity_id:   UUID
-    date:        date
+    travel_date: date
     guests:      int
-    options:     Optional[dict] = None
+    options:     Optional[Dict[str, Any]] = None
     added_at:    datetime
 
 
@@ -246,21 +263,19 @@ class BookPrasadamRequest(BaseModel):
 
 
 class BookPackageRequest(BaseModel):
-    """POST /bookings/package
-    Excel: Book tour package with start_date, group_size, traveler_details.
-    ERD:   package_bookings has start_date + end_date — both required.
-    """
     package_id:       UUID
     start_date:       date
-    end_date:         date                           # cross-checked: ERD package_bookings has end_date
-    num_adults:       int                            = Field(1, ge=1, le=50)
-    num_children:     int                            = Field(0, ge=0, le=20)
-    customizations:   Optional[dict]                 = None   # {meals, room_type, extra_stops}
+    end_date:         date
+    num_adults:       int = Field(1, ge=1, le=50)
+    num_children:     int = Field(0, ge=0, le=20)
+
+    customizations:   Optional[Dict[str, Any]] = None
+
     traveler_details: Optional[List[TravelerSchema]] = None
-    special_requests: Optional[str]                  = Field(None, max_length=1000)
+    special_requests: Optional[str] = Field(None, max_length=1000)
     contact_details:  Optional[ContactDetailsSchema] = None
-    addons:           Optional[List[AddonSchema]]    = None
-    coupon_code:      Optional[str]                  = Field(None, max_length=50)
+    addons:           Optional[List[AddonSchema]] = None
+    coupon_code:      Optional[str] = Field(None, max_length=50)
 
     @field_validator("end_date")
     @classmethod
@@ -425,7 +440,7 @@ class PackageBookingDetail(BaseModel):
     package_price:  Decimal
     addon_charges:  Decimal
     total_price:    Decimal
-    customizations: Optional[Any]
+    customizations: Optional[Dict[str, Any]] = None
 
     model_config = {"from_attributes": True}
 

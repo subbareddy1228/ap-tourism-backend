@@ -24,7 +24,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.database import get_db
-from src.core.dependencies import get_current_user, get_redis
+from src.core.dependencies import get_current_user
+from src.core.redis import get_redis
 from src.models.user import User
 from src.schemas.booking import (
     # Cart
