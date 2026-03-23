@@ -17,3 +17,5 @@ from .package import Package
 from .booking import Booking
 
 from src.models.transaction import Transaction, SavedCard, Refund
+
+from src.models.coupon import Coupon

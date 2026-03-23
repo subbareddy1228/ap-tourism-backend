@@ -4,7 +4,7 @@ from enum import Enum as PyEnum
 from sqlalchemy import Boolean, Column, DateTime, Float, ForeignKey, Integer, String, Text, JSON, Numeric
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
-from src.database import Base
+from src.core.database import Base
 # Enums for use in schemas/services
 class DiscountType(str, PyEnum):
     PERCENTAGE   = "percentage"

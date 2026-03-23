@@ -2,98 +2,117 @@ import uuid
 import random
 import string
 from datetime import datetime, date
+
 from sqlalchemy import (
-    Column, Numeric, String, Text, Float, Integer, Boolean,
-    DateTime, Date, Time, ForeignKey, event
+    Column, String, Text, Float, Integer, Boolean,
+    DateTime, Date, Time, ForeignKey, Numeric
 )
+
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
+
 from src.core.database import Base
-from sqlalchemy import UniqueConstraint
-from src.models.booking import Booking
-from src.models.temple import Temple
 
 
-def _generate_reference(prefix: str) -> str:
+# ---------------------------------------------------------
+# Utility
+# ---------------------------------------------------------
+
+def generate_reference(prefix: str) -> str:
     today = date.today().strftime("%Y%m%d")
     suffix = ''.join(random.choices(string.ascii_uppercase + string.digits, k=4))
     return f"{prefix}-{today}-{suffix}"
 
 
-# ─────────────────────────────────────────────
+# ---------------------------------------------------------
 # Darshan Type
-# GET /{id}/darshan-types          — List: FREE, SPECIAL_ENTRY, SUPRABHATA, VIP
-# GET /{id}/darshan-types/{type_id} — Detail: price, duration, what_is_included
-# ─────────────────────────────────────────────
+# ---------------------------------------------------------
+
 class DarshanType(Base):
     __tablename__ = "darshan_types"
 
-    id                      = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    temple_id               = Column(UUID(as_uuid=True), ForeignKey("temples.id", ondelete="CASCADE"), nullable=False, index=True)
-    name                    = Column(String(100), nullable=False)
-    darshan_type            = Column(String(50), nullable=False, index=True)   # FREE, SPECIAL_ENTRY, SUPRABHATA, VIP
-    description             = Column(Text, nullable=True)
-    price                   = Column(Float, default=0.0, nullable=False)
-    duration_minutes        = Column(Integer, default=30, nullable=False)
-    what_is_included        = Column(Text, nullable=True)
-    max_persons_per_booking = Column(Integer, default=6, nullable=False)
-    is_active               = Column(Boolean, default=True, nullable=False)
-    created_at              = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at              = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
-    temple = relationship("Temple",      back_populates="darshan_types")
-    slots  = relationship("DarshanSlot", back_populates="darshan_type", cascade="all, delete-orphan")
+    temple_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("temples.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
+
+    name = Column(String(100), nullable=False)
+    darshan_type = Column(String(50), nullable=False, index=True)
+
+    description = Column(Text)
+    price = Column(Float, default=0.0)
+    duration_minutes = Column(Integer, default=30)
+
+    what_is_included = Column(Text)
+
+    max_persons_per_booking = Column(Integer, default=6)
+
+    is_active = Column(Boolean, default=True)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    temple = relationship("Temple", back_populates="darshan_types")
+
+    slots = relationship(
+        "DarshanSlot",
+        back_populates="darshan_type",
+        cascade="all, delete-orphan"
+    )
 
 
-# ─────────────────────────────────────────────
+# ---------------------------------------------------------
 # Darshan Slot
-# GET /{id}/darshan-slots         — All slots next 30 days, cached 2 min
-# GET /{id}/darshan-slots/{date}  — Slots for date: quota, booked_count, available_count
-# POST /{id}/darshan/check-availability
-# ─────────────────────────────────────────────
+# ---------------------------------------------------------
+
 class DarshanSlot(Base):
     __tablename__ = "darshan_slots"
 
-    id              = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    temple_id       = Column(UUID(as_uuid=True), ForeignKey("temples.id", ondelete="CASCADE"), nullable=False, index=True)
-    darshan_type_id = Column(UUID(as_uuid=True), ForeignKey("darshan_types.id", ondelete="CASCADE"), nullable=False, index=True)
-    slot_date       = Column(Date, nullable=False, index=True)
-    start_time      = Column(Time, nullable=False)
-    end_time        = Column(Time, nullable=False)
-    total_quota     = Column(Integer, nullable=False)
-    booked_count = Column(Integer, default=0, nullable=False)
-    is_active       = Column(Boolean, default=True, nullable=False)
-    created_at      = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at      = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
-    temple       = relationship("Temple",           back_populates="darshan_slots")
+    temple_id = Column(UUID(as_uuid=True), ForeignKey("temples.id"), nullable=False)
+    darshan_type_id = Column(UUID(as_uuid=True), ForeignKey("darshan_types.id"), nullable=False)
+
+    slot_date = Column(Date, nullable=False)
+
+    start_time = Column(Time, nullable=False)
+    end_time = Column(Time, nullable=False)
+
+    total_quota = Column(Integer, nullable=False)
+
+    booked_count = Column(Integer, default=0)
+
+    is_active = Column(Boolean, default=True)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    temple = relationship("Temple", back_populates="darshan_slots")
+
     darshan_type = relationship("DarshanType", back_populates="slots")
-    bookings     = relationship("DarshanBooking",   back_populates="slot", cascade="all, delete-orphan")
+
+    bookings = relationship(
+        "DarshanBooking",
+        back_populates="slot",
+        cascade="all, delete-orphan"
+    )
 
     @property
-    def available_count(self) -> int:
+    def available_count(self):
         return max(0, self.total_quota - self.booked_count)
 
     @property
-    def is_full(self) -> bool:
+    def is_full(self):
         return self.booked_count >= self.total_quota
 
 
-# ─────────────────────────────────────────────
+# ---------------------------------------------------------
 # Darshan Booking
-# POST /{id}/darshan/book              — Lock Redis 15 min → PENDING → trigger payment
-# GET /{id}/darshan/booking/{id}       — Booking detail with QR ticket
-# ─────────────────────────────────────────────
-import uuid
-from datetime import datetime
-from sqlalchemy import Column, String, Integer, Float, DateTime, ForeignKey, Text, text
-from sqlalchemy.dialects.postgresql import UUID, JSONB
-from sqlalchemy.orm import relationship
-
-def _generate_reference(prefix: str):
-    import random, string
-    return prefix + ''.join(random.choices(string.digits, k=8))
-
+# ---------------------------------------------------------
 
 class DarshanBooking(Base):
     __tablename__ = "darshan_bookings"
@@ -104,224 +123,266 @@ class DarshanBooking(Base):
         UUID(as_uuid=True),
         ForeignKey("bookings.id", ondelete="CASCADE"),
         nullable=False,
-        unique=True,
-        index=True
+        unique=True
     )
 
-    temple_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("temples.id", ondelete="CASCADE"),
-        nullable=False,
-        index=True
-    )
+    temple_id = Column(UUID(as_uuid=True), ForeignKey("temples.id"), nullable=False)
 
-    darshan_slot_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("darshan_slots.id", ondelete="CASCADE"),
-        nullable=False
-    )
+    darshan_slot_id = Column(UUID(as_uuid=True), ForeignKey("darshan_slots.id"))
 
-    darshan_type_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("darshan_types.id", ondelete="CASCADE"),
-        nullable=False
-    )
+    darshan_type_id = Column(UUID(as_uuid=True), ForeignKey("darshan_types.id"))
 
     darshan_date = Column(Date, nullable=False)
     darshan_time = Column(Time, nullable=False)
 
     num_persons = Column(Integer, nullable=False)
 
-    price_per_person = Column(Numeric(10,2), nullable=False)
-    total_price = Column(Numeric(10,2), nullable=False)
+    price_per_person = Column(Numeric(10, 2), nullable=False)
+    total_price = Column(Numeric(10, 2), nullable=False)
 
-    devotee_details = Column(JSONB, nullable=False)
+    devotee_details = Column(JSONB)
 
     ticket_number = Column(String(50), unique=True)
 
     booking = relationship("Booking", back_populates="darshan_booking")
+
     temple = relationship("Temple", back_populates="darshan_bookings")
 
-# ─────────────────────────────────────────────
+    slot = relationship("DarshanSlot", back_populates="bookings")
+
+
+# ---------------------------------------------------------
 # Pooja Service
-# GET /{id}/pooja-services          — List with price
-# GET /{id}/pooja-services/{id}     — Detail: description, duration, items, priest requirements
-# GET /{id}/pooja-services/{id}/slots — Available slots
-# ─────────────────────────────────────────────
+# ---------------------------------------------------------
+
 class PoojaService(Base):
     __tablename__ = "pooja_services"
 
-    id                  = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    temple_id           = Column(UUID(as_uuid=True), ForeignKey("temples.id", ondelete="CASCADE"), nullable=False, index=True)
-    name                = Column(String(255), nullable=False)
-    description         = Column(Text, nullable=True)
-    price               = Column(Float, nullable=False)
-    duration_minutes    = Column(Integer, default=30, nullable=False)
-    items_included      = Column(Text, nullable=True)
-    priest_requirements = Column(Text, nullable=True)
-    max_persons         = Column(Integer, default=10, nullable=False)
-    is_active           = Column(Boolean, default=True, nullable=False)
-    created_at          = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at          = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
-    temple   = relationship("Temple",       back_populates="pooja_services")
-    slots    = relationship("PoojaSlot",    back_populates="pooja_service", cascade="all, delete-orphan")
-    bookings = relationship("PoojaBooking", back_populates="pooja_service", cascade="all, delete-orphan")
+    temple_id = Column(UUID(as_uuid=True), ForeignKey("temples.id"))
+
+    name = Column(String(255), nullable=False)
+
+    description = Column(Text)
+
+    price = Column(Float)
+
+    duration_minutes = Column(Integer)
+
+    items_included = Column(Text)
+
+    priest_requirements = Column(Text)
+
+    max_persons = Column(Integer)
+
+    is_active = Column(Boolean, default=True)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    temple = relationship("Temple", back_populates="pooja_services")
+
+    slots = relationship(
+        "PoojaSlot",
+        back_populates="pooja_service",
+        cascade="all, delete-orphan"
+    )
+
+    bookings = relationship(
+        "PoojaBooking",
+        back_populates="pooja_service"
+    )
 
 
-# ─────────────────────────────────────────────
+# ---------------------------------------------------------
 # Pooja Slot
-# GET /{id}/pooja-services/{id}/slots — Available time slots
-# ─────────────────────────────────────────────
+# ---------------------------------------------------------
+
 class PoojaSlot(Base):
     __tablename__ = "pooja_slots"
 
-    id               = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    temple_id        = Column(UUID(as_uuid=True), ForeignKey("temples.id", ondelete="CASCADE"), nullable=False, index=True)
-    pooja_service_id = Column(UUID(as_uuid=True), ForeignKey("pooja_services.id", ondelete="CASCADE"), nullable=False, index=True)
-    slot_date        = Column(Date, nullable=False, index=True)
-    start_time       = Column(Time, nullable=False)
-    end_time         = Column(Time, nullable=False)
-    total_quota      = Column(Integer, nullable=False)
-    booked_count     = Column(Integer, default=0, nullable=False)
-    is_active        = Column(Boolean, default=True, nullable=False)
-    created_at       = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at       = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+
+    temple_id = Column(UUID(as_uuid=True), ForeignKey("temples.id"))
+
+    pooja_service_id = Column(UUID(as_uuid=True), ForeignKey("pooja_services.id"))
+
+    slot_date = Column(Date)
+
+    start_time = Column(Time)
+
+    end_time = Column(Time)
+
+    total_quota = Column(Integer)
+
+    booked_count = Column(Integer, default=0)
+
+    is_active = Column(Boolean, default=True)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     pooja_service = relationship("PoojaService", back_populates="slots")
-    bookings      = relationship("PoojaBooking", back_populates="slot", cascade="all, delete-orphan")
 
-    @property
-    def available_count(self) -> int:
-        return max(0, self.total_quota - self.booked_count)
-
-    @property
-    def is_full(self) -> bool:
-        return self.booked_count >= self.total_quota
+    bookings = relationship("PoojaBooking", back_populates="slot")
 
 
-# ─────────────────────────────────────────────
+# ---------------------------------------------------------
 # Pooja Booking
-# POST /{id}/pooja/book — lock-pay-confirm flow
-# ─────────────────────────────────────────────
+# ---------------------------------------------------------
+
 class PoojaBooking(Base):
     __tablename__ = "pooja_bookings"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
-    booking_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("bookings.id", ondelete="CASCADE"),
-        nullable=False,
-        unique=True,
-        index=True
-    )
+    booking_id = Column(UUID(as_uuid=True), ForeignKey("bookings.id"), nullable=False, unique=True)
 
-    temple_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("temples.id", ondelete="CASCADE"),
-        nullable=False,
-        index=True
-    )
+    temple_id = Column(UUID(as_uuid=True), ForeignKey("temples.id"))
 
-    pooja_service_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("pooja_services.id", ondelete="CASCADE"),
-        nullable=False
-    )
+    pooja_service_id = Column(UUID(as_uuid=True), ForeignKey("pooja_services.id"))
 
-    slot_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("pooja_slots.id", ondelete="CASCADE"),
-        nullable=True
-    )
+    slot_id = Column(UUID(as_uuid=True), ForeignKey("pooja_slots.id"))
 
-    user_id = Column(UUID(as_uuid=True), nullable=False, index=True)
+    user_id = Column(UUID(as_uuid=True), nullable=False)
 
     booking_reference = Column(
         String(20),
-        unique=True,
-        nullable=False,
-        default=lambda: _generate_reference("POJ")
+        default=lambda: generate_reference("POJ"),
+        unique=True
     )
 
-    num_persons = Column(Integer, nullable=False, default=1)
-    total_amount = Column(Float, nullable=False)
-    status = Column(String(20), default="PENDING", nullable=False)
-    payment_id = Column(String(100), nullable=True)
+    num_persons = Column(Integer, default=1)
 
-    devotee_name = Column(String(255), nullable=True)
-    gotram = Column(String(100), nullable=True)
-    special_requests = Column(Text, nullable=True)
+    total_amount = Column(Float)
 
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    status = Column(String(20), default="PENDING")
+
+    payment_id = Column(String(100))
+
+    devotee_name = Column(String(255))
+
+    gotram = Column(String(100))
+
+    special_requests = Column(Text)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     booking = relationship("Booking", back_populates="pooja_booking")
+
     temple = relationship("Temple", back_populates="pooja_bookings")
+
     pooja_service = relationship("PoojaService", back_populates="bookings")
+
     slot = relationship("PoojaSlot", back_populates="bookings")
 
-# ─────────────────────────────────────────────
+
+# ---------------------------------------------------------
 # Prasadam Item
-# GET /{id}/prasadam           — List for pre-order
-# GET /{id}/prasadam/{item_id} — Item detail with price
-# ─────────────────────────────────────────────
+# ---------------------------------------------------------
+
 class PrasadamItem(Base):
     __tablename__ = "prasadam_items"
 
-    id           = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    temple_id    = Column(UUID(as_uuid=True), ForeignKey("temples.id", ondelete="CASCADE"), nullable=False, index=True)
-    name         = Column(String(255), nullable=False)
-    description  = Column(Text, nullable=True)
-    price        = Column(Float, nullable=False)
-    weight_grams = Column(Integer, nullable=True)
-    image_url    = Column(String(500), nullable=True)
-    is_available = Column(Boolean, default=True, nullable=False)
-    created_at   = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at   = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
-    temple      = relationship("Temple",            back_populates="prasadam_items")
-    order_items = relationship("PrasadamOrderItem", back_populates="item", cascade="all, delete-orphan")
+    temple_id = Column(UUID(as_uuid=True), ForeignKey("temples.id"))
+
+    name = Column(String(255))
+
+    description = Column(Text)
+
+    price = Column(Float)
+
+    weight_grams = Column(Integer)
+
+    image_url = Column(String(500))
+
+    is_available = Column(Boolean, default=True)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    temple = relationship("Temple", back_populates="prasadam_items")
+
+    order_items = relationship(
+        "PrasadamOrderItem",
+        back_populates="item",
+        cascade="all, delete-orphan"
+    )
 
 
-# ─────────────────────────────────────────────
+# ---------------------------------------------------------
 # Prasadam Order
-# POST /{id}/prasadam/order  — Order for pickup during visit
-# GET /{id}/prasadam/orders  — My orders
-# ─────────────────────────────────────────────
+# ---------------------------------------------------------
+
 class PrasadamOrder(Base):
     __tablename__ = "prasadam_orders"
 
-    id              = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    temple_id       = Column(UUID(as_uuid=True), ForeignKey("temples.id", ondelete="CASCADE"), nullable=False, index=True)
-    user_id         = Column(UUID(as_uuid=True), nullable=False, index=True)
-    # FIX (W6): safe default
-    order_reference = Column(String(20), unique=True, nullable=False, default=lambda: _generate_reference("PRS"))
-    total_amount    = Column(Float, nullable=False)
-    pickup_date     = Column(Date, nullable=True)
-    status          = Column(String(20), default="PENDING", nullable=False)
-    payment_id      = Column(String(100), nullable=True)
-    created_at      = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at      = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
-    temple = relationship("Temple",            back_populates="prasadam_orders")
-    items  = relationship("PrasadamOrderItem", back_populates="order", cascade="all, delete-orphan")
+    booking_id = Column(UUID(as_uuid=True), ForeignKey("bookings.id"), nullable=False)
+
+    temple_id = Column(UUID(as_uuid=True), ForeignKey("temples.id"))
+
+    user_id = Column(UUID(as_uuid=True))
+
+    order_reference = Column(
+        String(20),
+        default=lambda: generate_reference("PRS"),
+        unique=True
+    )
+
+    total_amount = Column(Float)
+
+    pickup_date = Column(Date)
+
+    status = Column(String(20), default="PENDING")
+
+    payment_id = Column(String(100))
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    booking = relationship("Booking", back_populates="prasadam_orders")
+
+    temple = relationship("Temple", back_populates="prasadam_orders")
+
+    items = relationship(
+        "PrasadamOrderItem",
+        back_populates="order",
+        cascade="all, delete-orphan"
+    )
 
 
-# ─────────────────────────────────────────────
+# ---------------------------------------------------------
 # Prasadam Order Item
-# ─────────────────────────────────────────────
+# ---------------------------------------------------------
+
 class PrasadamOrderItem(Base):
     __tablename__ = "prasadam_order_items"
 
-    id         = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    order_id   = Column(UUID(as_uuid=True), ForeignKey("prasadam_orders.id", ondelete="CASCADE"), nullable=False, index=True)
-    item_id    = Column(UUID(as_uuid=True), ForeignKey("prasadam_items.id", ondelete="CASCADE"), nullable=False)
-    quantity   = Column(Integer, nullable=False, default=1)
-    unit_price = Column(Float, nullable=False)
-    subtotal   = Column(Float, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+
+    order_id = Column(UUID(as_uuid=True), ForeignKey("prasadam_orders.id"))
+
+    item_id = Column(UUID(as_uuid=True), ForeignKey("prasadam_items.id"))
+
+    quantity = Column(Integer, default=1)
+
+    unit_price = Column(Float)
+
+    subtotal = Column(Float)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
 
     order = relationship("PrasadamOrder", back_populates="items")
-    item  = relationship("PrasadamItem",  back_populates="order_items")
+
+    item = relationship("PrasadamItem", back_populates="order_items")

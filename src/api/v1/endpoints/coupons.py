@@ -5,7 +5,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 from jose import JWTError, jwt
 
-from src.database import get_db
+from src.core.database import get_db
 from src.core.config import settings
 from src.schemas.coupon import (
     ValidateCouponRequest, ValidateCouponResponse,
