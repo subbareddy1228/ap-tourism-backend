@@ -3,7 +3,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.api.deps.database import get_db
+from src.core.database import get_db
 from src.models.package import PackageType
 from src.schemas.package import PackageCreate, PackageUpdate
 from src.services.package_service import (

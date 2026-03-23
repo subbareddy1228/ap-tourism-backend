@@ -1,6 +1,5 @@
 from fastapi import APIRouter
 from src.api.v1.endpoints import auth, bookings, destination, guide, packages, users, vehicles, wallet, partner, temple, darshan, hotels
-from src.schemas import booking
 
 router = APIRouter()
 
