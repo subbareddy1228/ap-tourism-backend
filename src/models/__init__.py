@@ -11,3 +11,5 @@ from src.models.hotel import Hotel, HotelRoom, HotelImage, HotelAmenity
 from src.models.vehicle import Vehicle, VehicleDocument, Driver, VehicleReview
 
 from src.models.guide import Guide, GuideLanguage, GuideSpecialization, GuideDocument
+
+from src.models.destination import Destination
