@@ -1,11 +1,12 @@
 """
-src/models/transaction.py — Matches exact DB schema
+models/transaction.py — Payment module models
+Fixed: from src.core.database import Base (not src.database)
 """
 import uuid
 from datetime import datetime
 from sqlalchemy import Column, String, Float, Boolean, DateTime, Text, Numeric
 from sqlalchemy.dialects.postgresql import UUID
-from src.database import Base
+from src.core.database import Base
 import sqlalchemy as sa
 
 

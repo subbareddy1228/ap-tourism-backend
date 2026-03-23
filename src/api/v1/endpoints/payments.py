@@ -1,11 +1,20 @@
+"""
+api/v1/endpoints/payments.py
+Payment module — fixed for LEV146 integration.
+Changes:
+  - from src.database → from src.core.database
+  - Uses get_current_user from src.api.deps.auth (LEV146 pattern)
+  - Uses APIResponse wrapper
+  - prefix /payments (not /payment) — consistent with LEV146 naming
+"""
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
-from jose import JWTError, jwt
 
-from src.database import get_db
-from src.core.config import settings
+from src.core.database import get_db
+from src.api.deps.auth import get_current_user
+from src.models.user import User
+from src.common.responses import APIResponse
 from src.schemas.payment import (
     InitiatePaymentRequest, InitiatePaymentResponse,
     VerifyPaymentRequest, VerifyPaymentResponse,
@@ -36,170 +45,156 @@ from src.services.payment_service import (
     handle_webhook,
 )
 
-router = APIRouter(prefix="/payment", tags=["Module 12 - Payments"])
-
-# ─────────────────────────────────────────────
-# JWT DEPENDENCY — extracts user_id from Bearer token
-# ─────────────────────────────────────────────
-
-security = HTTPBearer()
+router = APIRouter(prefix="/payments", tags=["Payments"])
 
 
-async def get_current_user_id(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
-) -> UUID:
-    token = credentials.credentials
-    try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-        user_id: str = payload.get("sub")
-        if not user_id:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token: user_id not found.")
-        return UUID(user_id)
-    except JWTError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token.")
-
-
-# ─── GET /methods (no auth needed) ──────────
-@router.get("/methods", response_model=PaymentMethodsResponse, summary="Get Payment Methods")
+# ─── GET /methods (no auth needed) ───────────
+@router.get("/methods", response_model=PaymentMethodsResponse, summary="Get payment methods")
 async def payment_methods():
+    """List all available payment methods: UPI, CARD, NET_BANKING, WALLET, EMI, PAY_LATER."""
     return get_payment_methods()
 
 
-# ─── POST /initiate ──────────────────────────
-@router.post("/initiate", response_model=InitiatePaymentResponse, summary="Initiate Payment")
+# ─── POST /initiate ───────────────────────────
+@router.post("/initiate", response_model=InitiatePaymentResponse, status_code=201, summary="Initiate payment")
 async def initiate(
     data: InitiatePaymentRequest,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-    user_id: UUID = Depends(get_current_user_id),
 ):
-    data.user_id = user_id
+    """Create Razorpay order and return order_id for frontend."""
+    data.user_id = current_user.id
     return await initiate_payment(db, data)
 
 
-# ─── POST /verify ────────────────────────────
-@router.post("/verify", response_model=VerifyPaymentResponse, summary="Verify Payment")
+# ─── POST /verify ─────────────────────────────
+@router.post("/verify", response_model=VerifyPaymentResponse, summary="Verify payment signature")
 async def verify(
     data: VerifyPaymentRequest,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-    user_id: UUID = Depends(get_current_user_id),
 ):
+    """Verify Razorpay HMAC signature and mark transaction SUCCESS or FAILED."""
     return await verify_payment(db, data)
 
 
-# ─── GET /history ────────────────────────────
-@router.get("/history", response_model=PaymentHistoryResponse, summary="Payment History")
+# ─── GET /history ─────────────────────────────
+@router.get("/history", response_model=PaymentHistoryResponse, summary="Payment history")
 async def history(
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-    user_id: UUID = Depends(get_current_user_id),
 ):
-    return await get_payment_history(db, user_id)
+    """All transactions for the current user."""
+    return await get_payment_history(db, current_user.id)
 
 
-# ─── POST /validate-upi ──────────────────────
-@router.post("/validate-upi", response_model=ValidateUPIResponse, summary="Validate UPI")
+# ─── POST /validate-upi ───────────────────────
+@router.post("/validate-upi", response_model=ValidateUPIResponse, summary="Validate UPI ID")
 async def validate_upi_id(
     data: ValidateUPIRequest,
-    user_id: UUID = Depends(get_current_user_id),
+    current_user: User = Depends(get_current_user),
 ):
+    """Validate format of a UPI ID."""
     return validate_upi(data)
 
 
-# ─── GET /saved-cards ────────────────────────
-@router.get("/saved-cards", response_model=SavedCardsResponse, summary="Get Saved Cards")
+# ─── GET /saved-cards ─────────────────────────
+@router.get("/saved-cards", response_model=SavedCardsResponse, summary="Get saved cards")
 async def saved_cards(
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-    user_id: UUID = Depends(get_current_user_id),
 ):
-    return await get_saved_cards(db, user_id)
+    return await get_saved_cards(db, current_user.id)
 
 
-# ─── POST /saved-cards ───────────────────────
-@router.post("/saved-cards", response_model=SaveCardResponse, summary="Save Card")
+# ─── POST /saved-cards ────────────────────────
+@router.post("/saved-cards", response_model=SaveCardResponse, status_code=201, summary="Save card")
 async def add_card(
     data: SaveCardRequest,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-    user_id: UUID = Depends(get_current_user_id),
 ):
-    data.user_id = user_id
+    data.user_id = current_user.id
     return await save_card(db, data)
 
 
 # ─── DELETE /saved-cards/{card_id} ───────────
-@router.delete("/saved-cards/{card_id}", response_model=DeleteCardResponse, summary="Delete Saved Card")
+@router.delete("/saved-cards/{card_id}", response_model=DeleteCardResponse, summary="Delete saved card")
 async def remove_card(
     card_id: UUID,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-    user_id: UUID = Depends(get_current_user_id),
 ):
-    return await delete_saved_card(db, card_id, user_id)
+    return await delete_saved_card(db, card_id, current_user.id)
 
 
-# ─── GET /refunds ────────────────────────────
-@router.get("/refunds", response_model=RefundsListResponse, summary="Get Refunds")
+# ─── GET /refunds ─────────────────────────────
+@router.get("/refunds", response_model=RefundsListResponse, summary="List refunds")
 async def refunds_list(
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-    user_id: UUID = Depends(get_current_user_id),
 ):
-    return await get_refunds(db, user_id)
+    return await get_refunds(db, current_user.id)
 
 
-# ─── POST /refund/request ────────────────────
-@router.post("/refund/request", response_model=RefundResponse, summary="Request Refund")
+# ─── POST /refund/request ─────────────────────
+@router.post("/refund/request", response_model=RefundResponse, status_code=201, summary="Request refund")
 async def refund_request(
     data: RefundRequest,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-    user_id: UUID = Depends(get_current_user_id),
 ):
-    data.user_id = user_id
+    data.user_id = current_user.id
     return await request_refund(db, data)
 
 
-# ─── GET /refund/{refund_id} ─────────────────
-@router.get("/refund/{refund_id}", response_model=RefundResponse, summary="Get Refund")
+# ─── GET /refund/{refund_id} ──────────────────
+@router.get("/refund/{refund_id}", response_model=RefundResponse, summary="Get refund detail")
 async def refund_detail(
     refund_id: UUID,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-    user_id: UUID = Depends(get_current_user_id),
 ):
     return await get_refund(db, refund_id)
 
 
-# ─── POST /pay-later/check ───────────────────
-@router.post("/pay-later/check", response_model=PayLaterCheckResponse, summary="Check Pay Later Eligibility")
+# ─── POST /pay-later/check ────────────────────
+@router.post("/pay-later/check", response_model=PayLaterCheckResponse, summary="Check Pay Later eligibility")
 async def pay_later_check(
     data: PayLaterCheckRequest,
-    user_id: UUID = Depends(get_current_user_id),
+    current_user: User = Depends(get_current_user),
 ):
-    data.user_id = user_id
+    data.user_id = current_user.id
     return check_pay_later(data)
 
 
-# ─── POST /pay-later/apply ───────────────────
-@router.post("/pay-later/apply", response_model=PayLaterApplyResponse, summary="Apply Pay Later")
+# ─── POST /pay-later/apply ────────────────────
+@router.post("/pay-later/apply", response_model=PayLaterApplyResponse, status_code=201, summary="Apply Pay Later")
 async def pay_later_apply(
     data: PayLaterApplyRequest,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-    user_id: UUID = Depends(get_current_user_id),
 ):
-    data.user_id = user_id
+    data.user_id = current_user.id
     return await apply_pay_later(db, data)
 
 
-# ─── POST /webhook/razorpay (no auth) ────────
-@router.post("/webhook/razorpay", summary="Razorpay Webhook")
+# ─── POST /webhook/razorpay (no auth) ─────────
+@router.post("/webhook/razorpay", summary="Razorpay webhook")
 async def razorpay_webhook(
     payload: WebhookPayload,
     db: AsyncSession = Depends(get_db),
 ):
+    """Called by Razorpay on payment events. No auth required."""
     return await handle_webhook(db, payload.dict())
 
 
-# ─── GET /{transaction_id} ───────────────────
-@router.get("/{transaction_id}", response_model=TransactionOut, summary="Get Transaction")
+# ─── GET /{transaction_id} ────────────────────
+@router.get("/{transaction_id}", response_model=TransactionOut, summary="Get transaction detail")
 async def transaction_detail(
     transaction_id: UUID,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-    user_id: UUID = Depends(get_current_user_id),
 ):
     txn = await get_transaction(db, transaction_id)
     if not txn:
