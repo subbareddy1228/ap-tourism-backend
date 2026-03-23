@@ -14,7 +14,7 @@ from src.core.exceptions import NotFoundException
 
 class TempleService:
 
-    def __init__(self, db: AsyncSession, redis_client=None):
+    async def __init__(self, db: AsyncSession, redis_client=None):
         self.repo  = TempleRepository(db)
         self.redis = redis_client
 

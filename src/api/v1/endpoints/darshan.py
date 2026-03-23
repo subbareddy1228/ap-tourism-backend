@@ -41,7 +41,7 @@ router = APIRouter(prefix="/darshan", tags=["Darshan"])
 
 
 # ── Redis dependency (optional) ───────────────────────────────
-def get_redis():
+async def get_redis():
     import redis as redis_lib
     from src.core.config import settings
     client = None

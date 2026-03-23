@@ -20,7 +20,7 @@ from src.schemas.darshan import (
 
 class DarshanService:
 
-    def __init__(self, db: AsyncSession, redis_client=None):
+    async def __init__(self, db: AsyncSession, redis_client=None):
         self.db    = db
         self.redis = redis_client
         self.repo  = DarshanRepository(db)

@@ -33,7 +33,7 @@ router = APIRouter(prefix="/temples", tags=["Temples"])
 
 
 # ── Redis dependency (optional — gracefully degrades if Redis down) ──
-def get_redis():
+async def get_redis():
     import redis as redis_lib
     from src.core.config import settings
     client = None
@@ -48,7 +48,7 @@ def get_redis():
 async def get_service(
     db: AsyncSession = Depends(get_db),
 ) -> TempleService:
-    redis = get_redis()
+    redis = await get_redis()
     return TempleService(db=db, redis_client=redis)
 
 
