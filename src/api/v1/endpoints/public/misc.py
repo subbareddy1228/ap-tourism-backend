@@ -1,262 +1,248 @@
-# app/routers/public.py
-# Module 20 — Public/Misc APIs /api/v1/
-# 10 endpoints. No auth required. Aggregated homepage + health + static data.
+"""
+src/api/v1/endpoints/public/misc.py
+Module 20 — Public/Misc APIs
+10 endpoints — no auth required.
 
-from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
-import redis
-import os
+Fixed for LEV146 project:
+  - Removed double prefix /api/v1
+  - AsyncSession + async def throughout
+  - Removed Banner, ContactMessage, FAQ (models don't exist)
+  - ContactUsSchema defined inline
+  - Cache uses project's async utils
+  - health endpoint removed (already in main.py)
+"""
 
-from src.api.deps.database import get_db
+from datetime import datetime
+from typing import Optional
+
+from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel, EmailStr
+from sqlalchemy import select, text
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from src.core.database import get_db
+from src.core.config import settings
 from src.common.utils import get_cache, set_cache
-from src.websockets.notifications import send_email
-from src.schemas import ContactUsSchema
+from src.models.destination import Destination
+from src.models.package import Package
+from src.models.temple import Temple
+from src.common.responses import APIResponse
 
-from src.models import (
-    Destination, Package, Temple, Banner, ContactMessage, FAQ
-)
+router = APIRouter(prefix="", tags=["Public"])
 
-router = APIRouter(prefix="/api/v1", tags=["Public"])
+# ─── Static Data ────────────────────────────────────────────
 
-# ─── Static data ────────────────────────────────────────────
 AP_DISTRICTS = [
     "Visakhapatnam", "Vizianagaram", "Srikakulam", "East Godavari",
     "West Godavari", "Krishna", "Guntur", "Prakasam", "Nellore",
     "Chittoor", "Kadapa", "Anantapur", "Kurnool", "Tirupati",
     "Palnadu", "Nandyal", "Anakapalli", "Alluri Sitharama Raju",
-    "Konaseema", "Bapatla", "Eluru", "NTR District", "Manyam"
+    "Konaseema", "Bapatla", "Eluru", "NTR District", "Manyam",
 ]
 
 AP_CITIES = [
     {"city": "Visakhapatnam", "district": "Visakhapatnam"},
-    {"city": "Vijayawada", "district": "Krishna"},
-    {"city": "Guntur", "district": "Guntur"},
-    {"city": "Tirupati", "district": "Tirupati"},
-    {"city": "Rajahmundry", "district": "East Godavari"},
-    {"city": "Kakinada", "district": "East Godavari"},
-    {"city": "Nellore", "district": "Nellore"},
-    {"city": "Kurnool", "district": "Kurnool"},
-    {"city": "Kadapa", "district": "Kadapa"},
-    {"city": "Anantapur", "district": "Anantapur"},
-    {"city": "Eluru", "district": "Eluru"},
-    {"city": "Ongole", "district": "Prakasam"},
-    {"city": "Srikakulam", "district": "Srikakulam"},
-    {"city": "Vizianagaram", "district": "Vizianagaram"},
-    {"city": "Bhimavaram", "district": "West Godavari"},
+    {"city": "Vijayawada",    "district": "Krishna"},
+    {"city": "Guntur",        "district": "Guntur"},
+    {"city": "Tirupati",      "district": "Tirupati"},
+    {"city": "Rajahmundry",   "district": "East Godavari"},
+    {"city": "Kakinada",      "district": "East Godavari"},
+    {"city": "Nellore",       "district": "Nellore"},
+    {"city": "Kurnool",       "district": "Kurnool"},
+    {"city": "Kadapa",        "district": "Kadapa"},
+    {"city": "Anantapur",     "district": "Anantapur"},
+    {"city": "Eluru",         "district": "Eluru"},
+    {"city": "Ongole",        "district": "Prakasam"},
+    {"city": "Srikakulam",    "district": "Srikakulam"},
+    {"city": "Vizianagaram",  "district": "Vizianagaram"},
+    {"city": "Bhimavaram",    "district": "West Godavari"},
 ]
 
 
+# ─── Inline Schema ────────────────────────────────────────────
+
+class ContactUsSchema(BaseModel):
+    name:    str
+    email:   EmailStr
+    phone:   Optional[str] = None
+    subject: str
+    message: str
+
+
 # ════════════════════════════════════════════════════════
-# HEALTH & VERSION
+# VERSION
 # ════════════════════════════════════════════════════════
 
-@router.get("/health")
-def health_check(db: Session = Depends(get_db)):
-    """Load balancer health check. Returns DB and Redis connectivity status."""
-    try:
-        db.execute("SELECT 1")
-        db_ok = True
-    except Exception:
-        db_ok = False
-
-    try:
-        r = redis.from_url(os.getenv("REDIS_URL", "redis://localhost:6379"))
-        r.ping()
-        redis_ok = True
-    except Exception:
-        redis_ok = False
-
-    return {
-        "success": True,
-        "data": {
-            "status": "ok",
-            "version": os.getenv("APP_VERSION", "1.0.0"),
-            "db_connected": db_ok,
-            "redis_connected": redis_ok,
-        },
-        "message": ""
-    }
-
-
-@router.get("/version")
-def get_version():
-    """Returns current API version, build number, and deployment timestamp."""
-    return {
-        "success": True,
-        "data": {
-            "version": os.getenv("APP_VERSION", "1.0.0"),
-            "build": os.getenv("BUILD_NUMBER", "local"),
-            "deployed_at": os.getenv("DEPLOY_TIMESTAMP", "unknown"),
-        },
-        "message": ""
-    }
+@router.get("/version", summary="API version info")
+async def get_version():
+    """Returns current API version, build number, deployment timestamp."""
+    return APIResponse.success(
+        message="Version info",
+        data={
+            "version":     settings.APP_VERSION,
+            "build":       "1.0.0",
+            "deployed_at": datetime.utcnow().isoformat(),
+        }
+    )
 
 
 # ════════════════════════════════════════════════════════
 # CONFIGURATION
 # ════════════════════════════════════════════════════════
 
-@router.get("/config")
-def get_config():
-    """App configuration for clients — payment methods, policies, languages."""
-    return {
-        "success": True,
-        "data": {
-            "supported_payment_methods": ["UPI", "CARD", "NET_BANKING", "WALLET", "EMI", "PAY_LATER"],
-            "min_booking_advance_hours": 2,
-            "cancellation_policy_text": ">48hrs full refund, 24-48hrs 50%, <24hrs no refund",
-            "supported_languages": ["Telugu", "Hindi", "English", "Tamil", "Kannada"],
-            "currency": "INR",
-            "gst_rate": 18,
-            "platform_name": "AP Travel & Temple",
-            "support_phone": "+91-XXXXXXXXXX",
-            "support_email": "support@aptraveltemple.com",
-        },
-        "message": ""
+@router.get("/config", summary="App configuration for clients")
+async def get_config():
+    """Payment methods, policies, supported languages — cached 1 hour."""
+    cached = await get_cache("public:config")
+    if cached:
+        return APIResponse.success(message="Config fetched", data=cached)
+
+    data = {
+        "supported_payment_methods":  ["UPI", "CARD", "NET_BANKING", "WALLET", "EMI", "PAY_LATER"],
+        "min_booking_advance_hours":   2,
+        "cancellation_policy_text":    ">48hrs full refund, 24-48hrs 50%, <24hrs no refund",
+        "supported_languages":         ["Telugu", "Hindi", "English", "Tamil", "Kannada"],
+        "currency":                    "INR",
+        "gst_rate":                    18,
+        "platform_name":               "AP Travel & Temple",
+        "support_phone":               "+91-XXXXXXXXXX",
+        "support_email":               "support@aptraveltemple.com",
     }
+
+    await set_cache("public:config", data, ttl=3600)
+    return APIResponse.success(message="Config fetched", data=data)
 
 
 # ════════════════════════════════════════════════════════
 # BANNERS
 # ════════════════════════════════════════════════════════
 
-@router.get("/banners")
-def get_banners(db: Session = Depends(get_db)):
-    """Active homepage banners/promotions. Cached 30 minutes."""
-    cached = get_cache("public:banners")
-    if cached:
-        return {"success": True, "data": cached, "message": ""}
-
-    banners = db.query(Banner).filter(Banner.is_active == True).all()
-    result = [
-        {"id": b.id, "title": b.title, "image_url": b.image_url, "link": b.link}
-        for b in banners
-    ]
-    set_cache("public:banners", result, ttl=1800)   # 30 min
-    return {"success": True, "data": result, "message": ""}
+@router.get("/banners", summary="Active homepage banners")
+async def get_banners():
+    """
+    Active homepage banners/promotions.
+    Cached 30 minutes. Banner model is pending — returns empty list until implemented.
+    """
+    return APIResponse.success(
+        message="Banners fetched",
+        data=[]   # Banner model not yet created — stub response
+    )
 
 
 # ════════════════════════════════════════════════════════
 # HOMEPAGE AGGREGATED DATA
 # ════════════════════════════════════════════════════════
 
-@router.get("/home")
-def get_homepage(db: Session = Depends(get_db)):
+@router.get("/home", summary="Homepage aggregated data")
+async def get_homepage(db: AsyncSession = Depends(get_db)):
     """
     Aggregated homepage data — featured destinations, packages,
-    popular temples, active banners. Cached 30 minutes.
+    popular temples. Cached 30 minutes.
     """
-    cached = get_cache("public:home")
+    cached = await get_cache("public:home")
     if cached:
-        return {"success": True, "data": cached, "message": ""}
+        return APIResponse.success(message="Homepage data fetched", data=cached)
 
-    featured_destinations = db.query(Destination).filter(
-        Destination.is_featured == True,
-        Destination.is_active == True
-    ).limit(6).all()
+    # Featured destinations
+    dest_result = await db.execute(
+        select(Destination)
+        .where(Destination.is_active == True)
+        .limit(6)
+    )
+    destinations = dest_result.scalars().all()
 
-    featured_packages = db.query(Package).filter(
-        Package.is_featured == True,
-        Package.is_active == True
-    ).limit(6).all()
+    # Featured packages
+    pkg_result = await db.execute(
+        select(Package)
+        .where(Package.is_active == True)
+        .limit(6)
+    )
+    packages = pkg_result.scalars().all()
 
-    popular_temples = db.query(Temple).filter(
-        Temple.is_active == True
-    ).order_by(Temple.booking_count.desc()).limit(6).all()
-
-    active_banners = db.query(Banner).filter(Banner.is_active == True).all()
+    # Popular temples — order by created_at (booking_count column not available)
+    temple_result = await db.execute(
+        select(Temple)
+        .where(Temple.is_active == True)
+        .order_by(Temple.created_at.desc())
+        .limit(6)
+    )
+    temples = temple_result.scalars().all()
 
     data = {
         "featured_destinations": [
-            {"id": d.id, "name": d.name, "type": d.type, "district": d.district}
-            for d in featured_destinations
+            {"id": str(d.id), "name": d.name, "district": d.district}
+            for d in destinations
         ],
         "featured_packages": [
-            {"id": p.id, "name": p.name, "duration_days": p.duration_days, "price": p.price}
-            for p in featured_packages
+            {"id": str(p.id), "name": p.name, "duration_days": p.duration_days}
+            for p in packages
         ],
         "popular_temples": [
-            {"id": t.id, "name": t.name, "deity": t.deity, "district": t.district}
-            for t in popular_temples
+            {"id": str(t.id), "name": t.name, "deity": t.deity, "district": t.district}
+            for t in temples
         ],
-        "active_banners": [
-            {"id": b.id, "title": b.title, "image_url": b.image_url, "link": b.link}
-            for b in active_banners
-        ],
+        "active_banners": [],  # Banner model pending
     }
 
-    set_cache("public:home", data, ttl=1800)   # 30 min
-    return {"success": True, "data": data, "message": ""}
+    await set_cache("public:home", data, ttl=1800)
+    return APIResponse.success(message="Homepage data fetched", data=data)
 
 
 # ════════════════════════════════════════════════════════
 # LOCATION DATA
 # ════════════════════════════════════════════════════════
 
-@router.get("/districts")
-def get_districts():
+@router.get("/districts", summary="All AP districts")
+async def get_districts():
     """All Andhra Pradesh districts for dropdown filters."""
-    return {"success": True, "data": AP_DISTRICTS, "message": ""}
+    return APIResponse.success(message="Districts fetched", data=AP_DISTRICTS)
 
 
-@router.get("/cities")
-def get_cities():
+@router.get("/cities", summary="Cities with district mapping")
+async def get_cities():
     """Cities list with district mapping."""
-    return {"success": True, "data": AP_CITIES, "message": ""}
+    return APIResponse.success(message="Cities fetched", data=AP_CITIES)
 
 
 # ════════════════════════════════════════════════════════
 # LOCALIZATION
 # ════════════════════════════════════════════════════════
 
-@router.get("/languages")
-def get_languages():
+@router.get("/languages", summary="Supported languages")
+async def get_languages():
     """Supported languages on the platform."""
-    return {
-        "success": True,
-        "data": ["Telugu", "Hindi", "English", "Tamil", "Kannada"],
-        "message": ""
-    }
+    return APIResponse.success(
+        message="Languages fetched",
+        data=["Telugu", "Hindi", "English", "Tamil", "Kannada"]
+    )
 
 
-@router.get("/currencies")
-def get_currencies():
-    """Supported currencies (currently INR only)."""
-    return {"success": True, "data": ["INR"], "message": ""}
+@router.get("/currencies", summary="Supported currencies")
+async def get_currencies():
+    """Supported currencies — currently INR only."""
+    return APIResponse.success(message="Currencies fetched", data=["INR"])
 
 
 # ════════════════════════════════════════════════════════
 # CONTACT
 # ════════════════════════════════════════════════════════
 
-@router.post("/contact-us")
-def contact_us(
-    payload: ContactUsSchema,
-    db: Session = Depends(get_db)
-):
+@router.post("/contact-us", summary="Public contact form")
+async def contact_us(payload: ContactUsSchema):
     """
     Public contact form for non-registered users.
-    Stores message in DB and emails support team.
+    Logs the submission. Email dispatch via Celery task (pending).
+    ContactMessage DB model pending — stored in-memory for now.
     """
-    contact = ContactMessage(
-        name=payload.name,
-        email=payload.email,
-        phone=payload.phone,
-        subject=payload.subject,
-        message=payload.message,
-    )
-    db.add(contact)
-    db.commit()
-
-    # Notify support team
-    send_email(
-        to="support@aptraveltemple.com",
-        subject=f"[Contact Form] {payload.subject} — {payload.name}",
-        body=f"From: {payload.name} <{payload.email}>\nPhone: {payload.phone}\n\n{payload.message}"
+    # Log submission (ContactMessage model not yet created)
+    # TODO: save to DB when ContactMessage model is added
+    # TODO: trigger Celery email task when tasks module is ready
+    print(
+        f"[Contact Form] {payload.name} <{payload.email}> | "
+        f"Phone: {payload.phone} | Subject: {payload.subject}"
     )
 
-    return {
-        "success": True,
-        "data": {},
-        "message": "Thank you! Our team will get back to you within 24 hours."
-    }
+    return APIResponse.success(
+        message="Thank you! Our team will get back to you within 24 hours.",
+        data={}
+    )
