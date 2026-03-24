@@ -10,7 +10,8 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
-
+from src.api.deps.auth import get_current_user
+from src.models.user import User
 from src.core.database import get_db
 from src.models.review import EntityType
 from src.schemas.review import (
@@ -33,10 +34,6 @@ def get_review_service(db: AsyncSession = Depends(get_db)) -> ReviewService:
     return ReviewService(db)
 
 
-# ---------------------------------------------------------------------------
-# TODO: replace temp_user_id with real auth when get_current_user is wired up
-# ---------------------------------------------------------------------------
-_TEMP_USER_ID = UUID("00000000-0000-0000-0000-000000000001")
 
 
 # ---------------------------------------------------------------------------
@@ -101,12 +98,12 @@ async def get_review(
 )
 async def create_review(
     payload: ReviewCreateRequest,
-    # current_user=Depends(get_current_user),   # uncomment when auth is ready
+    current_user: User = Depends(get_current_user),   # uncomment when auth is ready
     service: ReviewService = Depends(get_review_service),
 ):
     return await service.create_review(
         payload=payload,
-        user_id=_TEMP_USER_ID,       # swap with current_user.id after auth
+        user_id=current_user.id ,       # swap with current_user.id after auth
         booking_service=None,        # swap with BookingService(db) after it's ready
     )
 
@@ -120,13 +117,13 @@ async def create_review(
 async def update_review(
     review_id: UUID,
     payload:   ReviewUpdateRequest,
-    # current_user=Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     service: ReviewService = Depends(get_review_service),
 ):
     return await service.update_review(
         review_id=review_id,
         payload=payload,
-        user_id=_TEMP_USER_ID,
+        user_id=current_user.id,
     )
 
 
@@ -138,10 +135,10 @@ async def update_review(
 )
 async def delete_review(
     review_id: UUID,
-    # current_user=Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     service: ReviewService = Depends(get_review_service),
 ):
-    await service.delete_review(review_id=review_id, user_id=_TEMP_USER_ID)
+    await service.delete_review(review_id=review_id, user_id=current_user.id)
 
 
 # ---------------------------------------------------------------------------
@@ -155,10 +152,10 @@ async def delete_review(
 )
 async def mark_helpful(
     review_id: UUID,
-    # current_user=Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     service: ReviewService = Depends(get_review_service),
 ):
-    return await service.mark_helpful(review_id=review_id, user_id=_TEMP_USER_ID)
+    return await service.mark_helpful(review_id=review_id, user_id=current_user.id)
 
 
 @router.delete(
@@ -168,10 +165,10 @@ async def mark_helpful(
 )
 async def unmark_helpful(
     review_id: UUID,
-    # current_user=Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     service: ReviewService = Depends(get_review_service),
 ):
-    return await service.unmark_helpful(review_id=review_id, user_id=_TEMP_USER_ID)
+    return await service.unmark_helpful(review_id=review_id, user_id=current_user.id)
 
 
 # ---------------------------------------------------------------------------
@@ -187,13 +184,13 @@ async def unmark_helpful(
 async def report_review(
     review_id: UUID,
     payload:   ReviewReportRequest,
-    # current_user=Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     service: ReviewService = Depends(get_review_service),
 ):
     return await service.report_review(
         review_id=review_id,
         payload=payload,
-        user_id=_TEMP_USER_ID,
+        user_id=current_user.id,
     )
 
 
@@ -209,11 +206,11 @@ async def report_review(
 async def get_my_reviews(
     page:      int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
-    # current_user=Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     service: ReviewService = Depends(get_review_service),
 ):
     return await service.get_my_reviews(
-        user_id=_TEMP_USER_ID,
+        user_id=current_user.id,
         page=page,
         page_size=page_size,
     )
