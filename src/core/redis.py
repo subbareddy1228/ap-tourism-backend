@@ -46,10 +46,8 @@ async def close_redis() -> None:
 
 
 # ── OTP Storage ───────────────────────────────────────────────
-# Key: otp:{purpose}:{phone}
 
 async def store_otp(phone: str, otp: str, purpose: str = "register") -> None:
-
     r = await get_redis()
 
     key = f"otp:{purpose}:{phone}"
@@ -62,7 +60,6 @@ async def store_otp(phone: str, otp: str, purpose: str = "register") -> None:
 
 
 async def get_otp(phone: str, purpose: str = "register") -> Optional[str]:
-
     r = await get_redis()
 
     key = f"otp:{purpose}:{phone}"
@@ -71,7 +68,6 @@ async def get_otp(phone: str, purpose: str = "register") -> Optional[str]:
 
 
 async def delete_otp(phone: str, purpose: str = "register") -> None:
-
     r = await get_redis()
 
     key = f"otp:{purpose}:{phone}"
@@ -80,10 +76,8 @@ async def delete_otp(phone: str, purpose: str = "register") -> None:
 
 
 # ── OTP Resend Rate Limit ─────────────────────────────────────
-# Max 3 resends per window
 
 async def increment_resend_count(phone: str) -> int:
-
     r = await get_redis()
 
     key = f"otp_resend_count:{phone}"
@@ -97,7 +91,6 @@ async def increment_resend_count(phone: str) -> int:
 
 
 async def get_resend_count(phone: str) -> int:
-
     r = await get_redis()
 
     key = f"otp_resend_count:{phone}"
@@ -108,7 +101,6 @@ async def get_resend_count(phone: str) -> int:
 
 
 async def get_resend_ttl(phone: str) -> int:
-
     r = await get_redis()
 
     key = f"otp_resend_count:{phone}"
@@ -119,7 +111,6 @@ async def get_resend_ttl(phone: str) -> int:
 # ── OTP Attempt Tracking ──────────────────────────────────────
 
 async def increment_otp_attempts(phone: str) -> int:
-
     r = await get_redis()
 
     key = f"otp_attempts:{phone}"
@@ -132,7 +123,6 @@ async def increment_otp_attempts(phone: str) -> int:
 
 
 async def clear_otp_attempts(phone: str) -> None:
-
     r = await get_redis()
 
     key = f"otp_attempts:{phone}"
@@ -143,7 +133,6 @@ async def clear_otp_attempts(phone: str) -> None:
 # ── JTI Blacklist (Logout) ────────────────────────────────────
 
 async def blacklist_jti(jti: str, expire_seconds: int) -> None:
-
     r = await get_redis()
 
     key = f"blacklist:jti:{jti}"
@@ -152,7 +141,6 @@ async def blacklist_jti(jti: str, expire_seconds: int) -> None:
 
 
 async def is_jti_blacklisted(jti: str) -> bool:
-
     r = await get_redis()
 
     key = f"blacklist:jti:{jti}"
@@ -163,7 +151,6 @@ async def is_jti_blacklisted(jti: str) -> bool:
 # ── Refresh Token Storage ─────────────────────────────────────
 
 async def store_refresh_jti(user_id: str, device_id: str, jti: str) -> None:
-
     r = await get_redis()
 
     key = f"refresh:{user_id}:{device_id}"
@@ -174,7 +161,6 @@ async def store_refresh_jti(user_id: str, device_id: str, jti: str) -> None:
 
 
 async def get_refresh_jti(user_id: str, device_id: str) -> Optional[str]:
-
     r = await get_redis()
 
     key = f"refresh:{user_id}:{device_id}"
@@ -183,7 +169,6 @@ async def get_refresh_jti(user_id: str, device_id: str) -> Optional[str]:
 
 
 async def delete_refresh_jti(user_id: str, device_id: str) -> None:
-
     r = await get_redis()
 
     key = f"refresh:{user_id}:{device_id}"
@@ -192,7 +177,6 @@ async def delete_refresh_jti(user_id: str, device_id: str) -> None:
 
 
 async def delete_all_refresh_jtis(user_id: str) -> None:
-
     r = await get_redis()
 
     pattern = f"refresh:{user_id}:*"
@@ -204,7 +188,6 @@ async def delete_all_refresh_jtis(user_id: str) -> None:
 # ── Compatibility Helpers ─────────────────────────────────────
 
 async def store_refresh_token(user_id: str, device_id: str, token: str) -> None:
-
     r = await get_redis()
 
     key = f"refresh:{user_id}:{device_id}"
@@ -215,10 +198,15 @@ async def store_refresh_token(user_id: str, device_id: str, token: str) -> None:
 
 
 async def delete_refresh_token(user_id: str, device_id: str) -> None:
-
     await delete_refresh_jti(user_id, device_id)
 
 
 async def delete_all_refresh_tokens(user_id: str) -> None:
-
     await delete_all_refresh_jtis(user_id)
+
+
+# ── Compatibility function (Fix for your error) ─────────────────
+
+async def get_redis_client():
+    """Compatibility function for modules importing get_redis_client."""
+    return await get_redis()

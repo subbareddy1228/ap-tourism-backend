@@ -1291,3 +1291,1053 @@ For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/St
 2026-03-23 22:16:40,527 | INFO | src.services.auth_service | Login success user_id=089f9d42-915a-4052-ab61-62f491de7132
 2026-03-24 09:30:33,491 | INFO | src.services.auth_service | Login success user_id=089f9d42-915a-4052-ab61-62f491de7132
 2026-03-24 09:51:05,747 | INFO | src.services.auth_service | Login success user_id=089f9d42-915a-4052-ab61-62f491de7132
+2026-03-24 12:55:15,392 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.730s]
+2026-03-24 12:55:15,393 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.780s]
+2026-03-24 12:55:15,396 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 1 times in a row, putting on 1 second timeout
+2026-03-24 12:55:15,396 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 1 times in a row, putting on 1 second timeout
+2026-03-24 12:55:15,397 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 0 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 12:55:15,515 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.014s]
+2026-03-24 12:55:15,517 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.015s]
+2026-03-24 12:55:15,522 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 2 times in a row, putting on 2 second timeout
+2026-03-24 12:55:15,524 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 1 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 12:55:15,537 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.011s]
+2026-03-24 12:55:15,542 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.015s]
+2026-03-24 12:55:15,545 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 3 times in a row, putting on 4 second timeout
+2026-03-24 12:55:15,546 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 3 times in a row, putting on 4 second timeout
+2026-03-24 12:55:15,549 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 2 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 12:55:15,549 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 2 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 12:55:15,564 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.012s]
+2026-03-24 12:55:15,565 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.012s]
+2026-03-24 12:55:15,565 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 4 times in a row, putting on 8 second timeout
+2026-03-24 12:55:15,567 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 4 times in a row, putting on 8 second timeout
+2026-03-24 12:55:15,567 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 1/5 failed: Connection error caused by: ConnectionError(Connection error caused by: ServerDisconnectedError(Server disconnected))
+2026-03-24 12:55:15,568 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 1/5 failed: Connection error caused by: ConnectionError(Connection error caused by: ServerDisconnectedError(Server disconnected))
+2026-03-24 12:55:18,576 | INFO | elastic_transport.node_pool | Resurrected node <AiohttpHttpNode(http://localhost:9200)> (force=False)
+2026-03-24 12:55:18,576 | INFO | elastic_transport.node_pool | Resurrected node <AiohttpHttpNode(http://localhost:9200)> (force=False)
+2026-03-24 12:55:18,584 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.007s]
+2026-03-24 12:55:18,584 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.007s]
+2026-03-24 12:55:18,585 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 5 times in a row, putting on 16 second timeout
+2026-03-24 12:55:18,586 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 5 times in a row, putting on 16 second timeout
+2026-03-24 12:55:18,587 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 0 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 12:55:18,587 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 0 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 12:55:18,589 | INFO | elastic_transport.node_pool | Resurrected node <AiohttpHttpNode(http://localhost:9200)> (force=False)
+2026-03-24 12:55:18,589 | INFO | elastic_transport.node_pool | Resurrected node <AiohttpHttpNode(http://localhost:9200)> (force=False)
+2026-03-24 12:55:18,597 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.007s]
+2026-03-24 12:55:18,597 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 6 times in a row, putting on 30 second timeout
+2026-03-24 12:55:18,598 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 6 times in a row, putting on 30 second timeout
+2026-03-24 12:55:18,598 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 1 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 12:55:18,598 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 1 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 12:55:18,610 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.010s]
+2026-03-24 12:55:18,611 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 7 times in a row, putting on 30 second timeout
+2026-03-24 12:55:18,611 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.011s]
+2026-03-24 12:55:18,612 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 7 times in a row, putting on 30 second timeout
+2026-03-24 12:55:18,611 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 2 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 12:55:18,612 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 2 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 12:55:18,621 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.008s]
+2026-03-24 12:55:18,622 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.008s]
+2026-03-24 12:55:18,625 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 8 times in a row, putting on 30 second timeout
+2026-03-24 12:55:18,626 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 8 times in a row, putting on 30 second timeout
+2026-03-24 12:55:18,626 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 2/5 failed: Connection error caused by: ConnectionError(Connection error caused by: ServerDisconnectedError(Server disconnected))
+2026-03-24 12:55:18,626 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 2/5 failed: Connection error caused by: ConnectionError(Connection error caused by: ServerDisconnectedError(Server disconnected))
+2026-03-24 12:55:21,632 | INFO | elastic_transport.node_pool | Resurrected node <AiohttpHttpNode(http://localhost:9200)> (force=False)
+2026-03-24 12:55:21,638 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.006s]
+2026-03-24 12:55:21,638 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.007s]
+2026-03-24 12:55:21,639 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 9 times in a row, putting on 30 second timeout
+2026-03-24 12:55:21,639 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 9 times in a row, putting on 30 second timeout
+2026-03-24 12:55:21,640 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 0 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 12:55:21,640 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 0 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 12:55:21,649 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.007s]
+2026-03-24 12:55:21,650 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.007s]
+2026-03-24 12:55:21,650 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 10 times in a row, putting on 30 second timeout
+2026-03-24 12:55:21,651 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 10 times in a row, putting on 30 second timeout
+2026-03-24 12:55:21,652 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 1 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 12:55:21,663 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.009s]
+2026-03-24 12:55:21,662 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.009s]
+2026-03-24 12:55:21,663 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 11 times in a row, putting on 30 second timeout
+2026-03-24 12:55:21,664 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 11 times in a row, putting on 30 second timeout
+2026-03-24 12:55:21,664 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 2 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 12:55:21,664 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 2 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 12:55:21,675 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.009s]
+2026-03-24 12:55:21,676 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 12 times in a row, putting on 30 second timeout
+2026-03-24 12:55:21,676 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 3/5 failed: Connection error caused by: ConnectionError(Connection error caused by: ServerDisconnectedError(Server disconnected))
+2026-03-24 12:55:21,679 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.014s]
+2026-03-24 12:55:21,680 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 12 times in a row, putting on 30 second timeout
+2026-03-24 12:55:21,680 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 3/5 failed: Connection error caused by: ConnectionError(Connection error caused by: ServerDisconnectedError(Server disconnected))
+2026-03-24 12:55:24,682 | INFO | elastic_transport.node_pool | Resurrected node <AiohttpHttpNode(http://localhost:9200)> (force=False)
+2026-03-24 12:55:24,682 | INFO | elastic_transport.node_pool | Resurrected node <AiohttpHttpNode(http://localhost:9200)> (force=False)
+2026-03-24 12:55:24,691 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.007s]
+2026-03-24 12:55:24,691 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 13 times in a row, putting on 30 second timeout
+2026-03-24 12:55:24,693 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.010s]
+2026-03-24 12:55:24,696 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 13 times in a row, putting on 30 second timeout
+2026-03-24 12:55:24,696 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 0 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 12:55:24,697 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 0 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 12:55:24,709 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.010s]
+2026-03-24 12:55:24,709 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 14 times in a row, putting on 30 second timeout
+2026-03-24 12:55:24,710 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 1 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 12:55:24,715 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.009s]
+2026-03-24 12:55:24,715 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 14 times in a row, putting on 30 second timeout
+2026-03-24 12:55:24,717 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 1 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 12:55:24,726 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.013s]
+2026-03-24 12:55:24,729 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.009s]
+2026-03-24 12:55:24,730 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 15 times in a row, putting on 30 second timeout
+2026-03-24 12:55:24,731 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 15 times in a row, putting on 30 second timeout
+2026-03-24 12:55:24,732 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 2 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 12:55:24,731 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 2 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 12:55:24,744 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.009s]
+2026-03-24 12:55:24,747 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.012s]
+2026-03-24 12:55:24,749 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 16 times in a row, putting on 30 second timeout
+2026-03-24 12:55:24,751 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 4/5 failed: Connection error caused by: ConnectionError(Connection error caused by: ServerDisconnectedError(Server disconnected))
+2026-03-24 12:55:24,751 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 16 times in a row, putting on 30 second timeout
+2026-03-24 12:55:24,754 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 4/5 failed: Connection error caused by: ConnectionError(Connection error caused by: ServerDisconnectedError(Server disconnected))
+2026-03-24 12:55:27,767 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.007s]
+2026-03-24 12:55:27,767 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 17 times in a row, putting on 30 second timeout
+2026-03-24 12:55:27,768 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.008s]
+2026-03-24 12:55:27,768 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 17 times in a row, putting on 30 second timeout
+2026-03-24 12:55:27,768 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 0 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 12:55:27,769 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 0 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 12:55:27,777 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.006s]
+2026-03-24 12:55:27,777 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 18 times in a row, putting on 30 second timeout
+2026-03-24 12:55:27,777 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.007s]
+2026-03-24 12:55:27,778 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 18 times in a row, putting on 30 second timeout
+2026-03-24 12:55:27,778 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 1 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 12:55:27,779 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 1 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 12:55:27,787 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.008s]
+2026-03-24 12:55:27,788 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 19 times in a row, putting on 30 second timeout
+2026-03-24 12:55:27,789 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.008s]
+2026-03-24 12:55:27,790 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 19 times in a row, putting on 30 second timeout
+2026-03-24 12:55:27,789 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 2 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 12:55:27,791 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 2 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 12:55:27,799 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.007s]
+2026-03-24 12:55:27,800 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 20 times in a row, putting on 30 second timeout
+2026-03-24 12:55:27,801 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 5/5 failed: Connection error caused by: ConnectionError(Connection error caused by: ServerDisconnectedError(Server disconnected))
+2026-03-24 12:55:27,802 | ERROR | src.core.elasticsearch | Could not connect to Elasticsearch after 5 attempts
+2026-03-24 12:55:27,802 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.009s]
+2026-03-24 12:55:27,803 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 20 times in a row, putting on 30 second timeout
+2026-03-24 12:55:27,804 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 5/5 failed: Connection error caused by: ConnectionError(Connection error caused by: ServerDisconnectedError(Server disconnected))
+2026-03-24 12:55:27,804 | ERROR | src.core.elasticsearch | Could not connect to Elasticsearch after 5 attempts
+2026-03-24 12:55:28,099 | ERROR | asyncio | Unclosed client session
+client_session: <aiohttp.client.ClientSession object at 0x00000195462E6900>
+2026-03-24 12:55:28,113 | ERROR | asyncio | Unclosed client session
+client_session: <aiohttp.client.ClientSession object at 0x000002E8928B6900>
+2026-03-24 13:00:16,756 | INFO | src.services.auth_service | Login success user_id=089f9d42-915a-4052-ab61-62f491de7132
+2026-03-24 14:01:36,428 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.025s]
+2026-03-24 14:01:36,430 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 1 times in a row, putting on 1 second timeout
+2026-03-24 14:01:36,431 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 0 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 14:01:36,449 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.010s]
+2026-03-24 14:01:36,450 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 2 times in a row, putting on 2 second timeout
+2026-03-24 14:01:36,452 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 1 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 14:01:36,465 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.009s]
+2026-03-24 14:01:36,466 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 3 times in a row, putting on 4 second timeout
+2026-03-24 14:01:36,467 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 2 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 14:01:36,481 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.009s]
+2026-03-24 14:01:36,481 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 4 times in a row, putting on 8 second timeout
+2026-03-24 14:01:36,483 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 1/5 failed: Connection error caused by: ConnectionError(Connection error caused by: ServerDisconnectedError(Server disconnected))
+2026-03-24 14:01:37,118 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.020s]
+2026-03-24 14:01:37,120 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 1 times in a row, putting on 1 second timeout
+2026-03-24 14:01:37,122 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 0 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 14:01:37,133 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.007s]
+2026-03-24 14:01:37,136 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 2 times in a row, putting on 2 second timeout
+2026-03-24 14:01:37,137 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 1 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 14:01:37,147 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.007s]
+2026-03-24 14:01:37,147 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 3 times in a row, putting on 4 second timeout
+2026-03-24 14:01:37,148 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 2 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 14:01:37,160 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.010s]
+2026-03-24 14:01:37,161 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 4 times in a row, putting on 8 second timeout
+2026-03-24 14:01:37,162 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 1/5 failed: Connection error caused by: ConnectionError(Connection error caused by: ServerDisconnectedError(Server disconnected))
+2026-03-24 14:01:39,488 | INFO | elastic_transport.node_pool | Resurrected node <AiohttpHttpNode(http://localhost:9200)> (force=False)
+2026-03-24 14:01:39,495 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.006s]
+2026-03-24 14:01:39,495 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 5 times in a row, putting on 16 second timeout
+2026-03-24 14:01:39,496 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 0 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 14:01:39,499 | INFO | elastic_transport.node_pool | Resurrected node <AiohttpHttpNode(http://localhost:9200)> (force=False)
+2026-03-24 14:01:39,508 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.008s]
+2026-03-24 14:01:39,508 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 6 times in a row, putting on 30 second timeout
+2026-03-24 14:01:39,509 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 1 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 14:01:39,516 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.006s]
+2026-03-24 14:01:39,517 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 7 times in a row, putting on 30 second timeout
+2026-03-24 14:01:39,518 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 2 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 14:01:39,528 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.007s]
+2026-03-24 14:01:39,528 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 8 times in a row, putting on 30 second timeout
+2026-03-24 14:01:39,529 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 2/5 failed: Connection error caused by: ConnectionError(Connection error caused by: ServerDisconnectedError(Server disconnected))
+2026-03-24 14:01:40,164 | INFO | elastic_transport.node_pool | Resurrected node <AiohttpHttpNode(http://localhost:9200)> (force=False)
+2026-03-24 14:01:40,171 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.007s]
+2026-03-24 14:01:40,171 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 5 times in a row, putting on 16 second timeout
+2026-03-24 14:01:40,172 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 0 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 14:01:40,175 | INFO | elastic_transport.node_pool | Resurrected node <AiohttpHttpNode(http://localhost:9200)> (force=False)
+2026-03-24 14:01:40,182 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.007s]
+2026-03-24 14:01:40,183 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 6 times in a row, putting on 30 second timeout
+2026-03-24 14:01:40,184 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 1 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 14:01:40,192 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.005s]
+2026-03-24 14:01:40,192 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 7 times in a row, putting on 30 second timeout
+2026-03-24 14:01:40,193 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 2 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 14:01:40,203 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.008s]
+2026-03-24 14:01:40,203 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 8 times in a row, putting on 30 second timeout
+2026-03-24 14:01:40,204 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 2/5 failed: Connection error caused by: ConnectionError(Connection error caused by: ServerDisconnectedError(Server disconnected))
+2026-03-24 14:01:42,531 | INFO | elastic_transport.node_pool | Resurrected node <AiohttpHttpNode(http://localhost:9200)> (force=False)
+2026-03-24 14:01:42,540 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.009s]
+2026-03-24 14:01:42,541 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 9 times in a row, putting on 30 second timeout
+2026-03-24 14:01:42,542 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 0 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 14:01:42,556 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.010s]
+2026-03-24 14:01:42,557 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 10 times in a row, putting on 30 second timeout
+2026-03-24 14:01:42,558 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 1 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 14:01:42,573 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.012s]
+2026-03-24 14:01:42,574 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 11 times in a row, putting on 30 second timeout
+2026-03-24 14:01:42,574 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 2 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 14:01:42,588 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.011s]
+2026-03-24 14:01:42,589 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 12 times in a row, putting on 30 second timeout
+2026-03-24 14:01:42,590 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 3/5 failed: Connection error caused by: ConnectionError(Connection error caused by: ServerDisconnectedError(Server disconnected))
+2026-03-24 14:01:43,215 | INFO | elastic_transport.node_pool | Resurrected node <AiohttpHttpNode(http://localhost:9200)> (force=False)
+2026-03-24 14:01:43,227 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.012s]
+2026-03-24 14:01:43,230 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 9 times in a row, putting on 30 second timeout
+2026-03-24 14:01:43,233 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 0 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 14:01:43,251 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.012s]
+2026-03-24 14:01:43,254 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 10 times in a row, putting on 30 second timeout
+2026-03-24 14:01:43,255 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 1 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 14:01:43,266 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.009s]
+2026-03-24 14:01:43,270 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 11 times in a row, putting on 30 second timeout
+2026-03-24 14:01:43,270 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 2 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 14:01:43,281 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.009s]
+2026-03-24 14:01:43,285 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 12 times in a row, putting on 30 second timeout
+2026-03-24 14:01:43,286 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 3/5 failed: Connection error caused by: ConnectionError(Connection error caused by: ServerDisconnectedError(Server disconnected))
+2026-03-24 14:01:45,596 | INFO | elastic_transport.node_pool | Resurrected node <AiohttpHttpNode(http://localhost:9200)> (force=False)
+2026-03-24 14:01:45,604 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.007s]
+2026-03-24 14:01:45,604 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 13 times in a row, putting on 30 second timeout
+2026-03-24 14:01:45,605 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 0 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 14:01:45,618 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.011s]
+2026-03-24 14:01:45,619 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 14 times in a row, putting on 30 second timeout
+2026-03-24 14:01:45,619 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 1 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 14:01:45,629 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.007s]
+2026-03-24 14:01:45,630 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 15 times in a row, putting on 30 second timeout
+2026-03-24 14:01:45,630 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 2 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 14:01:45,660 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.027s]
+2026-03-24 14:01:45,661 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 16 times in a row, putting on 30 second timeout
+2026-03-24 14:01:45,661 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 4/5 failed: Connection error caused by: ConnectionError(Connection error caused by: ServerDisconnectedError(Server disconnected))
+2026-03-24 14:01:46,295 | INFO | elastic_transport.node_pool | Resurrected node <AiohttpHttpNode(http://localhost:9200)> (force=False)
+2026-03-24 14:01:46,303 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.007s]
+2026-03-24 14:01:46,305 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 13 times in a row, putting on 30 second timeout
+2026-03-24 14:01:46,310 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 0 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 14:01:46,321 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.009s]
+2026-03-24 14:01:46,321 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 14 times in a row, putting on 30 second timeout
+2026-03-24 14:01:46,324 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 1 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 14:01:46,336 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.009s]
+2026-03-24 14:01:46,338 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 15 times in a row, putting on 30 second timeout
+2026-03-24 14:01:46,339 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 2 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 14:01:46,352 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.011s]
+2026-03-24 14:01:46,354 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 16 times in a row, putting on 30 second timeout
+2026-03-24 14:01:46,355 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 4/5 failed: Connection error caused by: ConnectionError(Connection error caused by: ServerDisconnectedError(Server disconnected))
+2026-03-24 14:01:48,679 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.009s]
+2026-03-24 14:01:48,680 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 17 times in a row, putting on 30 second timeout
+2026-03-24 14:01:48,680 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 0 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 14:01:48,691 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.008s]
+2026-03-24 14:01:48,691 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 18 times in a row, putting on 30 second timeout
+2026-03-24 14:01:48,691 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 1 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 14:01:48,703 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.009s]
+2026-03-24 14:01:48,704 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 19 times in a row, putting on 30 second timeout
+2026-03-24 14:01:48,704 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 2 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 14:01:48,726 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.020s]
+2026-03-24 14:01:48,727 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 20 times in a row, putting on 30 second timeout
+2026-03-24 14:01:48,728 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 5/5 failed: Connection error caused by: ConnectionError(Connection error caused by: ServerDisconnectedError(Server disconnected))
+2026-03-24 14:01:48,731 | ERROR | src.core.elasticsearch | Could not connect to Elasticsearch after 5 attempts
+2026-03-24 14:01:49,228 | ERROR | asyncio | Unclosed client session
+client_session: <aiohttp.client.ClientSession object at 0x0000022894CC6900>
+2026-03-24 14:01:49,682 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.321s]
+2026-03-24 14:01:49,684 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 17 times in a row, putting on 30 second timeout
+2026-03-24 14:01:49,685 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 0 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 14:01:49,696 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.008s]
+2026-03-24 14:01:49,698 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 18 times in a row, putting on 30 second timeout
+2026-03-24 14:01:49,698 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 1 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 14:01:49,709 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.007s]
+2026-03-24 14:01:49,709 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 19 times in a row, putting on 30 second timeout
+2026-03-24 14:01:49,710 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 2 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 14:01:49,724 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.009s]
+2026-03-24 14:01:49,726 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 20 times in a row, putting on 30 second timeout
+2026-03-24 14:01:49,727 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 5/5 failed: Connection error caused by: ConnectionError(Connection error caused by: ServerDisconnectedError(Server disconnected))
+2026-03-24 14:01:49,727 | ERROR | src.core.elasticsearch | Could not connect to Elasticsearch after 5 attempts
+2026-03-24 14:01:50,120 | ERROR | asyncio | Unclosed client session
+client_session: <aiohttp.client.ClientSession object at 0x0000022591926900>
+2026-03-24 14:04:29,656 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.126s]
+2026-03-24 14:04:29,659 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 1 times in a row, putting on 1 second timeout
+2026-03-24 14:04:29,660 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 0 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 14:04:29,677 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.011s]
+2026-03-24 14:04:29,678 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 2 times in a row, putting on 2 second timeout
+2026-03-24 14:04:29,680 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 1 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 14:04:29,697 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.012s]
+2026-03-24 14:04:29,700 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 3 times in a row, putting on 4 second timeout
+2026-03-24 14:04:29,701 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 2 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 14:04:29,716 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.011s]
+2026-03-24 14:04:29,719 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 4 times in a row, putting on 8 second timeout
+2026-03-24 14:04:29,720 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 1/5 failed: Connection error caused by: ConnectionError(Connection error caused by: ServerDisconnectedError(Server disconnected))
+2026-03-24 14:04:32,728 | INFO | elastic_transport.node_pool | Resurrected node <AiohttpHttpNode(http://localhost:9200)> (force=False)
+2026-03-24 14:04:32,735 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.006s]
+2026-03-24 14:04:32,736 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 5 times in a row, putting on 16 second timeout
+2026-03-24 14:04:32,737 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 0 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 14:04:32,738 | INFO | elastic_transport.node_pool | Resurrected node <AiohttpHttpNode(http://localhost:9200)> (force=False)
+2026-03-24 14:04:32,744 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.005s]
+2026-03-24 14:04:32,744 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 6 times in a row, putting on 30 second timeout
+2026-03-24 14:04:32,745 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 1 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 14:04:32,753 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.007s]
+2026-03-24 14:04:32,754 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 7 times in a row, putting on 30 second timeout
+2026-03-24 14:04:32,755 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 2 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 14:04:32,762 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.005s]
+2026-03-24 14:04:32,762 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 8 times in a row, putting on 30 second timeout
+2026-03-24 14:04:32,763 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 2/5 failed: Connection error caused by: ConnectionError(Connection error caused by: ServerDisconnectedError(Server disconnected))
+2026-03-24 14:04:35,766 | INFO | elastic_transport.node_pool | Resurrected node <AiohttpHttpNode(http://localhost:9200)> (force=False)
+2026-03-24 14:04:35,772 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.006s]
+2026-03-24 14:04:35,773 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 9 times in a row, putting on 30 second timeout
+2026-03-24 14:04:35,773 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 0 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 14:04:35,781 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.006s]
+2026-03-24 14:04:35,782 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 10 times in a row, putting on 30 second timeout
+2026-03-24 14:04:35,782 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 1 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 14:04:35,791 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.007s]
+2026-03-24 14:04:35,791 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 11 times in a row, putting on 30 second timeout
+2026-03-24 14:04:35,791 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 2 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 14:04:35,799 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.006s]
+2026-03-24 14:04:35,800 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 12 times in a row, putting on 30 second timeout
+2026-03-24 14:04:35,800 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 3/5 failed: Connection error caused by: ConnectionError(Connection error caused by: ServerDisconnectedError(Server disconnected))
+2026-03-24 14:04:38,807 | INFO | elastic_transport.node_pool | Resurrected node <AiohttpHttpNode(http://localhost:9200)> (force=False)
+2026-03-24 14:04:38,814 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.007s]
+2026-03-24 14:04:38,815 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 13 times in a row, putting on 30 second timeout
+2026-03-24 14:04:38,815 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 0 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 14:04:38,824 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.007s]
+2026-03-24 14:04:38,824 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 14 times in a row, putting on 30 second timeout
+2026-03-24 14:04:38,825 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 1 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 14:04:38,834 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.008s]
+2026-03-24 14:04:38,836 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 15 times in a row, putting on 30 second timeout
+2026-03-24 14:04:38,837 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 2 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 14:04:38,845 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.006s]
+2026-03-24 14:04:38,845 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 16 times in a row, putting on 30 second timeout
+2026-03-24 14:04:38,846 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 4/5 failed: Connection error caused by: ConnectionError(Connection error caused by: ServerDisconnectedError(Server disconnected))
+2026-03-24 14:04:41,863 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.010s]
+2026-03-24 14:04:41,864 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 17 times in a row, putting on 30 second timeout
+2026-03-24 14:04:41,865 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 0 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 14:04:41,876 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.008s]
+2026-03-24 14:04:41,876 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 18 times in a row, putting on 30 second timeout
+2026-03-24 14:04:41,877 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 1 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 14:04:41,887 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.008s]
+2026-03-24 14:04:41,888 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 19 times in a row, putting on 30 second timeout
+2026-03-24 14:04:41,888 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 2 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_async_transport.py", line 264, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\OneDrive\Documents\GitHub\ap-tourism-backend\venv\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 228, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 14:04:41,900 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.009s]
+2026-03-24 14:04:41,900 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 20 times in a row, putting on 30 second timeout
+2026-03-24 14:04:41,901 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 5/5 failed: Connection error caused by: ConnectionError(Connection error caused by: ServerDisconnectedError(Server disconnected))
+2026-03-24 14:04:41,901 | ERROR | src.core.elasticsearch | Could not connect to Elasticsearch after 5 attempts
+2026-03-24 14:04:42,174 | ERROR | asyncio | Unclosed client session
+client_session: <aiohttp.client.ClientSession object at 0x000002260D086900>
