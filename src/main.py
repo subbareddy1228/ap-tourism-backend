@@ -22,7 +22,7 @@ from contextlib import asynccontextmanager
 from src.core.config import settings
 from src.core.redis import init_redis, close_redis
 from src.core.logging import setup_logging
-# from src.core.elasticsearch import init_elasticsearch, close_elasticsearch  # ← ADDED
+from src.core.elasticsearch import init_elasticsearch, close_elasticsearch  # ← ADDED
 
 from src.api.v1.router import router as v1_router
 
@@ -31,13 +31,16 @@ setup_logging()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-     print("Starting services...")
-     await init_redis()
-    # await init_elasticsearch()   
-     yield
-     print("Shutting down services...")
-     await close_redis()
-    # await close_elasticsearch()  
+    print("Starting services...")
+    await init_redis()
+    try:
+        await init_elasticsearch()   # ← try, don't crash if ES is down
+    except Exception as e:
+        print(f"Elasticsearch unavailable: {e}. Search endpoints disabled.")
+    yield
+    print("Shutting down services...")
+    await close_redis()
+    await close_elasticsearch()
 
 
 app = FastAPI(
