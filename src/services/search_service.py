@@ -46,7 +46,8 @@ def _build_bool_query(must: list, filters: list) -> dict:
     return query
 
 
-async def global_search(q: str, user_id: Optional[int], limit: int = 5) -> GlobalSearchResult:
+# ← fix: user_id is Optional[str] not Optional[int]
+async def global_search(q: str, user_id: Optional[str], limit: int = 5) -> GlobalSearchResult:
     es = get_es_client()
 
     es_query = {
@@ -187,6 +188,7 @@ async def get_autocomplete(q: str) -> list[AutocompleteItem]:
     return items[:10]
 
 
+# ← fix: user_id is str not int
 async def _save_recent_search(user_id: str, query: str) -> None:
     redis = get_redis_client()
     if redis is None:
@@ -201,6 +203,7 @@ async def _save_recent_search(user_id: str, query: str) -> None:
         logger.warning("Could not save recent search: %s", exc)
 
 
+# ← fix: user_id is str not int
 async def get_recent_searches(user_id: str) -> list[str]:
     redis = get_redis_client()
     if redis is None:
@@ -242,6 +245,8 @@ async def search_temples(params: TempleSearchParams) -> EntitySearchResult:
         size=params.size,
     )
 
+    # ← fix: use .get() to avoid KeyError on empty index
+    agg_data = res.get("aggregations", {})
     return EntitySearchResult(
         query=params.q,
         total=res["hits"]["total"]["value"],
@@ -249,8 +254,8 @@ async def search_temples(params: TempleSearchParams) -> EntitySearchResult:
         size=params.size,
         results=[_hit_to_search_hit(h, "temple") for h in res["hits"]["hits"]],
         facets={
-            "districts":     {b["key"]: b["doc_count"] for b in res["aggregations"]["districts"]["buckets"]},
-            "darshan_types": {b["key"]: b["doc_count"] for b in res["aggregations"]["darshan_types"]["buckets"]},
+            "districts":     {b["key"]: b["doc_count"] for b in agg_data.get("districts",     {}).get("buckets", [])},
+            "darshan_types": {b["key"]: b["doc_count"] for b in agg_data.get("darshan_types", {}).get("buckets", [])},
         },
     )
 
@@ -297,6 +302,8 @@ async def search_hotels(params: HotelSearchParams) -> EntitySearchResult:
         size=params.size,
     )
 
+    # ← fix: use .get() to avoid KeyError on empty index
+    agg_data = res.get("aggregations", {})
     return EntitySearchResult(
         query=params.q,
         total=res["hits"]["total"]["value"],
@@ -304,11 +311,11 @@ async def search_hotels(params: HotelSearchParams) -> EntitySearchResult:
         size=params.size,
         results=[_hit_to_search_hit(h, "hotel") for h in res["hits"]["hits"]],
         facets={
-            "cities":       {b["key"]: b["doc_count"] for b in res["aggregations"]["cities"]["buckets"]},
-            "star_ratings": {b["key"]: b["doc_count"] for b in res["aggregations"]["star_ratings"]["buckets"]},
+            "cities":       {b["key"]: b["doc_count"] for b in agg_data.get("cities",       {}).get("buckets", [])},
+            "star_ratings": {b["key"]: b["doc_count"] for b in agg_data.get("star_ratings", {}).get("buckets", [])},
             "price_ranges": [
                 {"label": f"{b.get('from', 0)}-{b.get('to', '∞')}", "count": b["doc_count"]}
-                for b in res["aggregations"]["price_ranges"]["buckets"]
+                for b in agg_data.get("price_ranges", {}).get("buckets", [])
             ],
         },
     )
@@ -351,6 +358,8 @@ async def search_packages(params: PackageSearchParams) -> EntitySearchResult:
         size=params.size,
     )
 
+    # ← fix: use .get() to avoid KeyError on empty index
+    agg_data = res.get("aggregations", {})
     return EntitySearchResult(
         query=params.q,
         total=res["hits"]["total"]["value"],
@@ -358,8 +367,8 @@ async def search_packages(params: PackageSearchParams) -> EntitySearchResult:
         size=params.size,
         results=[_hit_to_search_hit(h, "package") for h in res["hits"]["hits"]],
         facets={
-            "package_types": {b["key"]: b["doc_count"] for b in res["aggregations"]["package_types"]["buckets"]},
-            "destinations":  {b["key"]: b["doc_count"] for b in res["aggregations"]["destinations"]["buckets"]},
+            "package_types": {b["key"]: b["doc_count"] for b in agg_data.get("package_types", {}).get("buckets", [])},
+            "destinations":  {b["key"]: b["doc_count"] for b in agg_data.get("destinations",  {}).get("buckets", [])},
         },
     )
 
@@ -391,6 +400,8 @@ async def search_destinations(params: DestinationSearchParams) -> EntitySearchRe
         size=params.size,
     )
 
+    # ← fix: use .get() to avoid KeyError on empty index
+    agg_data = res.get("aggregations", {})
     return EntitySearchResult(
         query=params.q,
         total=res["hits"]["total"]["value"],
@@ -398,7 +409,7 @@ async def search_destinations(params: DestinationSearchParams) -> EntitySearchRe
         size=params.size,
         results=[_hit_to_search_hit(h, "destination") for h in res["hits"]["hits"]],
         facets={
-            "types":    {b["key"]: b["doc_count"] for b in res["aggregations"]["types"]["buckets"]},
-            "districts":{b["key"]: b["doc_count"] for b in res["aggregations"]["districts"]["buckets"]},
+            "types":    {b["key"]: b["doc_count"] for b in agg_data.get("types",    {}).get("buckets", [])},
+            "districts":{b["key"]: b["doc_count"] for b in agg_data.get("districts",{}).get("buckets", [])},
         },
     )

@@ -89,7 +89,7 @@ async def register_user(data: RegisterRequest, db: AsyncSession) -> dict:
     await db.commit()
     # ─────────────────────────────────────────────────────────
 
-    otp = await generate_otp()
+    otp = generate_otp()
     await store_otp(data.phone, otp, purpose="register")
     await send_sms_otp(data.phone, otp)
 
@@ -133,7 +133,7 @@ async def resend_otp(phone: str, purpose: str) -> dict:
 
     await increment_resend_count(phone)
 
-    otp = await generate_otp()
+    otp = generate_otp()
 
     await store_otp(phone, otp, purpose=purpose)
     await send_sms_otp(phone, otp)
@@ -379,7 +379,7 @@ async def forgot_password(phone: str, db: AsyncSession) -> dict:
         # Don't reveal if user exists — return generic message
         return {"message": "If the number is registered, an OTP has been sent."}
 
-    otp = await generate_otp()
+    otp = generate_otp()
     await store_otp(phone, otp, purpose="forgot_password")
     await send_sms_otp(phone, otp)
 

@@ -9,6 +9,9 @@ CHANGED in M2:
 CHANGED in M3:
   - Added Swagger Bearer auth with persistAuthorization
   - Added custom OpenAPI schema with BearerAuth security scheme
+
+CHANGED in Search (M15):
+  - Added Elasticsearch init/close to lifespan
 """
 
 from fastapi import FastAPI
@@ -19,6 +22,7 @@ from contextlib import asynccontextmanager
 from src.core.config import settings
 from src.core.redis import init_redis, close_redis
 from src.core.logging import setup_logging
+from src.core.elasticsearch import init_elasticsearch, close_elasticsearch  # ← ADDED
 
 from src.api.v1.router import router as v1_router
 
@@ -29,8 +33,10 @@ setup_logging()
 async def lifespan(app: FastAPI):
     """Startup and shutdown events."""
     await init_redis()
+    await init_elasticsearch()   # ← ADDED
     yield
     await close_redis()
+    await close_elasticsearch()  # ← ADDED
 
 
 app = FastAPI(
@@ -71,7 +77,6 @@ def custom_openapi():
         routes=app.routes,
     )
 
-    # Add Bearer token security scheme
     openapi_schema["components"]["securitySchemes"] = {
         "BearerAuth": {
             "type": "http",
@@ -81,11 +86,9 @@ def custom_openapi():
         }
     }
 
-    # Apply security to all routes except auth and health
     for path, path_item in openapi_schema["paths"].items():
         for method in path_item.values():
             if isinstance(method, dict):
-                # Skip public endpoints
                 if any(tag in method.get("tags", []) for tag in ["Authentication", "Health"]):
                     method["security"] = []
                 else:

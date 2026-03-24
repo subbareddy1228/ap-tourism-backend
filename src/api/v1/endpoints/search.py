@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 async def global_search(
     q: Annotated[str, Query(min_length=2, description="Search query (min 2 chars)")],
     limit: Annotated[int, Query(ge=1, le=20)] = 5,
-    user_id: Optional[int] = Depends(get_optional_user_id),
+    user_id: Optional[str] = Depends(get_optional_user_id),  # ← fix: str not int
 ) -> GlobalSearchResult:
     return await search_service.global_search(q=q, limit=limit, user_id=user_id)
 
@@ -45,7 +45,7 @@ async def autocomplete(
 
 @router.get("/recent", response_model=list[str], summary="Recent Searches")
 async def recent_searches(
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_user_id),  # ← secure: JWT auth not query param
 ) -> list[str]:
     return await search_service.get_recent_searches(user_id=user_id)
 
