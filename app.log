@@ -3003,3 +3003,215 @@ elastic_transport.ConnectionError: Connection error caused by: ServerDisconnecte
 2026-03-24 16:44:37,093 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 20 times in a row, putting on 30 second timeout
 2026-03-24 16:44:37,094 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 5/5 failed: Connection error caused by: ConnectionError(Connection error caused by: ServerDisconnectedError(Server disconnected))
 2026-03-24 16:44:37,094 | ERROR | src.core.elasticsearch | Could not connect to Elasticsearch after 5 attempts
+2026-03-24 16:50:07,116 | INFO | src.core.elasticsearch | Elasticsearch connection closed
+2026-03-24 16:50:17,608 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.045s]
+2026-03-24 16:50:17,609 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 1 times in a row, putting on 1 second timeout
+2026-03-24 16:50:17,610 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 0 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 16:50:17,627 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.008s]
+2026-03-24 16:50:17,629 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 2 times in a row, putting on 2 second timeout
+2026-03-24 16:50:17,630 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 1 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 16:50:17,644 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.008s]
+2026-03-24 16:50:17,645 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 3 times in a row, putting on 4 second timeout
+2026-03-24 16:50:17,647 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 2 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 16:50:17,659 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.008s]
+2026-03-24 16:50:17,660 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 4 times in a row, putting on 8 second timeout
+2026-03-24 16:50:17,661 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 1/5 failed: Connection error caused by: ConnectionError(Connection error caused by: ServerDisconnectedError(Server disconnected))
+2026-03-24 16:50:20,666 | INFO | elastic_transport.node_pool | Resurrected node <AiohttpHttpNode(http://localhost:9200)> (force=False)
+2026-03-24 16:50:20,675 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.008s]
+2026-03-24 16:50:20,675 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 5 times in a row, putting on 16 second timeout
+2026-03-24 16:50:20,677 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 0 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 16:50:20,684 | INFO | elastic_transport.node_pool | Resurrected node <AiohttpHttpNode(http://localhost:9200)> (force=False)
+2026-03-24 16:50:20,694 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.007s]
+2026-03-24 16:50:20,700 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 6 times in a row, putting on 30 second timeout
+2026-03-24 16:50:20,704 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 1 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 16:50:20,714 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.008s]
+2026-03-24 16:50:20,716 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 7 times in a row, putting on 30 second timeout
+2026-03-24 16:50:20,720 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 2 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 16:50:20,976 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.254s]
+2026-03-24 16:50:20,976 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 8 times in a row, putting on 30 second timeout
+2026-03-24 16:50:20,978 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 2/5 failed: Connection error caused by: ConnectionError(Connection error caused by: ServerDisconnectedError(Server disconnected))
+2026-03-24 16:50:23,986 | INFO | elastic_transport.node_pool | Resurrected node <AiohttpHttpNode(http://localhost:9200)> (force=False)
+2026-03-24 16:50:23,992 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.006s]
+2026-03-24 16:50:23,993 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 9 times in a row, putting on 30 second timeout
+2026-03-24 16:50:23,996 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 0 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 16:50:24,004 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.006s]
+2026-03-24 16:50:24,004 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 10 times in a row, putting on 30 second timeout
+2026-03-24 16:50:24,005 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 1 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 16:50:24,013 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.006s]
+2026-03-24 16:50:24,013 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 11 times in a row, putting on 30 second timeout
+2026-03-24 16:50:24,014 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 2 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 16:50:24,025 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.008s]
+2026-03-24 16:50:24,025 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 12 times in a row, putting on 30 second timeout
+2026-03-24 16:50:24,027 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 3/5 failed: Connection error caused by: ConnectionError(Connection error caused by: ServerDisconnectedError(Server disconnected))
+2026-03-24 16:50:27,041 | INFO | elastic_transport.node_pool | Resurrected node <AiohttpHttpNode(http://localhost:9200)> (force=False)
+2026-03-24 16:50:27,049 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.007s]
+2026-03-24 16:50:27,051 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 13 times in a row, putting on 30 second timeout
+2026-03-24 16:50:27,052 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 0 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 16:50:27,067 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.012s]
+2026-03-24 16:50:27,068 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 14 times in a row, putting on 30 second timeout
+2026-03-24 16:50:27,069 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 1 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 16:50:27,079 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.009s]
+2026-03-24 16:50:27,084 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 15 times in a row, putting on 30 second timeout
+2026-03-24 16:50:27,085 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 2 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 16:50:27,096 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.008s]
+2026-03-24 16:50:27,099 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 16 times in a row, putting on 30 second timeout
+2026-03-24 16:50:27,100 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 4/5 failed: Connection error caused by: ConnectionError(Connection error caused by: ServerDisconnectedError(Server disconnected))
+2026-03-24 16:50:30,114 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.008s]
+2026-03-24 16:50:30,115 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 17 times in a row, putting on 30 second timeout
+2026-03-24 16:50:30,115 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 0 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 16:50:30,121 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.004s]
+2026-03-24 16:50:30,121 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 18 times in a row, putting on 30 second timeout
+2026-03-24 16:50:30,122 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 1 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 16:50:30,130 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.007s]
+2026-03-24 16:50:30,131 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 19 times in a row, putting on 30 second timeout
+2026-03-24 16:50:30,131 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 2 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
