@@ -80,25 +80,27 @@ async def get_full_profile(current_user: User, db: AsyncSession) -> dict:
 
 
 async def update_profile(data: UpdateProfileRequest, current_user: User, db: AsyncSession) -> dict:
-
+ 
     if data.full_name is not None:
         current_user.full_name = data.full_name
-
+ 
+    db.add(current_user)  # ← ensure SQLAlchemy tracks this object in the session
+ 
     profile = await get_or_create_profile(str(current_user.id), db)
-
+ 
     if data.date_of_birth is not None:
         profile.date_of_birth = data.date_of_birth
-
+ 
     if data.gender is not None:
         profile.gender = data.gender
-
+ 
     if data.language is not None:
         profile.language = data.language
-
+ 
     profile.updated_at = datetime.utcnow()
-
+ 
     await db.commit()
-
+ 
     return await get_full_profile(current_user, db)
 
 

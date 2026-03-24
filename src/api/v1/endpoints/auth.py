@@ -230,35 +230,30 @@ async def refresh_token(
     summary="Logout from current device"
 )
 async def logout(data: LogoutRequest):
-    """
-    Logout from current device.
-    Pass your access_token in the request body.
-    JTI will be blacklisted in Redis.
-    """
     from src.core.security import decode_token
     payload = decode_token(data.access_token)
-    user_id = payload.get("sub") if payload else None
+    if not payload or payload.get("sub") is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token"
+        )
+    user_id = payload.get("sub")
     result = await auth_service.logout(user_id, data.access_token)
-    return APIResponse.success(message=result["message"])   # ← return added
+    return APIResponse.success(message=result["message"])
 
 
 # ── 9. Logout All Devices ─────────────────────────────────────
-@router.post(
-    "/logout-all",
-    response_model=APIResponse,
-    summary="Logout from all devices"
-)
 async def logout_all(data: LogoutRequest):
-    """
-    Logout from ALL devices simultaneously.
-    Pass your access_token in the request body.
-    All sessions will be removed from Redis.
-    """
     from src.core.security import decode_token
     payload = decode_token(data.access_token)
-    user_id = payload.get("sub") if payload else None
+    if not payload or payload.get("sub") is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token"
+        )
+    user_id = payload.get("sub")
     result = await auth_service.logout_all(user_id, data.access_token)
-    return APIResponse.success(message=result["message"])   # ← return added
+    return APIResponse.success(message=result["message"])
 
 
 # ── 10. Forgot Password ───────────────────────────────────────

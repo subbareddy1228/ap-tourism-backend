@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from src.api.v1.endpoints import auth, bookings, coupons, destination, guide, notifications, packages, payments, reviews, users, vehicles, wallet, partner, temple, darshan, hotels, search, support, tracking
+from src.api.v1.endpoints import admin, auth, bookings, coupons, destination, guide, notifications, packages, payments, reviews, users, vehicles, wallet, partner, temple, darshan, hotels, search, support, tracking
 
 router = APIRouter()
 
@@ -22,3 +22,4 @@ router.include_router(search.router)
 router.include_router(notifications.router)
 router.include_router(support.router)
 router.include_router(tracking.router)
+router.include_router(admin.router)

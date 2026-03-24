@@ -1,169 +1,125 @@
-from pydantic import BaseModel, EmailStr
+"""
+schemas/admin.py
+Admin module schemas — fixed for LEV146 (Pydantic v2).
+"""
+from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
+from uuid import UUID
 
 
-# ── User Schemas ──────────────────────────────────────
-class UserUpdateSchema(BaseModel):
-    name: Optional[str]
-    email: Optional[str]
-    language: Optional[str]
-    date_of_birth: Optional[str]
-    gender: Optional[str]
-
-    class Config:
-        from_attributes = True
-
-
+# ── User ──────────────────────────────────────────────
 class UserStatusUpdate(BaseModel):
     status: str   # ACTIVE | SUSPENDED
 
 
 class UserRoleUpdate(BaseModel):
-    role: str     # USER | ADMIN | SUPPORT
+    role: str     # traveler | partner | admin
 
 
-class KYCVerifySchema(BaseModel):
-    approved: bool
-    rejection_reason: Optional[str]
-
-
-# ── Partner Schemas ───────────────────────────────────
+# ── Partner ───────────────────────────────────────────
 class PartnerStatusUpdate(BaseModel):
     status: str   # ACTIVE | SUSPENDED
 
 
 class VerifySchema(BaseModel):
     approved: bool
-    rejection_reason: Optional[str]
+    rejection_reason: Optional[str] = None
 
 
 class CommissionSchema(BaseModel):
     rate: float
 
 
-# ── Booking Schemas ───────────────────────────────────
+# ── Booking ───────────────────────────────────────────
 class BookingStatusUpdate(BaseModel):
     status: str
 
 
-class AssignGuideSchema(BaseModel):
-    guide_id: int
-
-
-class AssignDriverSchema(BaseModel):
-    driver_id: int
-
-
-# ── Content Schemas ───────────────────────────────────
+# ── Temple ────────────────────────────────────────────
 class TempleCreateSchema(BaseModel):
-    name: str
-    deity: str
-    district: str
-    description: Optional[str]
+    name:        str
+    deity:       Optional[str] = None
+    district:    str
+    description: Optional[str] = None
     is_featured: Optional[bool] = False
 
 
 class TempleUpdateSchema(BaseModel):
-    name: Optional[str]
-    deity: Optional[str]
-    district: Optional[str]
-    description: Optional[str]
-    is_featured: Optional[bool]
-    is_active: Optional[bool]
+    name:        Optional[str] = None
+    deity:       Optional[str] = None
+    district:    Optional[str] = None
+    description: Optional[str] = None
+    is_featured: Optional[bool] = None
+    is_active:   Optional[bool] = None
 
 
+# ── Destination ───────────────────────────────────────
 class DestinationCreateSchema(BaseModel):
-    name: str
-    type: str
-    district: str
-    description: Optional[str]
+    name:        str
+    slug:        str
+    type:        str
+    district:    str
+    tagline:     str
+    description: str
     is_featured: Optional[bool] = False
 
 
 class DestinationUpdateSchema(BaseModel):
-    name: Optional[str]
-    type: Optional[str]
-    district: Optional[str]
-    description: Optional[str]
-    is_featured: Optional[bool]
-    is_active: Optional[bool]
+    name:        Optional[str] = None
+    type:        Optional[str] = None
+    district:    Optional[str] = None
+    description: Optional[str] = None
+    is_featured: Optional[bool] = None
+    is_active:   Optional[bool] = None
 
 
+# ── Package ───────────────────────────────────────────
 class PackageCreateSchema(BaseModel):
-    name: str
-    duration_days: int
-    type: str
+    name:            str
+    duration_days:   int
+    package_type:    str
     budget_category: str
-    price: float
-    itinerary: Optional[dict]
-    is_featured: Optional[bool] = False
+    price:           float
+    is_featured:     Optional[bool] = False
 
 
 class PackageUpdateSchema(BaseModel):
-    name: Optional[str]
-    duration_days: Optional[int]
-    type: Optional[str]
-    budget_category: Optional[str]
-    price: Optional[float]
-    itinerary: Optional[dict]
-    is_featured: Optional[bool]
-    is_active: Optional[bool]
+    name:            Optional[str]   = None
+    duration_days:   Optional[int]   = None
+    package_type:    Optional[str]   = None
+    budget_category: Optional[str]   = None
+    price:           Optional[float] = None
+    is_featured:     Optional[bool]  = None
+    is_active:       Optional[bool]  = None
 
 
-# ── Support Schemas ───────────────────────────────────
+# ── Support ───────────────────────────────────────────
 class AssignAgentSchema(BaseModel):
-    agent_id: int
+    agent_id: UUID
 
 
-# ── FAQ Schemas ───────────────────────────────────────
-class FAQCreateSchema(BaseModel):
-    question: str
-    answer: str
-    category: str
-
-
-class FAQUpdateSchema(BaseModel):
-    question: Optional[str]
-    answer: Optional[str]
-    category: Optional[str]
-    is_active: Optional[bool]
-
-
-# ── Coupon Schemas ────────────────────────────────────
+# ── Coupon ────────────────────────────────────────────
 class CouponCreateSchema(BaseModel):
-    code: str
-    discount_type: str
+    code:           str
+    discount_type:  str
     discount_value: float
-    min_order: Optional[float] = 0
-    max_uses: Optional[int]
-    expires_at: Optional[datetime]
+    valid_from:     datetime
+    valid_until:    datetime
+    min_order_value: Optional[float] = 0
+    max_uses:        Optional[int]   = None
+    is_active:       Optional[bool]  = True
 
 
 class CouponUpdateSchema(BaseModel):
-    discount_type: Optional[str]
-    discount_value: Optional[float]
-    min_order: Optional[float]
-    max_uses: Optional[int]
-    is_active: Optional[bool]
-    expires_at: Optional[datetime]
+    discount_type:  Optional[str]   = None
+    discount_value: Optional[float] = None
+    min_order_value: Optional[float] = None
+    max_uses:        Optional[int]  = None
+    is_active:       Optional[bool] = None
+    valid_until:     Optional[datetime] = None
 
 
-# ── Banner Schemas ────────────────────────────────────
-class BannerCreateSchema(BaseModel):
-    title: str
-    image_url: str
-    link: Optional[str]
-    is_active: Optional[bool] = True
-
-
-class BannerUpdateSchema(BaseModel):
-    title: Optional[str]
-    image_url: Optional[str]
-    link: Optional[str]
-    is_active: Optional[bool]
-
-
-# ── Settings Schema ───────────────────────────────────
+# ── Settings ──────────────────────────────────────────
 class SettingUpdateSchema(BaseModel):
     value: str

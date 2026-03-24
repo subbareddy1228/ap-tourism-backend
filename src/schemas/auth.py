@@ -43,9 +43,11 @@ class RegisterRequest(BaseModel):
     full_name: Optional[str] = None
 
     @field_validator("phone")
+    @classmethod
     def phone_valid(cls, v): return validate_phone(v)
 
     @field_validator("password")
+    @classmethod
     def password_valid(cls, v): return validate_password(v)
 
 
@@ -55,6 +57,7 @@ class SendOTPRequest(BaseModel):
     purpose: str = "register"   # register | login | forgot_password
 
     @field_validator("phone")
+    @classmethod
     def phone_valid(cls, v): return validate_phone(v)
 
 
@@ -65,9 +68,11 @@ class VerifyOTPRequest(BaseModel):
     purpose: str = "register"
 
     @field_validator("phone")
+    @classmethod
     def phone_valid(cls, v): return validate_phone(v)
 
     @field_validator("otp")
+    @classmethod
     def otp_valid(cls, v):
         if not v.isdigit() or len(v) != 6:
             raise ValueError("OTP must be a 6-digit number")
@@ -80,6 +85,7 @@ class ResendOTPRequest(BaseModel):
     purpose: str = "register"
 
     @field_validator("phone")
+    @classmethod
     def phone_valid(cls, v): return validate_phone(v)
 
 
@@ -90,6 +96,7 @@ class LoginRequest(BaseModel):
     device_id: Optional[str] = "default"   # for multi-device session tracking
 
     @field_validator("phone")
+    @classmethod
     def phone_valid(cls, v): return validate_phone(v)
 
 class LogoutRequest(BaseModel):
@@ -104,6 +111,7 @@ class OTPLoginRequest(BaseModel):
     device_id: Optional[str] = "default"
 
     @field_validator("phone")
+    @classmethod
     def phone_valid(cls, v): return validate_phone(v)
 
 
@@ -117,6 +125,7 @@ class ForgotPasswordRequest(BaseModel):
     phone: str
 
     @field_validator("phone")
+    @classmethod
     def phone_valid(cls, v): return validate_phone(v)
 
 
@@ -127,9 +136,12 @@ class ResetPasswordRequest(BaseModel):
     new_password: str
 
     @field_validator("phone")
+    @classmethod
     def phone_valid(cls, v): return validate_phone(v)
 
     @field_validator("new_password")
+    @classmethod
+
     def password_valid(cls, v): return validate_password(v)
 
 
@@ -139,6 +151,7 @@ class ChangePasswordRequest(BaseModel):
     new_password: str
 
     @field_validator("new_password")
+    @classmethod
     def password_valid(cls, v): return validate_password(v)
 
 

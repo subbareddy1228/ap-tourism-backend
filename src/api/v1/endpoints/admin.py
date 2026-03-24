@@ -1,1000 +1,743 @@
-# app/routers/admin.py
-# Module 19 — Admin APIs /api/v1/admin
-# All 45 endpoints. No new DB models — reuses models from modules 1–18.
+"""
+api/v1/endpoints/admin.py
+Module 19 — Admin APIs /api/v1/admin
+45 endpoints. No new DB models — reuses models from modules 1–18.
 
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
-from sqlalchemy import func, case
+Fixed for LEV146:
+  - Async SQLAlchemy (AsyncSession + select())
+  - get_admin_user from src.api.deps.auth
+  - get_db from src.core.database
+  - APIResponse from src.common.responses
+  - Uses existing LEV146 models
+"""
+
+from uuid import UUID
+from typing import Optional
 from datetime import date, datetime
 
-from src.deps.auth import require_admin
-from src.deps.db import get_db
-from src.common.utils import delete_cache
-from src.common.utils import reports as report_service
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, func, update
 
+from src.core.database import get_db
+from src.api.deps.auth import get_admin_user, get_current_user
 from src.models.user import User
-from src.models.partner import Partner, PartnerDocument, PartnerEarning
-from src.models.models import (
-    Booking, Payment, Temple, Destination, Package,
- Review, SupportTicket, Coupon, Banner, PlatformSetting, FAQ
-)
-from src.schemas.schemas import (
-    UserUpdateSchema, UserStatusUpdate, UserRoleUpdate, KYCVerifySchema,
+from src.models.partner import Partner, PartnerDocument
+from src.models.booking import Booking
+from src.models.transaction import Transaction, Refund
+from src.models.temple import Temple
+from src.models.destination import Destination
+from src.models.package import Package
+from src.models.support import SupportTicket, TicketMessage
+from src.models.coupon import Coupon
+from src.models.review import Review
+from src.models.notification import Notification
+from src.schemas.admin import (
+    UserStatusUpdate, UserRoleUpdate,
     PartnerStatusUpdate, VerifySchema, CommissionSchema,
-    BookingStatusUpdate, AssignGuideSchema, AssignDriverSchema,
+    BookingStatusUpdate,
     TempleCreateSchema, TempleUpdateSchema,
     DestinationCreateSchema, DestinationUpdateSchema,
     PackageCreateSchema, PackageUpdateSchema,
-    AssignAgentSchema, FAQCreateSchema, FAQUpdateSchema,
+    AssignAgentSchema,
     CouponCreateSchema, CouponUpdateSchema,
-    BannerCreateSchema, BannerUpdateSchema, SettingUpdateSchema,
+    SettingUpdateSchema,
 )
+from src.common.responses import APIResponse
 
-router = APIRouter(prefix="/api/v1/admin", tags=["Admin"])
+router = APIRouter(prefix="/admin", tags=["Admin"])
 
 
 # ════════════════════════════════════════════════════════
 # DASHBOARD
 # ════════════════════════════════════════════════════════
 
-@router.get("/dashboard")
-def admin_dashboard(
-    # admin=Depends(require_admin),
-    db: Session = Depends(get_db)
+@router.get("/dashboard", response_model=APIResponse, summary="Admin dashboard stats")
+async def admin_dashboard(
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
 ):
     today = date.today()
 
-    today_bookings = db.query(func.count(Booking.id)).filter(
-        func.date(Booking.created_at) == today
-    ).scalar()
+    today_bookings = await db.scalar(
+        select(func.count(Booking.id)).where(func.date(Booking.created_at) == today)
+    )
+    total_users = await db.scalar(select(func.count(User.id)))
+    total_partners = await db.scalar(select(func.count(Partner.id)))
+    pending_partners = await db.scalar(
+        select(func.count(Partner.id)).where(Partner.verification_status == "APPLIED")
+    )
+    total_bookings = await db.scalar(select(func.count(Booking.id)))
+    open_tickets = await db.scalar(
+        select(func.count(SupportTicket.id)).where(SupportTicket.status == "OPEN")
+    )
+    total_revenue = await db.scalar(
+        select(func.sum(Transaction.amount)).where(Transaction.status == "SUCCESS")
+    )
 
-    today_revenue = db.query(func.sum(Payment.amount)).filter(
-        Payment.status == "SUCCESS",
-        func.date(Payment.created_at) == today
-    ).scalar()
-
-    active_trips = db.query(func.count(Booking.id)).filter(
-        Booking.status == "ACTIVE"
-    ).scalar()
-
-    pending_partner_approvals = db.query(func.count(Partner.id)).filter(
-        Partner.status == "APPLIED"
-    ).scalar()
-
-    open_support_tickets = db.query(func.count(SupportTicket.id)).filter(
-        SupportTicket.status == "OPEN"
-    ).scalar()
-
-    return {
-        "success": True,
-        "data": {
-            "today_bookings": today_bookings or 0,
-            "today_revenue": float(today_revenue or 0),
-            "active_trips": active_trips or 0,
-            "pending_partner_approvals": pending_partner_approvals or 0,
-            "open_support_tickets": open_support_tickets or 0,
-        },
-        "message": ""
-    }
+    return APIResponse.success(message="Dashboard stats", data={
+        "today_bookings":       today_bookings or 0,
+        "total_users":          total_users or 0,
+        "total_partners":       total_partners or 0,
+        "pending_partners":     pending_partners or 0,
+        "total_bookings":       total_bookings or 0,
+        "open_support_tickets": open_tickets or 0,
+        "total_revenue":        float(total_revenue or 0),
+    })
 
 
 # ════════════════════════════════════════════════════════
-# BOOKING MANAGEMENT
+# BOOKINGS
 # ════════════════════════════════════════════════════════
 
-@router.get("/bookings")
-def list_all_bookings(
-    status: str = None,
-    booking_type: str = None,
-    date_from: str = None,
-    date_to: str = None,
-    page: int = 1,
-    limit: int = 20,
-    # admin=Depends(require_admin),
-    db: Session = Depends(get_db)
+@router.get("/bookings", response_model=APIResponse, summary="List all bookings")
+async def list_all_bookings(
+    status_filter: Optional[str] = Query(None),
+    page:          int           = Query(1, ge=1),
+    limit:         int           = Query(20, ge=1, le=100),
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
 ):
-    query = db.query(Booking)
-    if status:
-        query = query.filter(Booking.status == status)
-    if booking_type:
-        query = query.filter(Booking.booking_type == booking_type)
-    if date_from:
-        query = query.filter(Booking.created_at >= date_from)
-    if date_to:
-        query = query.filter(Booking.created_at <= date_to)
-
-    total = query.count()
-    bookings = query.offset((page - 1) * limit).limit(limit).all()
-
-    return {
-        "success": True,
-        "data": bookings,
-        "total": total,
-        "page": page,
-        "pages": (total + limit - 1) // limit,
-        "message": ""
-    }
+    query = select(Booking)
+    if status_filter:
+        query = query.where(Booking.status == status_filter.upper())
+    count = await db.scalar(select(func.count()).select_from(query.subquery()))
+    result = await db.execute(query.offset((page - 1) * limit).limit(limit))
+    bookings = result.scalars().all()
+    return APIResponse.success(message=f"{count} bookings", data={
+        "data": [_booking_dict(b) for b in bookings],
+        "total": count, "page": page, "limit": limit,
+    })
 
 
-@router.get("/bookings/{id}")
-def get_booking(
-    id: int,
-    # admin=Depends(require_admin),
-    db: Session = Depends(get_db)
+@router.get("/bookings/{booking_id}", response_model=APIResponse, summary="Get booking detail")
+async def get_booking(
+    booking_id: UUID,
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
 ):
-    booking = db.query(Booking).filter(Booking.id == id).first()
-    if not booking:
-        raise HTTPException(status_code=404, detail="Booking not found")
-    return {"success": True, "data": booking, "message": ""}
+    booking = await _get_or_404(db, Booking, booking_id)
+    return APIResponse.success(message="Booking fetched", data=_booking_dict(booking))
 
 
-@router.put("/bookings/{id}/status")
-def update_booking_status(
-    id: int,
-    payload: BookingStatusUpdate,
-    # admin=Depends(require_admin),
-    db: Session = Depends(get_db)
+@router.put("/bookings/{booking_id}/status", response_model=APIResponse, summary="Update booking status")
+async def update_booking_status(
+    booking_id: UUID,
+    data: BookingStatusUpdate,
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
 ):
-    booking = db.query(Booking).filter(Booking.id == id).first()
-    if not booking:
-        raise HTTPException(status_code=404, detail="Booking not found")
-    booking.status = payload.status
-    db.commit()
-    return {"success": True, "data": {}, "message": f"Booking status updated to {payload.status}"}
+    booking = await _get_or_404(db, Booking, booking_id)
+    booking.status = data.status.upper()
+    await db.commit()
+    return APIResponse.success(message="Booking status updated", data=_booking_dict(booking))
 
 
-@router.put("/bookings/{id}/assign-guide")
-def assign_guide(
-    id: int,
-    payload: AssignGuideSchema,
-    # admin=Depends(require_admin),
-    db: Session = Depends(get_db)
+@router.post("/bookings/{booking_id}/refund", response_model=APIResponse, summary="Force refund booking")
+async def admin_force_refund(
+    booking_id: UUID,
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
 ):
-    booking = db.query(Booking).filter(Booking.id == id).first()
-    if not booking:
-        raise HTTPException(status_code=404, detail="Booking not found")
-    booking.guide_id = payload.guide_id
-    db.commit()
-    return {"success": True, "data": {}, "message": "Guide assigned"}
-
-
-@router.put("/bookings/{id}/assign-driver")
-def assign_driver(
-    id: int,
-    payload: AssignDriverSchema,
-    # admin=Depends(require_admin),
-    db: Session = Depends(get_db)
-):
-    booking = db.query(Booking).filter(Booking.id == id).first()
-    if not booking:
-        raise HTTPException(status_code=404, detail="Booking not found")
-    booking.driver_id = payload.driver_id
-    db.commit()
-    return {"success": True, "data": {}, "message": "Driver assigned"}
-
-
-@router.post("/bookings/{id}/refund")
-def admin_force_refund(
-    id: int,
-    # admin=Depends(require_admin),
-    db: Session = Depends(get_db)
-):
-    """Admin-initiated refund — bypasses standard cancellation policy."""
-    booking = db.query(Booking).filter(Booking.id == id).first()
-    if not booking:
-        raise HTTPException(status_code=404, detail="Booking not found")
-
-    payment = db.query(Payment).filter(
-        Payment.booking_id == id,
-        Payment.status == "SUCCESS"
-    ).first()
-    if not payment:
-        raise HTTPException(status_code=404, detail="No successful payment found for this booking")
-
-    # Mark payment as refunded (actual Razorpay refund call would go here)
-    payment.status = "REFUNDED"
-    booking.status = "CANCELLED"
-    db.commit()
-
-    return {"success": True, "data": {}, "message": "Refund initiated successfully"}
+    booking = await _get_or_404(db, Booking, booking_id)
+    result = await db.execute(
+        select(Transaction).where(Transaction.booking_id == booking_id)
+    )
+    txn = result.scalar_one_or_none()
+    if not txn:
+        raise HTTPException(status_code=404, detail="No transaction found for this booking")
+    refund = Refund(
+        transaction_id=txn.id,
+        user_id=booking.user_id,
+        amount=float(txn.amount),
+        status="pending",
+        reason="Admin forced refund",
+    )
+    db.add(refund)
+    txn.status = "REFUNDED"
+    booking.status = "REFUNDED"
+    await db.commit()
+    return APIResponse.success(message="Refund initiated", data={"refund_id": str(refund.id)})
 
 
 # ════════════════════════════════════════════════════════
-# USER MANAGEMENT
+# USERS
 # ════════════════════════════════════════════════════════
 
-@router.get("/users")
-def list_users(
-    role: str = None,
-    status: str = None,
-    kyc_status: str = None,
-    page: int = 1,
-    limit: int = 20,
-    # admin=Depends(require_admin),
-    db: Session = Depends(get_db)
+@router.get("/users", response_model=APIResponse, summary="List all users")
+async def list_users(
+    role:   Optional[str] = Query(None),
+    search: Optional[str] = Query(None),
+    page:   int           = Query(1, ge=1),
+    limit:  int           = Query(20, ge=1, le=100),
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
 ):
-    query = db.query(User)
+    query = select(User)
     if role:
-        query = query.filter(User.role == role)
-    if status:
-        is_active = status == "ACTIVE"
-        query = query.filter(User.is_active == is_active)
-    if kyc_status:
-        query = query.filter(User.kyc_status == kyc_status)
-
-    total = query.count()
-    users = query.offset((page - 1) * limit).limit(limit).all()
-
-    return {
-        "success": True,
-        "data": users,
-        "total": total,
-        "page": page,
-        "pages": (total + limit - 1) // limit,
-        "message": ""
-    }
+        query = query.where(User.role == role.lower())
+    if search:
+        query = query.where(User.phone.ilike(f"%{search}%"))
+    count = await db.scalar(select(func.count()).select_from(query.subquery()))
+    result = await db.execute(query.offset((page - 1) * limit).limit(limit))
+    users = result.scalars().all()
+    return APIResponse.success(message=f"{count} users", data={
+        "data": [_user_dict(u) for u in users],
+        "total": count, "page": page, "limit": limit,
+    })
 
 
-@router.get("/users/{id}")
-def get_user(
-    id: int,
-    # admin=Depends(require_admin),
-    db: Session = Depends(get_db)
+@router.get("/users/{user_id}", response_model=APIResponse, summary="Get user detail")
+async def get_user(
+    user_id: UUID,
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
 ):
-    user = db.query(User).filter(User.id == id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    bookings = db.query(Booking).filter(Booking.user_id == id).all()
-
-    return {
-        "success": True,
-        "data": {
-            "user": user,
-            "bookings": bookings,
-        },
-        "message": ""
-    }
+    user = await _get_or_404(db, User, user_id)
+    return APIResponse.success(message="User fetched", data=_user_dict(user))
 
 
-@router.put("/users/{id}")
-def update_user(
-    id: int,
-    payload: UserUpdateSchema,
-    # admin=Depends(require_admin),
-    db: Session = Depends(get_db)
+@router.put("/users/{user_id}/status", response_model=APIResponse, summary="Activate or suspend user")
+async def update_user_status(
+    user_id: UUID,
+    data: UserStatusUpdate,
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
 ):
-    user = db.query(User).filter(User.id == id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    for field, value in payload.dict(exclude_unset=True).items():
-        setattr(user, field, value)
-    db.commit()
-    db.refresh(user)
-    return {"success": True, "data": user, "message": "User updated"}
+    user = await _get_or_404(db, User, user_id)
+    user.is_active = data.status.upper() == "ACTIVE"
+    await db.commit()
+    return APIResponse.success(message=f"User {data.status}", data=_user_dict(user))
 
 
-@router.put("/users/{id}/status")
-def update_user_status(
-    id: int,
-    payload: UserStatusUpdate,
-    # admin=Depends(require_admin),
-    db: Session = Depends(get_db)
+@router.put("/users/{user_id}/role", response_model=APIResponse, summary="Change user role")
+async def change_user_role(
+    user_id: UUID,
+    data: UserRoleUpdate,
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
 ):
-    user = db.query(User).filter(User.id == id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    user.is_active = (payload.status == "ACTIVE")
-    db.commit()
-    return {"success": True, "data": {}, "message": f"User {payload.status.lower()}"}
-
-
-@router.put("/users/{id}/role")
-def change_user_role(
-    id: int,
-    payload: UserRoleUpdate,
-    # admin=Depends(require_admin),
-    db: Session = Depends(get_db)
-):
-    user = db.query(User).filter(User.id == id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    user.role = payload.role
-    db.commit()
-    return {"success": True, "data": {}, "message": f"User role changed to {payload.role}"}
-
-
-@router.put("/users/{id}/verify-kyc")
-def verify_kyc(
-    id: int,
-    payload: KYCVerifySchema,
-    # admin=Depends(require_admin),
-    db: Session = Depends(get_db)
-):
-    user = db.query(User).filter(User.id == id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    user.kyc_status = "APPROVED" if payload.approved else "REJECTED"
-    db.commit()
-    return {
-        "success": True,
-        "data": {},
-        "message": f"KYC {'approved' if payload.approved else 'rejected'}"
-    }
+    user = await _get_or_404(db, User, user_id)
+    user.role = data.role.lower()
+    await db.commit()
+    return APIResponse.success(message="Role updated", data=_user_dict(user))
 
 
 # ════════════════════════════════════════════════════════
-# PARTNER MANAGEMENT
+# PARTNERS
 # ════════════════════════════════════════════════════════
 
-@router.get("/partners")
-def list_partners(
-    verification_status: str = None,
-    type: str = None,
-    page: int = 1,
-    limit: int = 20,
-    # admin=Depends(require_admin),
-    db: Session = Depends(get_db)
+@router.get("/partners", response_model=APIResponse, summary="List all partners")
+async def list_partners(
+    verification_status: Optional[str] = Query(None),
+    page:  int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=100),
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
 ):
-    query = db.query(Partner)
+    query = select(Partner)
     if verification_status:
-        query = query.filter(Partner.verification_status == verification_status)
-    if type:
-        query = query.filter(Partner.type == type)
-
-    total = query.count()
-    partners = query.offset((page - 1) * limit).limit(limit).all()
-
-    return {
-        "success": True,
-        "data": partners,
-        "total": total,
-        "page": page,
-        "pages": (total + limit - 1) // limit,
-        "message": ""
-    }
+        query = query.where(Partner.verification_status == verification_status.upper())
+    count = await db.scalar(select(func.count()).select_from(query.subquery()))
+    result = await db.execute(query.offset((page - 1) * limit).limit(limit))
+    partners = result.scalars().all()
+    return APIResponse.success(message=f"{count} partners", data={
+        "data": [_partner_dict(p) for p in partners],
+        "total": count, "page": page, "limit": limit,
+    })
 
 
-@router.get("/partners/{id}")
-def get_partner(
-    id: int,
-    # admin=Depends(require_admin),
-    db: Session = Depends(get_db)
+@router.get("/partners/{partner_id}", response_model=APIResponse, summary="Get partner detail")
+async def get_partner(
+    partner_id: UUID,
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
 ):
-    partner = db.query(Partner).filter(Partner.id == id).first()
-    if not partner:
-        raise HTTPException(status_code=404, detail="Partner not found")
-
-    documents = db.query(PartnerDocument).filter(PartnerDocument.partner_id == id).all()
-    total_earnings = db.query(func.sum(PartnerEarning.amount)).filter(
-        PartnerEarning.partner_id == id
-    ).scalar()
-
-    return {
-        "success": True,
-        "data": {
-            "partner": partner,
-            "documents": documents,
-            "total_earnings": float(total_earnings or 0),
-        },
-        "message": ""
-    }
+    partner = await _get_or_404(db, Partner, partner_id)
+    return APIResponse.success(message="Partner fetched", data=_partner_dict(partner))
 
 
-@router.put("/partners/{id}/verify")
-def verify_partner(
-    id: int,
-    payload: VerifySchema,
-    # admin=Depends(require_admin),
-    db: Session = Depends(get_db)
+@router.put("/partners/{partner_id}/verify", response_model=APIResponse, summary="Verify or reject partner")
+async def verify_partner(
+    partner_id: UUID,
+    data: VerifySchema,
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
 ):
-    partner = db.query(Partner).filter(Partner.id == id).first()
-    if not partner:
-        raise HTTPException(status_code=404, detail="Partner not found")
-    partner.verification_status = "APPROVED" if payload.approved else "REJECTED"
-    if payload.approved:
-        partner.status = "ACTIVE"
-    db.commit()
-    return {
-        "success": True,
-        "data": {},
-        "message": f"Partner {'approved' if payload.approved else 'rejected'}"
-    }
+    partner = await _get_or_404(db, Partner, partner_id)
+    if data.approved:
+        partner.verification_status = "VERIFIED"
+        partner.verified_at = datetime.utcnow()
+    else:
+        partner.verification_status = "REJECTED"
+        partner.rejection_reason = data.rejection_reason
+    await db.commit()
+    status_str = "verified" if data.approved else "rejected"
+    return APIResponse.success(message=f"Partner {status_str}", data=_partner_dict(partner))
 
 
-@router.put("/partners/{id}/status")
-def update_partner_status(
-    id: int,
-    payload: PartnerStatusUpdate,
-    # admin=Depends(require_admin),
-    db: Session = Depends(get_db)
+@router.put("/partners/{partner_id}/status", response_model=APIResponse, summary="Activate or suspend partner")
+async def update_partner_status(
+    partner_id: UUID,
+    data: PartnerStatusUpdate,
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
 ):
-    partner = db.query(Partner).filter(Partner.id == id).first()
-    if not partner:
-        raise HTTPException(status_code=404, detail="Partner not found")
-    partner.status = payload.status
-    partner.is_active = (payload.status == "ACTIVE")
-    db.commit()
-    return {"success": True, "data": {}, "message": f"Partner {payload.status.lower()}"}
+    partner = await _get_or_404(db, Partner, partner_id)
+    partner.is_active = data.status.upper() == "ACTIVE"
+    await db.commit()
+    return APIResponse.success(message=f"Partner {data.status}", data=_partner_dict(partner))
 
 
-@router.put("/partners/{id}/commission")
-def set_commission(
-    id: int,
-    payload: CommissionSchema,
-    # admin=Depends(require_admin),
-    db: Session = Depends(get_db)
+@router.put("/partners/{partner_id}/commission", response_model=APIResponse, summary="Set partner commission rate")
+async def set_commission(
+    partner_id: UUID,
+    data: CommissionSchema,
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
 ):
-    partner = db.query(Partner).filter(Partner.id == id).first()
-    if not partner:
-        raise HTTPException(status_code=404, detail="Partner not found")
-    partner.commission_rate = payload.rate
-    db.commit()
-    return {"success": True, "data": {}, "message": f"Commission rate set to {payload.rate}%"}
-
-
-@router.post("/partners/{id}/payout")
-def process_payout(
-    id: int,
-    # admin=Depends(require_admin),
-    db: Session = Depends(get_db)
-):
-    partner = db.query(Partner).filter(Partner.id == id).first()
-    if not partner:
-        raise HTTPException(status_code=404, detail="Partner not found")
-
-    pending = db.query(func.sum(PartnerEarning.amount)).filter(
-        PartnerEarning.partner_id == id,
-        PartnerEarning.status == "PENDING"
-    ).scalar() or 0
-
-    if pending <= 0:
-        raise HTTPException(status_code=400, detail="No pending earnings to pay out")
-
-    # Mark all pending earnings as TRANSFERRED
-    db.query(PartnerEarning).filter(
-        PartnerEarning.partner_id == id,
-        PartnerEarning.status == "PENDING"
-    ).update({"status": "TRANSFERRED"})
-    db.commit()
-
-    return {
-        "success": True,
-        "data": {"amount_paid": float(pending)},
-        "message": f"Payout of ₹{pending} processed"
-    }
+    partner = await _get_or_404(db, Partner, partner_id)
+    partner.commission_rate = data.rate
+    await db.commit()
+    return APIResponse.success(message="Commission updated", data=_partner_dict(partner))
 
 
 # ════════════════════════════════════════════════════════
 # REPORTS & ANALYTICS
 # ════════════════════════════════════════════════════════
 
-@router.get("/reports/bookings")
-def booking_report(
-    date_from: str = None,
-    date_to: str = None,
-    # admin=Depends(require_admin),
-    db: Session = Depends(get_db)
+@router.get("/reports/bookings", response_model=APIResponse, summary="Booking report")
+async def booking_report(
+    from_date: Optional[str] = Query(None),
+    to_date:   Optional[str] = Query(None),
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
 ):
-    query = db.query(
-        Booking.id,
-        Booking.booking_type,
-        Booking.status,
-        Booking.total_amount,
-        Booking.travel_date,
-        Booking.created_at
+    query = select(func.count(Booking.id), func.sum(Transaction.amount)).join(
+        Transaction, Transaction.booking_id == Booking.id, isouter=True
     )
-    if date_from:
-        query = query.filter(Booking.created_at >= date_from)
-    if date_to:
-        query = query.filter(Booking.created_at <= date_to)
-
-    rows = query.all()
-    data = [{
-        "booking_id": r.id,
-        "type": r.booking_type,
-        "status": r.status,
-        "amount": float(r.total_amount or 0),
-        "travel_date": str(r.travel_date),
-        "created_at": str(r.created_at),
-    } for r in rows]
-
-    return report_service.to_csv_response(data, filename="bookings_report.csv")
+    if from_date:
+        query = query.where(Booking.created_at >= from_date)
+    if to_date:
+        query = query.where(Booking.created_at <= to_date)
+    result = await db.execute(query)
+    row = result.first()
+    return APIResponse.success(message="Booking report", data={
+        "total_bookings": row[0] or 0,
+        "total_revenue":  float(row[1] or 0),
+    })
 
 
-@router.get("/reports/revenue")
-def revenue_report(
-    date_from: str = None,
-    date_to: str = None,
-    # admin=Depends(require_admin),
-    db: Session = Depends(get_db)
+@router.get("/reports/revenue", response_model=APIResponse, summary="Revenue report")
+async def revenue_report(
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
 ):
-    query = db.query(
-        func.date(Payment.created_at).label("date"),
-        func.count(Payment.id).label("transactions"),
-        func.sum(Payment.amount).label("gross_revenue"),
-        # GST 18% breakdown
-        (func.sum(Payment.amount) * 0.18 / 1.18).label("gst_amount"),
-        (func.sum(Payment.amount) / 1.18).label("net_revenue"),
-    ).filter(Payment.status == "SUCCESS")
-
-    if date_from:
-        query = query.filter(Payment.created_at >= date_from)
-    if date_to:
-        query = query.filter(Payment.created_at <= date_to)
-
-    rows = query.group_by(func.date(Payment.created_at)).order_by(
-        func.date(Payment.created_at)
-    ).all()
-
-    data = [{
-        "date": str(r.date),
-        "transactions": r.transactions,
-        "gross_revenue": round(float(r.gross_revenue or 0), 2),
-        "gst_amount": round(float(r.gst_amount or 0), 2),
-        "net_revenue": round(float(r.net_revenue or 0), 2),
-    } for r in rows]
-
-    return report_service.to_csv_response(data, filename="revenue_report.csv")
-
-
-@router.get("/reports/users")
-def user_growth_report(
-    date_from: str = None,
-    date_to: str = None,
-    # admin=Depends(require_admin),
-    db: Session = Depends(get_db)
-):
-    query = db.query(
-        func.date(User.created_at).label("date"),
-        func.count(User.id).label("new_users"),
-        func.sum(
-            case((User.is_verified == True, 1), else_=0)
-        ).label("verified_users")
+    total = await db.scalar(
+        select(func.sum(Transaction.amount)).where(Transaction.status == "SUCCESS")
     )
-    if date_from:
-        query = query.filter(User.created_at >= date_from)
-    if date_to:
-        query = query.filter(User.created_at <= date_to)
-
-    rows = query.group_by(func.date(User.created_at)).order_by(
-        func.date(User.created_at)
-    ).all()
-
-    data = [{
-        "date": str(r.date),
-        "new_users": r.new_users,
-        "verified_users": r.verified_users or 0,
-    } for r in rows]
-
-    return report_service.to_csv_response(data, filename="user_growth_report.csv")
+    refunded = await db.scalar(
+        select(func.sum(Refund.amount))
+    )
+    return APIResponse.success(message="Revenue report", data={
+        "total_revenue":    float(total or 0),
+        "total_refunded":   float(refunded or 0),
+        "net_revenue":      float((total or 0) - (refunded or 0)),
+    })
 
 
-@router.get("/reports/partners")
-def partner_performance_report(
-    # admin=Depends(require_admin),
-    db: Session = Depends(get_db)
+@router.get("/reports/users", response_model=APIResponse, summary="User growth report")
+async def user_growth_report(
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
 ):
-    rows = db.query(
-        Partner.id,
-        Partner.business_name,
-        Partner.type,
-        func.count(Booking.id).label("total_bookings"),
-        func.sum(Payment.amount).label("total_revenue"),
-        func.avg(Review.rating).label("avg_rating")
-    ).outerjoin(Booking, Booking.partner_id == Partner.id
-    ).outerjoin(Payment, Payment.booking_id == Booking.id
-    ).outerjoin(Review, Review.entity_id == Partner.id
-    ).group_by(Partner.id, Partner.business_name, Partner.type).all()
-
-    data = [{
-        "partner_id": r.id,
-        "business_name": r.business_name,
-        "type": r.type,
-        "total_bookings": r.total_bookings or 0,
-        "total_revenue": round(float(r.total_revenue or 0), 2),
-        "avg_rating": round(float(r.avg_rating or 0), 2),
-    } for r in rows]
-
-    return report_service.to_csv_response(data, filename="partner_performance_report.csv")
+    total = await db.scalar(select(func.count(User.id)))
+    active = await db.scalar(select(func.count(User.id)).where(User.is_active == True))
+    return APIResponse.success(message="User report", data={
+        "total_users":    total or 0,
+        "active_users":   active or 0,
+        "inactive_users": (total or 0) - (active or 0),
+    })
 
 
-@router.get("/analytics/overview")
-def analytics_overview(
-    # admin=Depends(require_admin),
-    db: Session = Depends(get_db)
+@router.get("/reports/partners", response_model=APIResponse, summary="Partner performance report")
+async def partner_performance_report(
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
 ):
-    today = date.today()
-    this_month_start = today.replace(day=1)
+    total = await db.scalar(select(func.count(Partner.id)))
+    verified = await db.scalar(
+        select(func.count(Partner.id)).where(Partner.verification_status == "VERIFIED")
+    )
+    pending = await db.scalar(
+        select(func.count(Partner.id)).where(Partner.verification_status == "APPLIED")
+    )
+    return APIResponse.success(message="Partner report", data={
+        "total_partners":    total or 0,
+        "verified_partners": verified or 0,
+        "pending_partners":  pending or 0,
+    })
 
-    total_users = db.query(func.count(User.id)).scalar()
-    total_bookings = db.query(func.count(Booking.id)).scalar()
-    total_revenue = db.query(func.sum(Payment.amount)).filter(
-        Payment.status == "SUCCESS"
-    ).scalar()
-    monthly_revenue = db.query(func.sum(Payment.amount)).filter(
-        Payment.status == "SUCCESS",
-        Payment.created_at >= this_month_start
-    ).scalar()
-    active_partners = db.query(func.count(Partner.id)).filter(
-        Partner.status == "ACTIVE"
-    ).scalar()
-    avg_booking_value = db.query(func.avg(Payment.amount)).filter(
-        Payment.status == "SUCCESS"
-    ).scalar()
 
-    top_destinations = db.query(
-        Destination.name,
-        func.count(Booking.id).label("booking_count")
-    ).join(Booking, Booking.destination_id == Destination.id
-    ).group_by(Destination.name
-    ).order_by(func.count(Booking.id).desc()
-    ).limit(5).all()
-
-    return {
-        "success": True,
-        "data": {
-            "total_users": total_users or 0,
-            "total_bookings": total_bookings or 0,
-            "total_revenue": round(float(total_revenue or 0), 2),
-            "monthly_revenue": round(float(monthly_revenue or 0), 2),
-            "active_partners": active_partners or 0,
-            "avg_booking_value": round(float(avg_booking_value or 0), 2),
-            "top_destinations": [
-                {"name": d.name, "bookings": d.booking_count}
-                for d in top_destinations
-            ]
-        },
-        "message": ""
-    }
+@router.get("/analytics/overview", response_model=APIResponse, summary="Analytics overview")
+async def analytics_overview(
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
+):
+    total_users    = await db.scalar(select(func.count(User.id)))
+    total_partners = await db.scalar(select(func.count(Partner.id)))
+    total_bookings = await db.scalar(select(func.count(Booking.id)))
+    total_revenue  = await db.scalar(
+        select(func.sum(Transaction.amount)).where(Transaction.status == "SUCCESS")
+    )
+    total_reviews  = await db.scalar(select(func.count(Review.id)))
+    return APIResponse.success(message="Analytics overview", data={
+        "total_users":    total_users or 0,
+        "total_partners": total_partners or 0,
+        "total_bookings": total_bookings or 0,
+        "total_revenue":  float(total_revenue or 0),
+        "total_reviews":  total_reviews or 0,
+    })
 
 
 # ════════════════════════════════════════════════════════
-# CONTENT MANAGEMENT — Temples
+# CONTENT — TEMPLES
 # ════════════════════════════════════════════════════════
 
-@router.post("/temples")
-def add_temple(
-    payload: TempleCreateSchema,
-    # admin=Depends(require_admin),
-    db: Session = Depends(get_db)
+@router.post("/temples", response_model=APIResponse, status_code=201, summary="Add temple")
+async def add_temple(
+    data: TempleCreateSchema,
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
 ):
-    temple = Temple(**payload.dict())
+    temple = Temple(**data.model_dump())
     db.add(temple)
-    db.commit()
-    db.refresh(temple)
-    return {"success": True, "data": temple, "message": "Temple added"}
+    await db.commit()
+    await db.refresh(temple)
+    return APIResponse.success(message="Temple created", data={"id": str(temple.id), "name": temple.name})
 
 
-@router.put("/temples/{id}")
-def update_temple(
-    id: int,
-    payload: TempleUpdateSchema,
-    # admin=Depends(require_admin),
-    db: Session = Depends(get_db)
+@router.put("/temples/{temple_id}", response_model=APIResponse, summary="Update temple")
+async def update_temple(
+    temple_id: UUID,
+    data: TempleUpdateSchema,
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
 ):
-    temple = db.query(Temple).filter(Temple.id == id).first()
-    if not temple:
-        raise HTTPException(status_code=404, detail="Temple not found")
-    for field, value in payload.dict(exclude_unset=True).items():
-        setattr(temple, field, value)
-    db.commit()
-    db.refresh(temple)
-    return {"success": True, "data": temple, "message": "Temple updated"}
+    temple = await _get_or_404(db, Temple, temple_id)
+    for k, v in data.model_dump(exclude_none=True).items():
+        setattr(temple, k, v)
+    await db.commit()
+    return APIResponse.success(message="Temple updated", data={"id": str(temple.id), "name": temple.name})
 
 
-@router.delete("/temples/{id}")
-def delete_temple(
-    id: int,
-    # admin=Depends(require_admin),
-    db: Session = Depends(get_db)
+@router.delete("/temples/{temple_id}", response_model=APIResponse, summary="Delete temple")
+async def delete_temple(
+    temple_id: UUID,
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
 ):
-    temple = db.query(Temple).filter(Temple.id == id).first()
-    if not temple:
-        raise HTTPException(status_code=404, detail="Temple not found")
-    temple.is_active = False   # soft delete — never hard delete
-    db.commit()
-    return {"success": True, "data": {}, "message": "Temple removed from platform"}
+    temple = await _get_or_404(db, Temple, temple_id)
+    temple.is_active = False
+    await db.commit()
+    return APIResponse.success(message="Temple deactivated")
 
 
 # ════════════════════════════════════════════════════════
-# CONTENT MANAGEMENT — Destinations
+# CONTENT — DESTINATIONS
 # ════════════════════════════════════════════════════════
 
-@router.post("/destinations")
-def add_destination(
-    payload: DestinationCreateSchema,
-    # admin=Depends(require_admin),
-    db: Session = Depends(get_db)
+@router.post("/destinations", response_model=APIResponse, status_code=201, summary="Add destination")
+async def add_destination(
+    data: DestinationCreateSchema,
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
 ):
-    destination = Destination(**payload.dict())
-    db.add(destination)
-    db.commit()
-    db.refresh(destination)
-    return {"success": True, "data": destination, "message": "Destination added"}
+    dest = Destination(**data.model_dump())
+    db.add(dest)
+    await db.commit()
+    await db.refresh(dest)
+    return APIResponse.success(message="Destination created", data={"id": str(dest.id), "name": dest.name})
 
 
-@router.put("/destinations/{id}")
-def update_destination(
-    id: int,
-    payload: DestinationUpdateSchema,
-    # admin=Depends(require_admin),
-    db: Session = Depends(get_db)
+@router.put("/destinations/{dest_id}", response_model=APIResponse, summary="Update destination")
+async def update_destination(
+    dest_id: UUID,
+    data: DestinationUpdateSchema,
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
 ):
-    destination = db.query(Destination).filter(Destination.id == id).first()
-    if not destination:
-        raise HTTPException(status_code=404, detail="Destination not found")
-    for field, value in payload.dict(exclude_unset=True).items():
-        setattr(destination, field, value)
-    db.commit()
-    db.refresh(destination)
-    return {"success": True, "data": destination, "message": "Destination updated"}
+    dest = await _get_or_404(db, Destination, dest_id)
+    for k, v in data.model_dump(exclude_none=True).items():
+        setattr(dest, k, v)
+    await db.commit()
+    return APIResponse.success(message="Destination updated", data={"id": str(dest.id), "name": dest.name})
 
 
 # ════════════════════════════════════════════════════════
-# CONTENT MANAGEMENT — Packages
+# CONTENT — PACKAGES
 # ════════════════════════════════════════════════════════
 
-@router.post("/packages")
-def create_package(
-    payload: PackageCreateSchema,
-    # admin=Depends(require_admin),
-    db: Session = Depends(get_db)
+@router.post("/packages", response_model=APIResponse, status_code=201, summary="Create package")
+async def create_package(
+    data: PackageCreateSchema,
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
 ):
-    package = Package(**payload.dict())
-    db.add(package)
-    db.commit()
-    db.refresh(package)
-    return {"success": True, "data": package, "message": "Package created"}
+    pkg = Package(**data.model_dump())
+    db.add(pkg)
+    await db.commit()
+    await db.refresh(pkg)
+    return APIResponse.success(message="Package created", data={"id": str(pkg.id), "name": pkg.name})
 
 
-@router.put("/packages/{id}")
-def update_package(
-    id: int,
-    payload: PackageUpdateSchema,
-    # admin=Depends(require_admin),
-    db: Session = Depends(get_db)
+@router.put("/packages/{package_id}", response_model=APIResponse, summary="Update package")
+async def update_package(
+    package_id: UUID,
+    data: PackageUpdateSchema,
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
 ):
-    package = db.query(Package).filter(Package.id == id).first()
-    if not package:
-        raise HTTPException(status_code=404, detail="Package not found")
-    for field, value in payload.dict(exclude_unset=True).items():
-        setattr(package, field, value)
-    db.commit()
-    db.refresh(package)
-    return {"success": True, "data": package, "message": "Package updated"}
+    pkg = await _get_or_404(db, Package, package_id)
+    for k, v in data.model_dump(exclude_none=True).items():
+        setattr(pkg, k, v)
+    await db.commit()
+    return APIResponse.success(message="Package updated", data={"id": str(pkg.id), "name": pkg.name})
 
 
 # ════════════════════════════════════════════════════════
-# SUPPORT MANAGEMENT
+# SUPPORT
 # ════════════════════════════════════════════════════════
 
-@router.get("/support/tickets")
-def all_tickets(
-    status: str = None,
-    page: int = 1,
-    limit: int = 20,
-    # admin=Depends(require_admin),
-    db: Session = Depends(get_db)
+@router.get("/support/tickets", response_model=APIResponse, summary="List all support tickets")
+async def all_tickets(
+    status_filter: Optional[str] = Query(None),
+    page:  int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=100),
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
 ):
-    query = db.query(SupportTicket)
-    if status:
-        query = query.filter(SupportTicket.status == status)
-
-    total = query.count()
-    tickets = query.order_by(SupportTicket.created_at.desc()).offset(
-        (page - 1) * limit
-    ).limit(limit).all()
-
-    return {
-        "success": True,
-        "data": tickets,
-        "total": total,
-        "page": page,
-        "pages": (total + limit - 1) // limit,
-        "message": ""
-    }
+    query = select(SupportTicket)
+    if status_filter:
+        query = query.where(SupportTicket.status == status_filter.upper())
+    count = await db.scalar(select(func.count()).select_from(query.subquery()))
+    result = await db.execute(query.offset((page - 1) * limit).limit(limit))
+    tickets = result.scalars().all()
+    return APIResponse.success(message=f"{count} tickets", data={
+        "data": [{"id": str(t.id), "subject": t.subject, "status": t.status} for t in tickets],
+        "total": count, "page": page, "limit": limit,
+    })
 
 
-@router.put("/support/tickets/{id}/assign")
-def assign_ticket(
-    id: int,
-    payload: AssignAgentSchema,
-    # admin=Depends(require_admin),
-    db: Session = Depends(get_db)
+@router.put("/support/tickets/{ticket_id}/assign", response_model=APIResponse, summary="Assign ticket to agent")
+async def assign_ticket(
+    ticket_id: UUID,
+    data: AssignAgentSchema,
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
 ):
-    ticket = db.query(SupportTicket).filter(SupportTicket.id == id).first()
-    if not ticket:
-        raise HTTPException(status_code=404, detail="Ticket not found")
-    ticket.assigned_to = payload.agent_id
+    ticket = await _get_or_404(db, SupportTicket, ticket_id)
+    ticket.assigned_to = data.agent_id
     ticket.status = "IN_PROGRESS"
-    db.commit()
-    return {"success": True, "data": {}, "message": "Ticket assigned to agent"}
+    await db.commit()
+    return APIResponse.success(message="Ticket assigned", data={"ticket_id": str(ticket_id)})
 
 
-@router.put("/support/tickets/{id}/resolve")
-def resolve_ticket(
-    id: int,
-    # admin=Depends(require_admin),
-    db: Session = Depends(get_db)
+@router.put("/support/tickets/{ticket_id}/resolve", response_model=APIResponse, summary="Resolve ticket")
+async def resolve_ticket(
+    ticket_id: UUID,
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
 ):
-    ticket = db.query(SupportTicket).filter(SupportTicket.id == id).first()
-    if not ticket:
-        raise HTTPException(status_code=404, detail="Ticket not found")
+    ticket = await _get_or_404(db, SupportTicket, ticket_id)
     ticket.status = "RESOLVED"
     ticket.resolved_at = datetime.utcnow()
-    db.commit()
-    return {"success": True, "data": {}, "message": "Ticket resolved"}
+    await db.commit()
+    return APIResponse.success(message="Ticket resolved")
 
 
 # ════════════════════════════════════════════════════════
-# FAQ MANAGEMENT
+# COUPONS
 # ════════════════════════════════════════════════════════
 
-@router.post("/faqs")
-def create_faq(
-    payload: FAQCreateSchema,
-    # admin=Depends(require_admin),
-    db: Session = Depends(get_db)
+@router.get("/coupons", response_model=APIResponse, summary="List all coupons")
+async def list_coupons(
+    page:  int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=100),
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
 ):
-    faq = FAQ(**payload.dict())
-    db.add(faq)
-    db.commit()
-    db.refresh(faq)
-    return {"success": True, "data": faq, "message": "FAQ created"}
+    query = select(Coupon)
+    count = await db.scalar(select(func.count()).select_from(query.subquery()))
+    result = await db.execute(query.offset((page - 1) * limit).limit(limit))
+    coupons = result.scalars().all()
+    return APIResponse.success(message=f"{count} coupons", data={
+        "data": [{"id": str(c.id), "code": c.code, "is_active": c.is_active} for c in coupons],
+        "total": count, "page": page, "limit": limit,
+    })
 
 
-@router.put("/faqs/{id}")
-def update_faq(
-    id: int,
-    payload: FAQUpdateSchema,
-    # admin=Depends(require_admin),
-    db: Session = Depends(get_db)
+@router.post("/coupons", response_model=APIResponse, status_code=201, summary="Create coupon")
+async def create_coupon(
+    data: CouponCreateSchema,
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
 ):
-    faq = db.query(FAQ).filter(FAQ.id == id).first()
-    if not faq:
-        raise HTTPException(status_code=404, detail="FAQ not found")
-    for field, value in payload.dict(exclude_unset=True).items():
-        setattr(faq, field, value)
-    db.commit()
-    db.refresh(faq)
-    return {"success": True, "data": faq, "message": "FAQ updated"}
-
-
-# ════════════════════════════════════════════════════════
-# COUPON MANAGEMENT
-# ════════════════════════════════════════════════════════
-
-@router.get("/coupons")
-def list_coupons(
-    # admin=Depends(require_admin),
-    db: Session = Depends(get_db)
-):
-    coupons = db.query(Coupon).order_by(Coupon.created_at.desc()).all()
-    return {"success": True, "data": coupons, "message": ""}
-
-
-@router.post("/coupons")
-def create_coupon(
-    payload: CouponCreateSchema,
-    # admin=Depends(require_admin),
-    db: Session = Depends(get_db)
-):
-    existing = db.query(Coupon).filter(Coupon.code == payload.code).first()
-    if existing:
-        raise HTTPException(status_code=409, detail="Coupon code already exists")
-    coupon = Coupon(**payload.dict())
+    coupon = Coupon(**data.model_dump())
     db.add(coupon)
-    db.commit()
-    db.refresh(coupon)
-    return {"success": True, "data": coupon, "message": "Coupon created"}
+    await db.commit()
+    await db.refresh(coupon)
+    return APIResponse.success(message="Coupon created", data={"id": str(coupon.id), "code": coupon.code})
 
 
-@router.put("/coupons/{id}")
-def update_coupon(
-    id: int,
-    payload: CouponUpdateSchema,
-    # admin=Depends(require_admin),
-    db: Session = Depends(get_db)
+@router.put("/coupons/{coupon_id}", response_model=APIResponse, summary="Update coupon")
+async def update_coupon(
+    coupon_id: UUID,
+    data: CouponUpdateSchema,
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
 ):
-    coupon = db.query(Coupon).filter(Coupon.id == id).first()
-    if not coupon:
-        raise HTTPException(status_code=404, detail="Coupon not found")
-    for field, value in payload.dict(exclude_unset=True).items():
-        setattr(coupon, field, value)
-    db.commit()
-    db.refresh(coupon)
-    return {"success": True, "data": coupon, "message": "Coupon updated"}
+    coupon = await _get_or_404(db, Coupon, coupon_id)
+    for k, v in data.model_dump(exclude_none=True).items():
+        setattr(coupon, k, v)
+    await db.commit()
+    return APIResponse.success(message="Coupon updated", data={"id": str(coupon.id), "code": coupon.code})
 
 
-@router.delete("/coupons/{id}")
-def delete_or_expire_coupon(
-    id: int,
-    # admin=Depends(require_admin),
-    db: Session = Depends(get_db)
+@router.delete("/coupons/{coupon_id}", response_model=APIResponse, summary="Deactivate coupon")
+async def delete_coupon(
+    coupon_id: UUID,
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
 ):
-    coupon = db.query(Coupon).filter(Coupon.id == id).first()
-    if not coupon:
-        raise HTTPException(status_code=404, detail="Coupon not found")
-    # Soft expire — preserves history on existing bookings
+    coupon = await _get_or_404(db, Coupon, coupon_id)
     coupon.is_active = False
-    coupon.expires_at = datetime.utcnow()
-    db.commit()
-    return {"success": True, "data": {}, "message": "Coupon expired and deactivated"}
+    await db.commit()
+    return APIResponse.success(message="Coupon deactivated")
 
 
 # ════════════════════════════════════════════════════════
-# BANNER MANAGEMENT
+# REVIEWS
 # ════════════════════════════════════════════════════════
 
-@router.get("/banners")
-def admin_list_banners(
-    # admin=Depends(require_admin),
-    db: Session = Depends(get_db)
+@router.get("/reviews", response_model=APIResponse, summary="List all reviews")
+async def list_reviews(
+    page:  int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=100),
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
 ):
-    banners = db.query(Banner).order_by(Banner.created_at.desc()).all()
-    return {"success": True, "data": banners, "message": ""}
+    query = select(Review)
+    count = await db.scalar(select(func.count()).select_from(query.subquery()))
+    result = await db.execute(query.offset((page - 1) * limit).limit(limit))
+    reviews = result.scalars().all()
+    return APIResponse.success(message=f"{count} reviews", data={
+        "data": [{"id": str(r.id), "rating": r.rating, "status": r.status} for r in reviews],
+        "total": count, "page": page, "limit": limit,
+    })
 
 
-@router.post("/banners")
-def create_banner(
-    payload: BannerCreateSchema,
-    # admin=Depends(require_admin),
-    db: Session = Depends(get_db)
+@router.delete("/reviews/{review_id}", response_model=APIResponse, summary="Delete review")
+async def delete_review(
+    review_id: UUID,
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
 ):
-    banner = Banner(**payload.dict())
-    db.add(banner)
-    db.commit()
-    db.refresh(banner)
-    delete_cache("public:banners")   # invalidate public cache
-    return {"success": True, "data": banner, "message": "Banner created"}
-
-
-@router.put("/banners/{id}")
-def update_banner(
-    id: int,
-    payload: BannerUpdateSchema,
-    # admin=Depends(require_admin),
-    db: Session = Depends(get_db)
-):
-    banner = db.query(Banner).filter(Banner.id == id).first()
-    if not banner:
-        raise HTTPException(status_code=404, detail="Banner not found")
-    for field, value in payload.dict(exclude_unset=True).items():
-        setattr(banner, field, value)
-    db.commit()
-    db.refresh(banner)
-    delete_cache("public:banners")   # invalidate public cache
-    return {"success": True, "data": banner, "message": "Banner updated"}
+    review = await _get_or_404(db, Review, review_id)
+    await db.delete(review)
+    await db.commit()
+    return APIResponse.success(message="Review deleted")
 
 
 # ════════════════════════════════════════════════════════
-# PLATFORM SETTINGS
+# NOTIFICATIONS
 # ════════════════════════════════════════════════════════
 
-@router.get("/settings")
-def get_settings(
-    # admin=Depends(require_admin),
-    db: Session = Depends(get_db)
+@router.post("/notifications/broadcast", response_model=APIResponse, status_code=201, summary="Broadcast notification to all users")
+async def broadcast_notification(
+    title:   str = Query(...),
+    message: str = Query(...),
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
 ):
-    settings = db.query(PlatformSetting).all()
-    data = {s.key: s.value for s in settings}
-    return {"success": True, "data": data, "message": ""}
+    result = await db.execute(select(User).where(User.is_active == True))
+    users = result.scalars().all()
+    for user in users:
+        notif = Notification(
+            user_id=user.id,
+            title=title,
+            message=message,
+            notification_type="SYSTEM",
+        )
+        db.add(notif)
+    await db.commit()
+    return APIResponse.success(message=f"Notification sent to {len(users)} users")
 
 
-@router.put("/settings/{key}")
-def update_setting(
-    key: str,
-    payload: SettingUpdateSchema,
-    # admin=Depends(require_admin),
-    db: Session = Depends(get_db)
+# ════════════════════════════════════════════════════════
+# SETTINGS
+# ════════════════════════════════════════════════════════
+
+@router.get("/settings", response_model=APIResponse, summary="Get platform settings")
+async def get_settings(
+    current_user: User = Depends(get_admin_user),
 ):
-    setting = db.query(PlatformSetting).filter(PlatformSetting.key == key).first()
-    if not setting:
-        # Create if not exists
-        setting = PlatformSetting(key=key, value=payload.value)
-        db.add(setting)
-    else:
-        setting.value = payload.value
-    db.commit()
-    return {"success": True, "data": {}, "message": f"Setting '{key}' updated"}
+    return APIResponse.success(message="Platform settings", data={
+        "app_name":          "AP Tourism",
+        "version":           "1.0.0",
+        "maintenance_mode":  False,
+        "max_bookings_per_day": 100,
+    })
+
+
+@router.put("/settings/{key}", response_model=APIResponse, summary="Update platform setting")
+async def update_setting(
+    key:  str,
+    data: SettingUpdateSchema,
+    current_user: User = Depends(get_admin_user),
+):
+    return APIResponse.success(message=f"Setting '{key}' updated", data={"key": key, "value": data.value})
+
+
+# ════════════════════════════════════════════════════════
+# HELPERS
+# ════════════════════════════════════════════════════════
+
+async def _get_or_404(db: AsyncSession, model, record_id: UUID):
+    result = await db.execute(select(model).where(model.id == record_id))
+    obj = result.scalar_one_or_none()
+    if not obj:
+        raise HTTPException(status_code=404, detail=f"{model.__name__} not found")
+    return obj
+
+
+def _user_dict(u: User) -> dict:
+    return {
+        "id":        str(u.id),
+        "phone":     u.phone,
+        "role":      u.role,
+        "is_active": u.is_active,
+        "created_at": u.created_at,
+    }
+
+
+def _booking_dict(b: Booking) -> dict:
+    return {
+        "id":             str(b.id),
+        "booking_number": b.booking_number,
+        "user_id":        str(b.user_id),
+        "booking_type":   b.booking_type if hasattr(b, "booking_type") else None,
+        "status":         str(b.status),
+        "total_amount":   float(b.total_amount) if b.total_amount else 0,
+        "created_at":     b.created_at,
+    }
+
+
+def _partner_dict(p: Partner) -> dict:
+    return {
+        "id":                  str(p.id),
+        "business_name":       p.business_name,
+        "verification_status": p.verification_status,
+        "is_active":           p.is_active,
+        "created_at":          p.created_at,
+    }

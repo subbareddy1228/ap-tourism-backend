@@ -20,6 +20,7 @@ class TopupInitiateRequest(BaseModel):
     amount: Decimal   # amount in INR e.g. 500.00
 
     @field_validator("amount")
+    @classmethod
     def amount_valid(cls, v):
         if v < Decimal("10.00"):
             raise ValueError("Minimum topup amount is ₹10")
@@ -44,12 +45,14 @@ class WithdrawRequest(BaseModel):
     account_holder_name: Optional[str] = None
 
     @field_validator("amount")
+    @classmethod
     def amount_valid(cls, v):
         if v < Decimal("100.00"):
             raise ValueError("Minimum withdrawal amount is ₹100")
         return v
 
     @field_validator("bank_ifsc")
+    @classmethod
     def ifsc_valid(cls, v):
         v = v.upper().strip()
         if len(v) != 11:
@@ -57,6 +60,7 @@ class WithdrawRequest(BaseModel):
         return v
 
     @field_validator("bank_account_number")
+    @classmethod
     def account_valid(cls, v):
         v = v.strip()
         if not v.isdigit() or not (9 <= len(v) <= 18):
