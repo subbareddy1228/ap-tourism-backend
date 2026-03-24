@@ -8,7 +8,7 @@ NOTE: Reuses the Redis client initialized in core/redis.py
  
 import json
 import logging
-import random
+import secrets
 from src.core.redis import redis_client
  
 logger = logging.getLogger(__name__)
@@ -19,10 +19,8 @@ async def get_redis():
     return redis_client
 
 def generate_otp() -> str:
-    """
-    Generate a 6 digit OTP.
-    """
-    return str(random.randint(100000, 999999))
+    return str(secrets.randbelow(900000) + 100000)
+
  
 async def set_cache(key: str, value, ttl: int = 3600):
     """Store a value in Redis. value is auto-serialized to JSON."""
