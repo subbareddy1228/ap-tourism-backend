@@ -54,7 +54,6 @@ def create_refresh_token(subject: Union[str, int], role: str, expires_delta=None
     return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
  
  
-from jose import jwt, JWTError
 from src.core.config import settings
 
 

@@ -29,14 +29,15 @@ from src.api.v1.router import router as v1_router
 setup_logging()
 
 
-# @asynccontextmanager
-# async def lifespan(app: FastAPI):
-#     """Startup and shutdown events."""
-#     await init_redis()
-#     # await init_elasticsearch()   
-#     yield
-#     await close_redis()
-#     # await close_elasticsearch()  
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+     print("Starting services...")
+     await init_redis()
+    # await init_elasticsearch()   
+     yield
+     print("Shutting down services...")
+     await close_redis()
+    # await close_elasticsearch()  
 
 
 app = FastAPI(

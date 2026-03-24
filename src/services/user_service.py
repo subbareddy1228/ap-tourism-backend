@@ -344,25 +344,52 @@ async def delete_family_member(member_id: str, current_user: User, db: AsyncSess
 
 # ══════════════════ PHONE VERIFICATION ══════════════════
 
+# AFTER
+
 async def send_phone_verification_otp(current_user: User):
-
+ 
     if current_user.is_phone_verified:
+
         raise HTTPException(
+
             status_code=400,
+
             detail="Phone is already verified"
+
         )
-
+ 
     otp = generate_otp()
-
+ 
     await store_otp(current_user.phone, otp, purpose="verify_phone")
+ 
+    try:
 
-    await send_sms(current_user.phone, otp)
+        await send_sms(current_user.phone, otp)
 
+    except Exception as e:
+
+        # Clean up Redis so user can retry immediately
+
+        await delete_otp(current_user.phone, purpose="verify_phone")
+
+        logger.error("SMS failed for phone verification phone=%s error=%s", current_user.phone, str(e))
+
+        raise HTTPException(
+
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+
+            detail="Failed to send OTP. Please try again."
+
+        )
+ 
     return {
-        "message": "OTP sent to your phone",
-        "expires_in": settings.OTP_EXPIRE_SECONDS
-    }
 
+        "message": "OTP sent to your phone",
+
+        "expires_in": settings.OTP_EXPIRE_SECONDS
+
+    }
+ 
 
 async def verify_phone_otp(data: VerifyPhoneRequest, current_user: User, db: AsyncSession):
 

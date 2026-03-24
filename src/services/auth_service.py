@@ -403,34 +403,47 @@ async def forgot_password(phone: str, db: AsyncSession) -> dict:
 # ═════════════════ RESET PASSWORD ═════════════════
 
 async def reset_password(data: ResetPasswordRequest, db: AsyncSession) -> dict:
-
+ 
     logger.info("Password reset attempt phone=%s", data.phone)
-
+ 
+    # ── Brute-force protection ────────────────────────────────
+    attempts = await increment_otp_attempts(data.phone)
+    if attempts > settings.OTP_MAX_ATTEMPTS:
+        logger.warning("Too many reset attempts phone=%s", data.phone)
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many attempts. Please request a new OTP."
+        )
+ 
     stored_otp = await get_otp(data.phone, purpose="forgot_password")
-
+ 
     if not stored_otp or stored_otp != data.otp:
         logger.warning("Invalid reset OTP phone=%s", data.phone)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired OTP"
         )
-
+ 
+    # ── OTP verified — clear attempts and proceed ─────────────
+    await clear_otp_attempts(data.phone)
+ 
     result = await db.execute(select(User).where(User.phone == data.phone))
     user = result.scalar_one_or_none()
-
+ 
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
         )
-
+ 
     user.password_hash = hash_password(data.new_password)
-
+    db.add(user)
+ 
     await db.commit()
-
+ 
     await delete_otp(data.phone, purpose="forgot_password")
     await delete_all_refresh_jtis(str(user.id))
-
+ 
     logger.info("Password reset success user_id=%s", user.id)
     return {"message": "Password reset successfully. Please login again."}
 
