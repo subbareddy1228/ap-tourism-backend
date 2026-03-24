@@ -187,7 +187,7 @@ async def get_autocomplete(q: str) -> list[AutocompleteItem]:
     return items[:10]
 
 
-async def _save_recent_search(user_id: int, query: str) -> None:
+async def _save_recent_search(user_id: str, query: str) -> None:
     redis = get_redis_client()
     if redis is None:
         return
@@ -201,7 +201,7 @@ async def _save_recent_search(user_id: int, query: str) -> None:
         logger.warning("Could not save recent search: %s", exc)
 
 
-async def get_recent_searches(user_id: int) -> list[str]:
+async def get_recent_searches(user_id: str) -> list[str]:
     redis = get_redis_client()
     if redis is None:
         return []

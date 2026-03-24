@@ -3,7 +3,7 @@ from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends, Query
 
-from src.api.deps.auth import get_optional_user_id
+from src.api.deps.auth import get_current_user_id, get_optional_user_id
 from src.schemas.search import (
     AutocompleteItem,
     EntitySearchResult,
@@ -16,7 +16,7 @@ from src.schemas.search import (
 )
 from src.services import search_service
 
-router = APIRouter(prefix="/api/v1/search", tags=["Search APIs"])
+router = APIRouter(prefix="/search", tags=["Search"])
 logger = logging.getLogger(__name__)
 
 
@@ -24,9 +24,9 @@ logger = logging.getLogger(__name__)
 async def global_search(
     q: Annotated[str, Query(min_length=2, description="Search query (min 2 chars)")],
     limit: Annotated[int, Query(ge=1, le=20)] = 5,
-    # user_id: Optional[int] = Depends(get_optional_user_id),
+    user_id: Optional[int] = Depends(get_optional_user_id),
 ) -> GlobalSearchResult:
-    return await search_service.global_search(q=q, limit=limit)
+    return await search_service.global_search(q=q, limit=limit, user_id=user_id)
 
 
 @router.get("/suggestions", response_model=list[SuggestionItem], summary="Search Suggestions")
@@ -45,7 +45,7 @@ async def autocomplete(
 
 @router.get("/recent", response_model=list[str], summary="Recent Searches")
 async def recent_searches(
-    user_id: Annotated[int, Query(description="User ID")],
+    user_id: str = Depends(get_current_user_id),
 ) -> list[str]:
     return await search_service.get_recent_searches(user_id=user_id)
 
