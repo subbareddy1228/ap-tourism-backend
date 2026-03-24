@@ -19,3 +19,16 @@ from .booking import Booking
 from src.models.transaction import Transaction, SavedCard, Refund
 
 from src.models.coupon import Coupon
+
+from src.models.review import Review, ReviewHelpful, ReviewReport
+from src.models.notification import Notification, NotificationPreference
+from src.models.support import SupportTicket, TicketMessage
+from src.models.tracking import TrackingSession, TripLocation, LocationHistory
+
+from src.models.review import Review, ReviewHelpful, ReviewReport
+
+from src.models.notification import Notification, NotificationPreference
+
+from src.models.support import SupportTicket, TicketMessage
+
+from src.models.tracking import TrackingSession, TripLocation, LocationHistory

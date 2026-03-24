@@ -22,21 +22,21 @@ from contextlib import asynccontextmanager
 from src.core.config import settings
 from src.core.redis import init_redis, close_redis
 from src.core.logging import setup_logging
-from src.core.elasticsearch import init_elasticsearch, close_elasticsearch  # ← ADDED
+# from src.core.elasticsearch import init_elasticsearch, close_elasticsearch  # ← ADDED
 
 from src.api.v1.router import router as v1_router
 
 setup_logging()
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """Startup and shutdown events."""
-    await init_redis()
-    # await init_elasticsearch()   
-    yield
-    await close_redis()
-    # await close_elasticsearch()  
+# @asynccontextmanager
+# async def lifespan(app: FastAPI):
+#     """Startup and shutdown events."""
+#     await init_redis()
+#     # await init_elasticsearch()   
+#     yield
+#     await close_redis()
+#     # await close_elasticsearch()  
 
 
 app = FastAPI(

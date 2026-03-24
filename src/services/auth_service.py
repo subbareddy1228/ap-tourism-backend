@@ -48,22 +48,45 @@ async def send_sms_otp(phone: str, otp: str) -> None:
 # ═════════════════ REGISTER ═════════════════
 
 async def register_user(data: RegisterRequest, db: AsyncSession) -> dict:
-
+ 
     logger.info("Registration attempt phone=%s", data.phone)
-
-    result = await db.execute(
-        select(User).where(
-            or_(User.phone == data.phone, User.email == data.email)
-        )
+ 
+    # Check phone uniqueness
+    phone_check = await db.execute(
+        select(User).where(User.phone == data.phone)
     )
-
-    if result.scalars().first():
+    if phone_check.scalars().first():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Phone or email already registered"
+            detail="Phone number already registered"
         )
-
-    # ── Create User ───────────────────────────────────────────
+ 
+    # Check email uniqueness only if provided
+    if data.email:
+        email_check = await db.execute(
+            select(User).where(User.email == data.email)
+        )
+        if email_check.scalars().first():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email already registered"
+            )
+ 
+    # Generate and send OTP FIRST — before touching the DB
+    otp = generate_otp()
+    await store_otp(data.phone, otp, purpose="register")
+ 
+    try:
+        await send_sms_otp(data.phone, otp)
+    except Exception as e:
+        await delete_otp(data.phone, purpose="register")
+        logger.error("SMS failed during registration phone=%s error=%s", data.phone, str(e))
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Failed to send OTP. Please try again."
+        )
+ 
+    # SMS succeeded — now safe to save user to DB
     user = User(
         phone=data.phone,
         email=data.email,
@@ -71,14 +94,10 @@ async def register_user(data: RegisterRequest, db: AsyncSession) -> dict:
         password_hash=hash_password(data.password),
         is_phone_verified=False,
     )
-
     db.add(user)
     await db.commit()
     await db.refresh(user)
-
-    # ── Create UserProfile immediately ────────────────────────
-    # Must be created here so GET /user/me works right after login.
-    # Without this, profile is null until user visits /user/me first.
+ 
     profile = UserProfile(
         user_id=user.id,
         preferences={},
@@ -87,19 +106,13 @@ async def register_user(data: RegisterRequest, db: AsyncSession) -> dict:
     )
     db.add(profile)
     await db.commit()
-    # ─────────────────────────────────────────────────────────
-
-    otp = generate_otp()
-    await store_otp(data.phone, otp, purpose="register")
-    await send_sms_otp(data.phone, otp)
-
+ 
     logger.info("User registered successfully user_id=%s", user.id)
-
+ 
     return {
         "user_id": str(user.id),
         "message": "OTP sent to your phone"
     }
-
 
 # ═════════════════ SEND OTP ═════════════════
 

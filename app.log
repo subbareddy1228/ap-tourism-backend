@@ -2341,3 +2341,18 @@ elastic_transport.ConnectionError: Connection error caused by: ServerDisconnecte
 2026-03-24 14:04:41,901 | ERROR | src.core.elasticsearch | Could not connect to Elasticsearch after 5 attempts
 2026-03-24 14:04:42,174 | ERROR | asyncio | Unclosed client session
 client_session: <aiohttp.client.ClientSession object at 0x000002260D086900>
+2026-03-24 14:54:14,287 | WARNING | passlib.handlers.bcrypt | (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2026-03-24 14:57:59,843 | INFO | httpx | HTTP Request: POST https://api.twilio.com/2010-04-01/Accounts/AC1788055ac9231f959d10c1c5959cfa9c/Messages.json "HTTP/1.1 201 Created"
+2026-03-24 14:57:59,845 | INFO | src.integrations.twilio | Twilio OTP sent successfully to 7793969902
+2026-03-24 15:01:50,056 | WARNING | passlib.handlers.bcrypt | (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2026-03-24 15:06:43,178 | INFO | src.services.auth_service | Login success user_id=089f9d42-915a-4052-ab61-62f491de7132

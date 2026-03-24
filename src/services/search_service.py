@@ -4,13 +4,19 @@ import logging
 from typing import Optional
 
 from src.core.config import settings
-from src.core.elasticsearch import (
-    get_es_client,
-    INDEX_DESTINATIONS,
-    INDEX_HOTELS,
-    INDEX_PACKAGES,
-    INDEX_TEMPLES,
-)
+try:
+    from src.core.elasticsearch import (
+        get_es_client,
+        INDEX_DESTINATIONS,
+        INDEX_HOTELS,
+        INDEX_PACKAGES,
+        INDEX_TEMPLES,
+    )
+    ES_AVAILABLE = True
+except Exception:
+    ES_AVAILABLE = False
+    get_es_client = None
+    INDEX_DESTINATIONS = INDEX_HOTELS = INDEX_PACKAGES = INDEX_TEMPLES = None
 from src.core.redis import get_redis_client
 from src.schemas.search import (
     AutocompleteItem,
