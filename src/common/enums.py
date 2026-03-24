@@ -11,6 +11,7 @@ class UserRole(str, Enum):
     PARTNER = "partner"
     GUIDE = "guide"
     ADMIN = "admin"
+    DRIVER = "driver"
 
 
 class OTPPurpose(str, Enum):

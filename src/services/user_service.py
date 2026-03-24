@@ -211,21 +211,34 @@ async def update_address(address_id: str, data: AddressRequest, current_user: Us
     if not address:
         raise HTTPException(status_code=404, detail="Address not found")
 
-    address.label = data.label
+    # ── If setting this address as default, un-default all others first ──
+    if data.is_default:
+        existing = (
+            await db.execute(
+                select(Address).where(
+                    Address.user_id == current_user.id,
+                    Address.id != address_id        # exclude the one being updated
+                )
+            )
+        ).scalars().all()
+
+        for addr in existing:
+            addr.is_default = False
+
+    address.label         = data.label
     address.address_line1 = data.address_line1
     address.address_line2 = data.address_line2
-    address.city = data.city
-    address.state = data.state
-    address.pincode = data.pincode
-    address.country = data.country or "India"
-    address.is_default = data.is_default or False
-    address.updated_at = datetime.utcnow()
+    address.city          = data.city
+    address.state         = data.state
+    address.pincode       = data.pincode
+    address.country       = data.country or "India"
+    address.is_default    = data.is_default or False
+    address.updated_at    = datetime.utcnow()
 
     await db.commit()
     await db.refresh(address)
 
     return address
-
 
 async def delete_address(address_id: str, current_user: User, db: AsyncSession):
 
@@ -337,7 +350,7 @@ async def send_phone_verification_otp(current_user: User):
             detail="Phone is already verified"
         )
 
-    otp = await generate_otp()
+    otp = generate_otp()
 
     await store_otp(current_user.phone, otp, purpose="verify_phone")
 
