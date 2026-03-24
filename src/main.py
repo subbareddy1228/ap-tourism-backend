@@ -33,10 +33,10 @@ setup_logging()
 async def lifespan(app: FastAPI):
     """Startup and shutdown events."""
     await init_redis()
-    await init_elasticsearch()   
+    # await init_elasticsearch()   
     yield
     await close_redis()
-    await close_elasticsearch()  
+    # await close_elasticsearch()  
 
 
 app = FastAPI(
