@@ -300,7 +300,7 @@ async def get_notifications(
  
 # ══════════════════ REVIEWS ══════════════════
  
-@router.get("/me/reviews", response_model=APIResponse, summary="Reviews received")
+@router.get("/my-reviews", response_model=APIResponse, summary="Reviews received")
 async def get_reviews(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)

@@ -3219,3 +3219,905 @@ elastic_transport.ConnectionError: Connection error caused by: ServerDisconnecte
 2026-03-24 16:50:30,137 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 20 times in a row, putting on 30 second timeout
 2026-03-24 16:50:30,137 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 5/5 failed: Connection error caused by: ConnectionError(Connection error caused by: ServerDisconnectedError(Server disconnected))
 2026-03-24 16:50:30,138 | ERROR | src.core.elasticsearch | Could not connect to Elasticsearch after 5 attempts
+2026-03-24 17:37:21,408 | INFO | src.core.elasticsearch | Elasticsearch connection closed
+2026-03-24 17:37:31,163 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.176s]
+2026-03-24 17:37:31,164 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 1 times in a row, putting on 1 second timeout
+2026-03-24 17:37:31,165 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 0 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 17:37:31,242 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.006s]
+2026-03-24 17:37:31,243 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 2 times in a row, putting on 2 second timeout
+2026-03-24 17:37:31,244 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 1 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 17:37:31,251 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.006s]
+2026-03-24 17:37:31,252 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 3 times in a row, putting on 4 second timeout
+2026-03-24 17:37:31,253 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 2 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 17:37:31,292 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.036s]
+2026-03-24 17:37:31,293 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 4 times in a row, putting on 8 second timeout
+2026-03-24 17:37:31,294 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 1/5 failed: Connection error caused by: ConnectionError(Connection error caused by: ServerDisconnectedError(Server disconnected))
+2026-03-24 17:37:34,299 | INFO | elastic_transport.node_pool | Resurrected node <AiohttpHttpNode(http://localhost:9200)> (force=False)
+2026-03-24 17:37:34,309 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.008s]
+2026-03-24 17:37:34,309 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 5 times in a row, putting on 16 second timeout
+2026-03-24 17:37:34,310 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 0 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 17:37:34,312 | INFO | elastic_transport.node_pool | Resurrected node <AiohttpHttpNode(http://localhost:9200)> (force=False)
+2026-03-24 17:37:34,319 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.007s]
+2026-03-24 17:37:34,324 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 6 times in a row, putting on 30 second timeout
+2026-03-24 17:37:34,325 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 1 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 17:37:34,333 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.006s]
+2026-03-24 17:37:34,333 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 7 times in a row, putting on 30 second timeout
+2026-03-24 17:37:34,335 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 2 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 17:37:34,346 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.006s]
+2026-03-24 17:37:34,347 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 8 times in a row, putting on 30 second timeout
+2026-03-24 17:37:34,347 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 2/5 failed: Connection error caused by: ConnectionError(Connection error caused by: ServerDisconnectedError(Server disconnected))
+2026-03-24 17:37:37,351 | INFO | elastic_transport.node_pool | Resurrected node <AiohttpHttpNode(http://localhost:9200)> (force=False)
+2026-03-24 17:37:37,358 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.007s]
+2026-03-24 17:37:37,359 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 9 times in a row, putting on 30 second timeout
+2026-03-24 17:37:37,360 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 0 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 17:37:37,369 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.007s]
+2026-03-24 17:37:37,371 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 10 times in a row, putting on 30 second timeout
+2026-03-24 17:37:37,373 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 1 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 17:37:37,585 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.209s]
+2026-03-24 17:37:37,587 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 11 times in a row, putting on 30 second timeout
+2026-03-24 17:37:37,588 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 2 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 17:37:37,596 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.006s]
+2026-03-24 17:37:37,596 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 12 times in a row, putting on 30 second timeout
+2026-03-24 17:37:37,597 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 3/5 failed: Connection error caused by: ConnectionError(Connection error caused by: ServerDisconnectedError(Server disconnected))
+2026-03-24 17:37:40,613 | INFO | elastic_transport.node_pool | Resurrected node <AiohttpHttpNode(http://localhost:9200)> (force=False)
+2026-03-24 17:37:40,620 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.006s]
+2026-03-24 17:37:40,621 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 13 times in a row, putting on 30 second timeout
+2026-03-24 17:37:40,622 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 0 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 17:37:40,628 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.005s]
+2026-03-24 17:37:40,629 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 14 times in a row, putting on 30 second timeout
+2026-03-24 17:37:40,629 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 1 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 17:37:40,639 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.008s]
+2026-03-24 17:37:40,640 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 15 times in a row, putting on 30 second timeout
+2026-03-24 17:37:40,640 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 2 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 17:37:40,646 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.005s]
+2026-03-24 17:37:40,647 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 16 times in a row, putting on 30 second timeout
+2026-03-24 17:37:40,647 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 4/5 failed: Connection error caused by: ConnectionError(Connection error caused by: ServerDisconnectedError(Server disconnected))
+2026-03-24 17:37:43,656 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.008s]
+2026-03-24 17:37:43,656 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 17 times in a row, putting on 30 second timeout
+2026-03-24 17:37:43,657 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 0 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 17:37:43,663 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.004s]
+2026-03-24 17:37:43,663 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 18 times in a row, putting on 30 second timeout
+2026-03-24 17:37:43,664 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 1 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 17:37:43,673 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.006s]
+2026-03-24 17:37:43,674 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 19 times in a row, putting on 30 second timeout
+2026-03-24 17:37:43,674 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 2 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 17:37:43,680 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.005s]
+2026-03-24 17:37:43,681 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 20 times in a row, putting on 30 second timeout
+2026-03-24 17:37:43,682 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 5/5 failed: Connection error caused by: ConnectionError(Connection error caused by: ServerDisconnectedError(Server disconnected))
+2026-03-24 17:37:43,683 | ERROR | src.core.elasticsearch | Could not connect to Elasticsearch after 5 attempts
+2026-03-24 17:41:45,919 | INFO | src.core.elasticsearch | Elasticsearch connection closed
+2026-03-24 17:57:23,273 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.021s]
+2026-03-24 17:57:23,274 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 1 times in a row, putting on 1 second timeout
+2026-03-24 17:57:23,275 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 0 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 17:57:23,283 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.005s]
+2026-03-24 17:57:23,284 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 2 times in a row, putting on 2 second timeout
+2026-03-24 17:57:23,285 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 1 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 17:57:23,293 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.006s]
+2026-03-24 17:57:23,294 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 3 times in a row, putting on 4 second timeout
+2026-03-24 17:57:23,295 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 2 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 17:57:23,311 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.008s]
+2026-03-24 17:57:23,312 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 4 times in a row, putting on 8 second timeout
+2026-03-24 17:57:23,313 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 1/5 failed: Connection error caused by: ConnectionError(Connection error caused by: ServerDisconnectedError(Server disconnected))
+2026-03-24 17:57:26,324 | INFO | elastic_transport.node_pool | Resurrected node <AiohttpHttpNode(http://localhost:9200)> (force=False)
+2026-03-24 17:57:26,331 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.006s]
+2026-03-24 17:57:26,332 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 5 times in a row, putting on 16 second timeout
+2026-03-24 17:57:26,333 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 0 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 17:57:26,335 | INFO | elastic_transport.node_pool | Resurrected node <AiohttpHttpNode(http://localhost:9200)> (force=False)
+2026-03-24 17:57:26,342 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.006s]
+2026-03-24 17:57:26,343 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 6 times in a row, putting on 30 second timeout
+2026-03-24 17:57:26,343 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 1 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 17:57:26,353 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.008s]
+2026-03-24 17:57:26,354 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 7 times in a row, putting on 30 second timeout
+2026-03-24 17:57:26,354 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 2 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 17:57:26,366 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.011s]
+2026-03-24 17:57:26,367 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 8 times in a row, putting on 30 second timeout
+2026-03-24 17:57:26,367 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 2/5 failed: Connection error caused by: ConnectionError(Connection error caused by: ServerDisconnectedError(Server disconnected))
+2026-03-24 17:57:29,375 | INFO | elastic_transport.node_pool | Resurrected node <AiohttpHttpNode(http://localhost:9200)> (force=False)
+2026-03-24 17:57:29,381 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.005s]
+2026-03-24 17:57:29,381 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 9 times in a row, putting on 30 second timeout
+2026-03-24 17:57:29,382 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 0 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 17:57:29,389 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.005s]
+2026-03-24 17:57:29,389 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 10 times in a row, putting on 30 second timeout
+2026-03-24 17:57:29,390 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 1 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 17:57:29,399 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.006s]
+2026-03-24 17:57:29,399 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 11 times in a row, putting on 30 second timeout
+2026-03-24 17:57:29,400 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 2 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 17:57:29,408 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.005s]
+2026-03-24 17:57:29,409 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 12 times in a row, putting on 30 second timeout
+2026-03-24 17:57:29,409 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 3/5 failed: Connection error caused by: ConnectionError(Connection error caused by: ServerDisconnectedError(Server disconnected))
+2026-03-24 17:57:32,422 | INFO | elastic_transport.node_pool | Resurrected node <AiohttpHttpNode(http://localhost:9200)> (force=False)
+2026-03-24 17:57:32,427 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.005s]
+2026-03-24 17:57:32,428 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 13 times in a row, putting on 30 second timeout
+2026-03-24 17:57:32,428 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 0 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 17:57:32,435 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.005s]
+2026-03-24 17:57:32,435 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 14 times in a row, putting on 30 second timeout
+2026-03-24 17:57:32,435 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 1 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 17:57:32,444 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.007s]
+2026-03-24 17:57:32,444 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 15 times in a row, putting on 30 second timeout
+2026-03-24 17:57:32,445 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 2 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 17:57:32,451 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.005s]
+2026-03-24 17:57:32,452 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 16 times in a row, putting on 30 second timeout
+2026-03-24 17:57:32,452 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 4/5 failed: Connection error caused by: ConnectionError(Connection error caused by: ServerDisconnectedError(Server disconnected))
+2026-03-24 17:57:35,463 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.008s]
+2026-03-24 17:57:35,463 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 17 times in a row, putting on 30 second timeout
+2026-03-24 17:57:35,464 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 0 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 17:57:35,469 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.004s]
+2026-03-24 17:57:35,470 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 18 times in a row, putting on 30 second timeout
+2026-03-24 17:57:35,470 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 1 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 17:57:35,478 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.007s]
+2026-03-24 17:57:35,479 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 19 times in a row, putting on 30 second timeout
+2026-03-24 17:57:35,479 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 2 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ServerDisconnectedError(Server disconnected)
+2026-03-24 17:57:35,484 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:0.004s]
+2026-03-24 17:57:35,484 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 20 times in a row, putting on 30 second timeout
+2026-03-24 17:57:35,485 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 5/5 failed: Connection error caused by: ConnectionError(Connection error caused by: ServerDisconnectedError(Server disconnected))
+2026-03-24 17:57:35,485 | ERROR | src.core.elasticsearch | Could not connect to Elasticsearch after 5 attempts
+2026-03-24 18:00:27,047 | INFO | src.services.auth_service | Login success user_id=089f9d42-915a-4052-ab61-62f491de7132
+2026-03-24 18:15:15,868 | INFO | src.core.elasticsearch | Elasticsearch connection closed
+2026-03-24 18:15:25,682 | INFO | elastic_transport.transport | GET https://localhost:9200/ [status:N/A duration:0.252s]
+2026-03-24 18:15:25,683 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(https://localhost:9200)> has failed for 1 times in a row, putting on 1 second timeout
+2026-03-24 18:15:25,684 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 0 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.TlsError: TLS error caused by: ClientConnectorCertificateError(Cannot connect to host localhost:9200 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1032)')])
+2026-03-24 18:15:25,763 | INFO | elastic_transport.transport | GET https://localhost:9200/ [status:N/A duration:0.076s]
+2026-03-24 18:15:25,764 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(https://localhost:9200)> has failed for 2 times in a row, putting on 2 second timeout
+2026-03-24 18:15:25,764 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 1 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.TlsError: TLS error caused by: ClientConnectorCertificateError(Cannot connect to host localhost:9200 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1032)')])
+2026-03-24 18:15:25,807 | INFO | elastic_transport.transport | GET https://localhost:9200/ [status:N/A duration:0.042s]
+2026-03-24 18:15:25,808 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(https://localhost:9200)> has failed for 3 times in a row, putting on 4 second timeout
+2026-03-24 18:15:25,808 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 2 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.TlsError: TLS error caused by: ClientConnectorCertificateError(Cannot connect to host localhost:9200 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1032)')])
+2026-03-24 18:15:25,853 | INFO | elastic_transport.transport | GET https://localhost:9200/ [status:N/A duration:0.043s]
+2026-03-24 18:15:25,854 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(https://localhost:9200)> has failed for 4 times in a row, putting on 8 second timeout
+2026-03-24 18:15:25,854 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 1/5 failed: TLS error caused by: TlsError(TLS error caused by: ClientConnectorCertificateError(Cannot connect to host localhost:9200 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1032)')]))
+2026-03-24 18:15:28,860 | INFO | elastic_transport.node_pool | Resurrected node <AiohttpHttpNode(https://localhost:9200)> (force=False)
+2026-03-24 18:15:28,898 | INFO | elastic_transport.transport | GET https://localhost:9200/ [status:N/A duration:0.038s]
+2026-03-24 18:15:28,899 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(https://localhost:9200)> has failed for 5 times in a row, putting on 16 second timeout
+2026-03-24 18:15:28,899 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 0 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.TlsError: TLS error caused by: ClientConnectorCertificateError(Cannot connect to host localhost:9200 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1032)')])
+2026-03-24 18:15:28,901 | INFO | elastic_transport.node_pool | Resurrected node <AiohttpHttpNode(https://localhost:9200)> (force=False)
+2026-03-24 18:15:28,938 | INFO | elastic_transport.transport | GET https://localhost:9200/ [status:N/A duration:0.037s]
+2026-03-24 18:15:28,939 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(https://localhost:9200)> has failed for 6 times in a row, putting on 30 second timeout
+2026-03-24 18:15:28,940 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 1 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.TlsError: TLS error caused by: ClientConnectorCertificateError(Cannot connect to host localhost:9200 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1032)')])
+2026-03-24 18:15:28,984 | INFO | elastic_transport.transport | GET https://localhost:9200/ [status:N/A duration:0.042s]
+2026-03-24 18:15:28,985 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(https://localhost:9200)> has failed for 7 times in a row, putting on 30 second timeout
+2026-03-24 18:15:28,985 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 2 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.TlsError: TLS error caused by: ClientConnectorCertificateError(Cannot connect to host localhost:9200 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1032)')])
+2026-03-24 18:15:29,027 | INFO | elastic_transport.transport | GET https://localhost:9200/ [status:N/A duration:0.040s]
+2026-03-24 18:15:29,028 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(https://localhost:9200)> has failed for 8 times in a row, putting on 30 second timeout
+2026-03-24 18:15:29,028 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 2/5 failed: TLS error caused by: TlsError(TLS error caused by: ClientConnectorCertificateError(Cannot connect to host localhost:9200 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1032)')]))
+2026-03-24 18:15:32,039 | INFO | elastic_transport.node_pool | Resurrected node <AiohttpHttpNode(https://localhost:9200)> (force=False)
+2026-03-24 18:15:32,074 | INFO | elastic_transport.transport | GET https://localhost:9200/ [status:N/A duration:0.035s]
+2026-03-24 18:15:32,075 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(https://localhost:9200)> has failed for 9 times in a row, putting on 30 second timeout
+2026-03-24 18:15:32,075 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 0 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.TlsError: TLS error caused by: ClientConnectorCertificateError(Cannot connect to host localhost:9200 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1032)')])
+2026-03-24 18:15:32,094 | INFO | elastic_transport.transport | GET https://localhost:9200/ [status:N/A duration:0.017s]
+2026-03-24 18:15:32,094 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(https://localhost:9200)> has failed for 10 times in a row, putting on 30 second timeout
+2026-03-24 18:15:32,094 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 1 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.TlsError: TLS error caused by: ClientConnectorCertificateError(Cannot connect to host localhost:9200 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1032)')])
+2026-03-24 18:15:32,116 | INFO | elastic_transport.transport | GET https://localhost:9200/ [status:N/A duration:0.020s]
+2026-03-24 18:15:32,116 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(https://localhost:9200)> has failed for 11 times in a row, putting on 30 second timeout
+2026-03-24 18:15:32,117 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 2 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.TlsError: TLS error caused by: ClientConnectorCertificateError(Cannot connect to host localhost:9200 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1032)')])
+2026-03-24 18:15:32,137 | INFO | elastic_transport.transport | GET https://localhost:9200/ [status:N/A duration:0.018s]
+2026-03-24 18:15:32,137 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(https://localhost:9200)> has failed for 12 times in a row, putting on 30 second timeout
+2026-03-24 18:15:32,137 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 3/5 failed: TLS error caused by: TlsError(TLS error caused by: ClientConnectorCertificateError(Cannot connect to host localhost:9200 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1032)')]))
+2026-03-24 18:15:35,153 | INFO | elastic_transport.node_pool | Resurrected node <AiohttpHttpNode(https://localhost:9200)> (force=False)
+2026-03-24 18:15:35,184 | INFO | elastic_transport.transport | GET https://localhost:9200/ [status:N/A duration:0.030s]
+2026-03-24 18:15:35,184 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(https://localhost:9200)> has failed for 13 times in a row, putting on 30 second timeout
+2026-03-24 18:15:35,185 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 0 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.TlsError: TLS error caused by: ClientConnectorCertificateError(Cannot connect to host localhost:9200 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1032)')])
+2026-03-24 18:15:35,214 | INFO | elastic_transport.transport | GET https://localhost:9200/ [status:N/A duration:0.027s]
+2026-03-24 18:15:35,214 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(https://localhost:9200)> has failed for 14 times in a row, putting on 30 second timeout
+2026-03-24 18:15:35,214 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 1 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.TlsError: TLS error caused by: ClientConnectorCertificateError(Cannot connect to host localhost:9200 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1032)')])
+2026-03-24 18:15:35,238 | INFO | elastic_transport.transport | GET https://localhost:9200/ [status:N/A duration:0.022s]
+2026-03-24 18:15:35,239 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(https://localhost:9200)> has failed for 15 times in a row, putting on 30 second timeout
+2026-03-24 18:15:35,239 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 2 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.TlsError: TLS error caused by: ClientConnectorCertificateError(Cannot connect to host localhost:9200 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1032)')])
+2026-03-24 18:15:35,268 | INFO | elastic_transport.transport | GET https://localhost:9200/ [status:N/A duration:0.026s]
+2026-03-24 18:15:35,268 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(https://localhost:9200)> has failed for 16 times in a row, putting on 30 second timeout
+2026-03-24 18:15:35,268 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 4/5 failed: TLS error caused by: TlsError(TLS error caused by: ClientConnectorCertificateError(Cannot connect to host localhost:9200 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1032)')]))
+2026-03-24 18:15:38,299 | INFO | elastic_transport.transport | GET https://localhost:9200/ [status:N/A duration:0.026s]
+2026-03-24 18:15:38,300 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(https://localhost:9200)> has failed for 17 times in a row, putting on 30 second timeout
+2026-03-24 18:15:38,300 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 0 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.TlsError: TLS error caused by: ClientConnectorCertificateError(Cannot connect to host localhost:9200 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1032)')])
+2026-03-24 18:15:38,332 | INFO | elastic_transport.transport | GET https://localhost:9200/ [status:N/A duration:0.029s]
+2026-03-24 18:15:38,332 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(https://localhost:9200)> has failed for 18 times in a row, putting on 30 second timeout
+2026-03-24 18:15:38,333 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 1 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.TlsError: TLS error caused by: ClientConnectorCertificateError(Cannot connect to host localhost:9200 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1032)')])
+2026-03-24 18:15:38,361 | INFO | elastic_transport.transport | GET https://localhost:9200/ [status:N/A duration:0.026s]
+2026-03-24 18:15:38,361 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(https://localhost:9200)> has failed for 19 times in a row, putting on 30 second timeout
+2026-03-24 18:15:38,362 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 2 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.TlsError: TLS error caused by: ClientConnectorCertificateError(Cannot connect to host localhost:9200 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1032)')])
+2026-03-24 18:15:38,389 | INFO | elastic_transport.transport | GET https://localhost:9200/ [status:N/A duration:0.026s]
+2026-03-24 18:15:38,391 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(https://localhost:9200)> has failed for 20 times in a row, putting on 30 second timeout
+2026-03-24 18:15:38,391 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 5/5 failed: TLS error caused by: TlsError(TLS error caused by: ClientConnectorCertificateError(Cannot connect to host localhost:9200 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1032)')]))
+2026-03-24 18:15:38,392 | ERROR | src.core.elasticsearch | Could not connect to Elasticsearch after 5 attempts
+2026-03-24 18:15:41,476 | INFO | elastic_transport.transport | GET https://localhost:9200/ [status:N/A duration:0.042s]
+2026-03-24 18:15:41,476 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(https://localhost:9200)> has failed for 1 times in a row, putting on 1 second timeout
+2026-03-24 18:15:41,477 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 0 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.TlsError: TLS error caused by: ClientConnectorCertificateError(Cannot connect to host localhost:9200 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1032)')])
+2026-03-24 18:15:41,507 | INFO | elastic_transport.transport | GET https://localhost:9200/ [status:N/A duration:0.028s]
+2026-03-24 18:15:41,507 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(https://localhost:9200)> has failed for 2 times in a row, putting on 2 second timeout
+2026-03-24 18:15:41,508 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 1 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.TlsError: TLS error caused by: ClientConnectorCertificateError(Cannot connect to host localhost:9200 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1032)')])
+2026-03-24 18:15:41,540 | INFO | elastic_transport.transport | GET https://localhost:9200/ [status:N/A duration:0.031s]
+2026-03-24 18:15:41,541 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(https://localhost:9200)> has failed for 3 times in a row, putting on 4 second timeout
+2026-03-24 18:15:41,542 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 2 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.TlsError: TLS error caused by: ClientConnectorCertificateError(Cannot connect to host localhost:9200 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1032)')])
+2026-03-24 18:15:41,568 | INFO | elastic_transport.transport | GET https://localhost:9200/ [status:N/A duration:0.024s]
+2026-03-24 18:15:41,568 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(https://localhost:9200)> has failed for 4 times in a row, putting on 8 second timeout
+2026-03-24 18:15:41,569 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 1/5 failed: TLS error caused by: TlsError(TLS error caused by: ClientConnectorCertificateError(Cannot connect to host localhost:9200 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1032)')]))
+2026-03-24 18:15:44,576 | INFO | elastic_transport.node_pool | Resurrected node <AiohttpHttpNode(https://localhost:9200)> (force=False)
+2026-03-24 18:15:44,594 | INFO | elastic_transport.transport | GET https://localhost:9200/ [status:N/A duration:0.017s]
+2026-03-24 18:15:44,594 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(https://localhost:9200)> has failed for 5 times in a row, putting on 16 second timeout
+2026-03-24 18:15:44,594 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 0 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.TlsError: TLS error caused by: ClientConnectorCertificateError(Cannot connect to host localhost:9200 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1032)')])
+2026-03-24 18:15:44,596 | INFO | elastic_transport.node_pool | Resurrected node <AiohttpHttpNode(https://localhost:9200)> (force=False)
+2026-03-24 18:15:44,618 | INFO | elastic_transport.transport | GET https://localhost:9200/ [status:N/A duration:0.021s]
+2026-03-24 18:15:44,619 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(https://localhost:9200)> has failed for 6 times in a row, putting on 30 second timeout
+2026-03-24 18:15:44,619 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 1 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.TlsError: TLS error caused by: ClientConnectorCertificateError(Cannot connect to host localhost:9200 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1032)')])
+2026-03-24 18:15:44,647 | INFO | elastic_transport.transport | GET https://localhost:9200/ [status:N/A duration:0.027s]
+2026-03-24 18:15:44,647 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(https://localhost:9200)> has failed for 7 times in a row, putting on 30 second timeout
+2026-03-24 18:15:44,648 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 2 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.TlsError: TLS error caused by: ClientConnectorCertificateError(Cannot connect to host localhost:9200 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1032)')])
+2026-03-24 18:15:44,668 | INFO | elastic_transport.transport | GET https://localhost:9200/ [status:N/A duration:0.019s]
+2026-03-24 18:15:44,669 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(https://localhost:9200)> has failed for 8 times in a row, putting on 30 second timeout
+2026-03-24 18:15:44,669 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 2/5 failed: TLS error caused by: TlsError(TLS error caused by: ClientConnectorCertificateError(Cannot connect to host localhost:9200 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1032)')]))
+2026-03-24 18:15:47,683 | INFO | elastic_transport.node_pool | Resurrected node <AiohttpHttpNode(https://localhost:9200)> (force=False)
+2026-03-24 18:15:47,700 | INFO | elastic_transport.transport | GET https://localhost:9200/ [status:N/A duration:0.016s]
+2026-03-24 18:15:47,700 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(https://localhost:9200)> has failed for 9 times in a row, putting on 30 second timeout
+2026-03-24 18:15:47,700 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 0 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.TlsError: TLS error caused by: ClientConnectorCertificateError(Cannot connect to host localhost:9200 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1032)')])
+2026-03-24 18:15:47,729 | INFO | elastic_transport.transport | GET https://localhost:9200/ [status:N/A duration:0.026s]
+2026-03-24 18:15:47,729 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(https://localhost:9200)> has failed for 10 times in a row, putting on 30 second timeout
+2026-03-24 18:15:47,729 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 1 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.TlsError: TLS error caused by: ClientConnectorCertificateError(Cannot connect to host localhost:9200 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1032)')])
+2026-03-24 18:15:47,757 | INFO | elastic_transport.transport | GET https://localhost:9200/ [status:N/A duration:0.026s]
+2026-03-24 18:15:47,758 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(https://localhost:9200)> has failed for 11 times in a row, putting on 30 second timeout
+2026-03-24 18:15:47,758 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 2 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.TlsError: TLS error caused by: ClientConnectorCertificateError(Cannot connect to host localhost:9200 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1032)')])
+2026-03-24 18:15:47,781 | INFO | elastic_transport.transport | GET https://localhost:9200/ [status:N/A duration:0.022s]
+2026-03-24 18:15:47,782 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(https://localhost:9200)> has failed for 12 times in a row, putting on 30 second timeout
+2026-03-24 18:15:47,782 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 3/5 failed: TLS error caused by: TlsError(TLS error caused by: ClientConnectorCertificateError(Cannot connect to host localhost:9200 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1032)')]))
+2026-03-24 18:15:50,797 | INFO | elastic_transport.node_pool | Resurrected node <AiohttpHttpNode(https://localhost:9200)> (force=False)
+2026-03-24 18:15:50,815 | INFO | elastic_transport.transport | GET https://localhost:9200/ [status:N/A duration:0.017s]
+2026-03-24 18:15:50,816 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(https://localhost:9200)> has failed for 13 times in a row, putting on 30 second timeout
+2026-03-24 18:15:50,816 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 0 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.TlsError: TLS error caused by: ClientConnectorCertificateError(Cannot connect to host localhost:9200 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1032)')])
+2026-03-24 18:15:50,839 | INFO | elastic_transport.transport | GET https://localhost:9200/ [status:N/A duration:0.022s]
+2026-03-24 18:15:50,840 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(https://localhost:9200)> has failed for 14 times in a row, putting on 30 second timeout
+2026-03-24 18:15:50,840 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 1 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.TlsError: TLS error caused by: ClientConnectorCertificateError(Cannot connect to host localhost:9200 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1032)')])
+2026-03-24 18:15:50,861 | INFO | elastic_transport.transport | GET https://localhost:9200/ [status:N/A duration:0.019s]
+2026-03-24 18:15:50,862 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(https://localhost:9200)> has failed for 15 times in a row, putting on 30 second timeout
+2026-03-24 18:15:50,862 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 2 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.TlsError: TLS error caused by: ClientConnectorCertificateError(Cannot connect to host localhost:9200 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1032)')])
+2026-03-24 18:15:50,889 | INFO | elastic_transport.transport | GET https://localhost:9200/ [status:N/A duration:0.025s]
+2026-03-24 18:15:50,890 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(https://localhost:9200)> has failed for 16 times in a row, putting on 30 second timeout
+2026-03-24 18:15:50,890 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 4/5 failed: TLS error caused by: TlsError(TLS error caused by: ClientConnectorCertificateError(Cannot connect to host localhost:9200 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1032)')]))
+2026-03-24 18:15:53,923 | INFO | elastic_transport.transport | GET https://localhost:9200/ [status:N/A duration:0.023s]
+2026-03-24 18:15:53,923 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(https://localhost:9200)> has failed for 17 times in a row, putting on 30 second timeout
+2026-03-24 18:15:53,923 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 0 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.TlsError: TLS error caused by: ClientConnectorCertificateError(Cannot connect to host localhost:9200 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1032)')])
+2026-03-24 18:15:53,942 | INFO | elastic_transport.transport | GET https://localhost:9200/ [status:N/A duration:0.018s]
+2026-03-24 18:15:53,943 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(https://localhost:9200)> has failed for 18 times in a row, putting on 30 second timeout
+2026-03-24 18:15:53,943 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 1 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.TlsError: TLS error caused by: ClientConnectorCertificateError(Cannot connect to host localhost:9200 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1032)')])
+2026-03-24 18:15:53,964 | INFO | elastic_transport.transport | GET https://localhost:9200/ [status:N/A duration:0.019s]
+2026-03-24 18:15:53,964 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(https://localhost:9200)> has failed for 19 times in a row, putting on 30 second timeout
+2026-03-24 18:15:53,964 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 2 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.TlsError: TLS error caused by: ClientConnectorCertificateError(Cannot connect to host localhost:9200 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1032)')])
+2026-03-24 18:15:53,985 | INFO | elastic_transport.transport | GET https://localhost:9200/ [status:N/A duration:0.019s]
+2026-03-24 18:15:53,986 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(https://localhost:9200)> has failed for 20 times in a row, putting on 30 second timeout
+2026-03-24 18:15:53,986 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 5/5 failed: TLS error caused by: TlsError(TLS error caused by: ClientConnectorCertificateError(Cannot connect to host localhost:9200 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1032)')]))
+2026-03-24 18:15:53,987 | ERROR | src.core.elasticsearch | Could not connect to Elasticsearch after 5 attempts
+2026-03-24 18:19:38,631 | INFO | src.core.elasticsearch | Elasticsearch connection closed
+2026-03-24 18:19:38,961 | INFO | src.core.elasticsearch | Elasticsearch connection closed
+2026-03-24 18:19:49,353 | INFO | elastic_transport.transport | GET https://localhost:9200/ [status:401 duration:0.206s]
+2026-03-24 18:19:49,354 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 1/5 failed: AuthenticationException(401, 'security_exception', 'missing authentication credentials for REST request [/]')
+2026-03-24 18:19:49,508 | INFO | elastic_transport.transport | GET https://localhost:9200/ [status:401 duration:0.095s]
+2026-03-24 18:19:49,510 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 1/5 failed: AuthenticationException(401, 'security_exception', 'missing authentication credentials for REST request [/]')
+2026-03-24 18:19:52,373 | INFO | elastic_transport.transport | GET https://localhost:9200/ [status:401 duration:0.005s]
+2026-03-24 18:19:52,374 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 2/5 failed: AuthenticationException(401, 'security_exception', 'missing authentication credentials for REST request [/]')
+2026-03-24 18:19:52,522 | INFO | elastic_transport.transport | GET https://localhost:9200/ [status:401 duration:0.005s]
+2026-03-24 18:19:52,523 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 2/5 failed: AuthenticationException(401, 'security_exception', 'missing authentication credentials for REST request [/]')
+2026-03-24 18:19:55,390 | INFO | elastic_transport.transport | GET https://localhost:9200/ [status:401 duration:0.004s]
+2026-03-24 18:19:55,390 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 3/5 failed: AuthenticationException(401, 'security_exception', 'missing authentication credentials for REST request [/]')
+2026-03-24 18:19:55,532 | INFO | elastic_transport.transport | GET https://localhost:9200/ [status:401 duration:0.005s]
+2026-03-24 18:19:55,533 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 3/5 failed: AuthenticationException(401, 'security_exception', 'missing authentication credentials for REST request [/]')
+2026-03-24 18:19:58,404 | INFO | elastic_transport.transport | GET https://localhost:9200/ [status:401 duration:0.004s]
+2026-03-24 18:19:58,404 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 4/5 failed: AuthenticationException(401, 'security_exception', 'missing authentication credentials for REST request [/]')
+2026-03-24 18:19:58,543 | INFO | elastic_transport.transport | GET https://localhost:9200/ [status:401 duration:0.003s]
+2026-03-24 18:19:58,543 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 4/5 failed: AuthenticationException(401, 'security_exception', 'missing authentication credentials for REST request [/]')
+2026-03-24 18:20:01,418 | INFO | elastic_transport.transport | GET https://localhost:9200/ [status:401 duration:0.004s]
+2026-03-24 18:20:01,419 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 5/5 failed: AuthenticationException(401, 'security_exception', 'missing authentication credentials for REST request [/]')
+2026-03-24 18:20:01,419 | ERROR | src.core.elasticsearch | Could not connect to Elasticsearch after 5 attempts
+2026-03-24 18:20:01,552 | INFO | elastic_transport.transport | GET https://localhost:9200/ [status:401 duration:0.002s]
+2026-03-24 18:20:01,552 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 5/5 failed: AuthenticationException(401, 'security_exception', 'missing authentication credentials for REST request [/]')
+2026-03-24 18:20:01,553 | ERROR | src.core.elasticsearch | Could not connect to Elasticsearch after 5 attempts
+2026-03-24 18:23:37,832 | INFO | src.core.elasticsearch | Elasticsearch connection closed
+2026-03-24 18:23:39,850 | INFO | src.core.elasticsearch | Elasticsearch connection closed
+2026-03-24 18:26:37,635 | INFO | elastic_transport.transport | GET https://localhost:9200/ [status:401 duration:0.050s]
+2026-03-24 18:26:37,637 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 1/5 failed: AuthenticationException(401, 'security_exception', 'missing authentication credentials for REST request [/]')
+2026-03-24 18:26:40,642 | INFO | elastic_transport.transport | GET https://localhost:9200/ [status:401 duration:0.003s]
+2026-03-24 18:26:40,643 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 2/5 failed: AuthenticationException(401, 'security_exception', 'missing authentication credentials for REST request [/]')
+2026-03-24 18:26:43,658 | INFO | elastic_transport.transport | GET https://localhost:9200/ [status:401 duration:0.003s]
+2026-03-24 18:26:43,659 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 3/5 failed: AuthenticationException(401, 'security_exception', 'missing authentication credentials for REST request [/]')
+2026-03-24 18:26:46,669 | INFO | elastic_transport.transport | GET https://localhost:9200/ [status:401 duration:0.003s]
+2026-03-24 18:26:46,670 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 4/5 failed: AuthenticationException(401, 'security_exception', 'missing authentication credentials for REST request [/]')
+2026-03-24 18:26:49,674 | INFO | elastic_transport.transport | GET https://localhost:9200/ [status:401 duration:0.003s]
+2026-03-24 18:26:49,674 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 5/5 failed: AuthenticationException(401, 'security_exception', 'missing authentication credentials for REST request [/]')
+2026-03-24 18:26:49,674 | ERROR | src.core.elasticsearch | Could not connect to Elasticsearch after 5 attempts
+2026-03-24 18:27:56,841 | INFO | src.core.elasticsearch | Elasticsearch connection closed
