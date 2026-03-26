@@ -4955,3 +4955,33 @@ elastic_transport.ConnectionError: Connection error caused by: ClientConnectorEr
 2026-03-26 12:25:56,022 | INFO | src.core.elasticsearch | Index already exists: packages
 2026-03-26 12:25:56,025 | INFO | src.core.elasticsearch | Index already exists: destinations
 2026-03-26 12:31:01,903 | INFO | src.core.elasticsearch | Elasticsearch connection closed
+2026-03-26 12:37:19,582 | INFO | src.services.auth_service | Login success user_id=089f9d42-915a-4052-ab61-62f491de7132
+2026-03-26 12:40:30,850 | INFO | src.services.auth_service | Registration attempt phone=9381772845
+2026-03-26 12:40:31,701 | INFO | httpx | HTTP Request: POST https://api.twilio.com/2010-04-01/Accounts/AC1788055ac9231f959d10c1c5959cfa9c/Messages.json "HTTP/1.1 401 Unauthorized"
+2026-03-26 12:40:31,702 | ERROR | src.integrations.twilio | Twilio SMS failed: Client error '401 Unauthorized' for url 'https://api.twilio.com/2010-04-01/Accounts/AC1788055ac9231f959d10c1c5959cfa9c/Messages.json'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401
+2026-03-26 12:40:31,703 | ERROR | src.services.auth_service | SMS failed during registration phone=9381772845 error=Twilio SMS failed: Client error '401 Unauthorized' for url 'https://api.twilio.com/2010-04-01/Accounts/AC1788055ac9231f959d10c1c5959cfa9c/Messages.json'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401
+2026-03-26 12:43:21,382 | INFO | src.services.auth_service | Registration attempt phone=9381772845
+2026-03-26 12:43:22,293 | INFO | httpx | HTTP Request: POST https://api.twilio.com/2010-04-01/Accounts/AC1788055ac9231f959d10c1c5959cfa9c/Messages.json "HTTP/1.1 201 Created"
+2026-03-26 12:43:22,294 | INFO | src.integrations.twilio | Twilio OTP sent successfully to 9381772845
+2026-03-26 12:43:22,607 | INFO | src.services.auth_service | User registered successfully user_id=9e97f277-39ab-4660-8e65-730f78d53a37
+2026-03-26 12:45:45,715 | INFO | httpx | HTTP Request: POST https://api.twilio.com/2010-04-01/Accounts/AC1788055ac9231f959d10c1c5959cfa9c/Messages.json "HTTP/1.1 201 Created"
+2026-03-26 12:45:45,717 | INFO | src.integrations.twilio | Twilio OTP sent successfully to 9381772845
+2026-03-26 12:47:40,550 | INFO | src.services.auth_service | Login success user_id=9e97f277-39ab-4660-8e65-730f78d53a37
+2026-03-26 12:57:20,823 | INFO | src.services.auth_service | Registration attempt phone=9381772845
+2026-03-26 12:58:08,543 | INFO | src.services.auth_service | Logout attempt user_id=9e97f277-39ab-4660-8e65-730f78d53a37 device_id=default
+2026-03-26 12:58:08,544 | INFO | src.services.auth_service | Logout success user_id=9e97f277-39ab-4660-8e65-730f78d53a37
+2026-03-26 12:59:05,915 | INFO | httpx | HTTP Request: POST https://api.twilio.com/2010-04-01/Accounts/AC1788055ac9231f959d10c1c5959cfa9c/Messages.json "HTTP/1.1 201 Created"
+2026-03-26 12:59:05,917 | INFO | src.integrations.twilio | Twilio OTP sent successfully to 9381772845
+2026-03-26 13:02:38,670 | INFO | src.services.auth_service | Registration attempt phone=9381772845
+2026-03-26 14:12:18,267 | INFO | src.services.auth_service | Registration attempt phone=9381772845
+2026-03-26 14:12:19,387 | INFO | httpx | HTTP Request: POST https://api.twilio.com/2010-04-01/Accounts/AC1788055ac9231f959d10c1c5959cfa9c/Messages.json "HTTP/1.1 201 Created"
+2026-03-26 14:12:19,388 | INFO | src.integrations.twilio | Twilio OTP sent successfully to 9381772845
+2026-03-26 14:19:23,675 | INFO | src.services.auth_service | Registration attempt phone=9381772845
+2026-03-26 14:19:24,229 | INFO | src.services.auth_service | Restoring deleted user phone=9381772845
+2026-03-26 14:19:25,082 | INFO | httpx | HTTP Request: POST https://api.twilio.com/2010-04-01/Accounts/AC1788055ac9231f959d10c1c5959cfa9c/Messages.json "HTTP/1.1 201 Created"
+2026-03-26 14:19:25,084 | INFO | src.integrations.twilio | Twilio OTP sent successfully to 9381772845
+2026-03-26 14:25:46,382 | INFO | httpx | HTTP Request: POST https://api.twilio.com/2010-04-01/Accounts/AC1788055ac9231f959d10c1c5959cfa9c/Messages.json "HTTP/1.1 201 Created"
+2026-03-26 14:25:46,383 | INFO | src.integrations.twilio | Twilio OTP sent successfully to 9381772845
+2026-03-26 14:26:31,641 | INFO | src.services.auth_service | Login success user_id=9e97f277-39ab-4660-8e65-730f78d53a37

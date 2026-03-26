@@ -82,7 +82,7 @@ class TestVerifyOTP:
                     "user": type("User", (), {
                         "id": "uuid-123", "phone": "9876543210",
                         "email": None, "full_name": "Test",
-                        "role": "traveler",
+                        "role": "admin",
                         "is_phone_verified": True,
                         "is_email_verified": False
                     })()

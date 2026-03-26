@@ -123,13 +123,43 @@ async def verify_payment(db: AsyncSession, data: VerifyPaymentRequest) -> Verify
     now = datetime.utcnow()
 
     if is_valid:
+
         txn.status = "SUCCESS"
+
         txn.razorpay_payment_id = data.razorpay_payment_id
+
         txn.razorpay_signature = data.razorpay_signature
+
         txn.completed_at = now
+
         txn.updated_at = now
+ 
+        # Update linked booking status to CONFIRMED
+
+        from src.models.booking import Booking
+
+        from src.common.enums import BookingStatus, PaymentStatus
+
+        booking_result = await db.execute(
+
+            select(Booking).where(Booking.id == txn.booking_id)
+
+        )
+
+        booking = booking_result.scalar_one_or_none()
+
+        if booking:
+
+            booking.status = BookingStatus.CONFIRMED
+
+            booking.payment_status = PaymentStatus.SUCCESS
+
+            booking.updated_at = now
+ 
         await db.commit()
+
         return VerifyPaymentResponse(success=True, transaction_id=txn.id, status="SUCCESS", message="Payment verified.")
+ 
     else:
         txn.status = "FAILED"
         txn.updated_at = now

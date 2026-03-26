@@ -40,7 +40,7 @@ async def get_or_create_wallet(user_id: str, db: AsyncSession) -> Wallet:
     Every user gets a wallet automatically.
     """
     result = await db.execute(
-        select(Wallet).where(Wallet.user_id == user_id)
+        select(Wallet).where(Wallet.user_id == user_id).with_for_update()
     )
     wallet = result.scalar_one_or_none()
 
@@ -179,10 +179,29 @@ async def verify_topup(
         raise ValueError(f"Payment not captured. Status: {payment['status']}")
 
     # ── Step 3: Credit wallet ─────────────────────────────────
+    # ── Step 3: Credit wallet ─────────────────────────────────
+
     amount_inr = Decimal(str(payment["amount"] / 100))   # convert paise to INR
+ 
+    # Idempotency check — prevent double-credit on retries
 
+    existing = await db.execute(
+
+        select(WalletTransaction).where(
+
+            WalletTransaction.reference_id == data.razorpay_payment_id
+
+        )
+
+    )
+
+    if existing.scalar_one_or_none():
+
+        raise ValueError("Payment already processed. Duplicate request detected.")
+ 
     wallet = await get_or_create_wallet(str(user.id), db)
-
+ 
+ 
     txn = await record_transaction(
         wallet      = wallet,
         txn_type    = "credit",

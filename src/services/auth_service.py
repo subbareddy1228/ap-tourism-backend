@@ -48,87 +48,88 @@ async def send_sms_otp(phone: str, otp: str) -> None:
 # ═════════════════ REGISTER ═════════════════
 
 async def register_user(data: RegisterRequest, db: AsyncSession) -> dict:
- 
+
     logger.info("Registration attempt phone=%s", data.phone)
- 
-    # Check phone uniqueness
-    phone_check = await db.execute(
-        select(User).where(User.phone == data.phone)
-    )
-    if phone_check.scalars().first():
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Phone number already registered"
-        )
- 
-    # Check email uniqueness only if provided
-    if data.email:
-        email_check = await db.execute(
-            select(User).where(User.email == data.email)
-        )
-        if email_check.scalars().first():
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Email already registered"
+
+    # ───────── Check if user exists (phone or email) ─────────
+    result = await db.execute(
+        select(User).where(
+            or_(
+                User.phone == data.phone,
+                User.email == data.email
             )
- 
-    # Generate and send OTP FIRST — before touching the DB
+        )
+    )
+
+    existing_user = result.scalar_one_or_none()
+
+    if existing_user:
+
+        # ───── Restore deleted user ─────
+        if existing_user.deleted_at is not None:
+
+            logger.info("Reactivating deleted user phone=%s", data.phone)
+
+            existing_user.deleted_at = None
+            existing_user.status = UserStatus.ACTIVE
+            existing_user.full_name = data.full_name
+            existing_user.password_hash = hash_password(data.password)
+            existing_user.updated_at = datetime.utcnow()
+
+            await db.commit()
+            await db.refresh(existing_user)
+
+            otp = generate_otp()
+            await store_otp(data.phone, otp, purpose="register")
+
+            await send_sms_otp(data.phone, otp)
+
+            return {
+                "user_id": str(existing_user.id),
+                "message": "Account reactivated. OTP sent."
+            }
+
+        # ───── Active user exists ─────
+        raise HTTPException(
+            status_code=400,
+            detail="User already exists"
+        )
+
+    # ───────── Generate OTP ─────────
     otp = generate_otp()
     await store_otp(data.phone, otp, purpose="register")
- 
-    try:
-        await send_sms_otp(data.phone, otp)
-    except Exception as e:
-        await delete_otp(data.phone, purpose="register")
-        logger.error("SMS failed during registration phone=%s error=%s", data.phone, str(e))
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Failed to send OTP. Please try again."
-        )
- 
-    # SMS succeeded — now safe to save user to DB
+
+    await send_sms_otp(data.phone, otp)
+
+    # ───────── Create new user ─────────
     user = User(
         phone=data.phone,
         email=data.email,
         full_name=data.full_name,
         password_hash=hash_password(data.password),
         is_phone_verified=False,
+        role="TRAVELER",
+        status=UserStatus.ACTIVE
     )
+
     db.add(user)
     await db.commit()
     await db.refresh(user)
- 
+
     profile = UserProfile(
         user_id=user.id,
         preferences={},
         language="en",
-        kyc_status="pending",
+        kyc_status="pending"
     )
+
     db.add(profile)
     await db.commit()
- 
-    logger.info("User registered successfully user_id=%s", user.id)
- 
+
     return {
         "user_id": str(user.id),
         "message": "OTP sent to your phone"
     }
-
-# ═════════════════ SEND OTP ═════════════════
-
-async def send_otp(phone: str, purpose: str) -> dict:
-
-    otp = generate_otp()
-
-    await store_otp(phone, otp, purpose=purpose)
-    await send_sms_otp(phone, otp)
-
-    return {
-        "message": "OTP sent successfully",
-        "phone": phone,
-        "expires_in": settings.OTP_EXPIRE_SECONDS,
-    }
-
 
 # ═════════════════ RESEND OTP ═════════════════
 

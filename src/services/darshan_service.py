@@ -139,6 +139,10 @@ class DarshanService:
         )
         created = await self.repo.create_darshan_booking(booking)
  
+        # Increment booked_count on the slot
+        slot.booked_count += req.num_persons
+        await self.db.commit()
+ 
         # STEP 4 — bust slot cache only (lock stays alive for 15 min)
         if self.redis:
             try:

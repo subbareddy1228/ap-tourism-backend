@@ -19,6 +19,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, update
 
+from src.common.enums import UserStatus
 from src.core.database import get_db
 from src.api.deps.auth import get_admin_user, get_current_user
 from src.models.user import User
@@ -205,7 +206,7 @@ async def update_user_status(
     db: AsyncSession = Depends(get_db),
 ):
     user = await _get_or_404(db, User, user_id)
-    user.is_active = data.status.upper() == "ACTIVE"
+    user.status = UserStatus.ACTIVE if data.status.upper() == "ACTIVE" else UserStatus.INACTIVE
     await db.commit()
     return APIResponse.success(message=f"User {data.status}", data=_user_dict(user))
 
@@ -352,7 +353,7 @@ async def user_growth_report(
     db: AsyncSession = Depends(get_db),
 ):
     total = await db.scalar(select(func.count(User.id)))
-    active = await db.scalar(select(func.count(User.id)).where(User.is_active == True))
+    active = await db.scalar(select(func.count(User.id)).where(User.status == UserStatus.ACTIVE))
     return APIResponse.success(message="User report", data={
         "total_users":    total or 0,
         "active_users":   active or 0,
@@ -660,7 +661,7 @@ async def broadcast_notification(
     current_user: User = Depends(get_admin_user),
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(select(User).where(User.is_active == True))
+    result = await db.execute(select(User).where(User.status == UserStatus.ACTIVE))
     users = result.scalars().all()
     for user in users:
         notif = Notification(
@@ -716,7 +717,7 @@ def _user_dict(u: User) -> dict:
         "id":        str(u.id),
         "phone":     u.phone,
         "role":      u.role,
-        "is_active": u.is_active,
+        "is_active": u.status.value == "active",
         "created_at": u.created_at,
     }
 

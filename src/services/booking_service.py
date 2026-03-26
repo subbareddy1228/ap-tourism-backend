@@ -94,7 +94,7 @@ def _calculate_refund(booking, reason: str) -> tuple[Decimal, int]:
     else:
         percent = 0
 
-    refund_amount = (booking.paid_amount * Decimal(percent) / 100).quantize(Decimal("0.01"))
+    refund_amount = (booking.total_amount * Decimal(percent) / 100).quantize(Decimal("0.01"))
     return refund_amount, percent
 
 
@@ -1344,7 +1344,25 @@ async def cancel_booking(
         await booking_repo.release_booking_slot(redis, "package", str(booking.package_booking.package_id))
     if booking.guide_booking:
         await booking_repo.release_booking_slot(redis, "guide", str(booking.guide_booking.guide_id))
-
+ 
+    # Restore DB slot availability
+    from sqlalchemy import update as sql_update
+    from src.models.darshan import DarshanSlot
+    from src.models.vehicle import Vehicle
+ 
+    if booking.darshan_booking:
+        await db.execute(
+            sql_update(DarshanSlot)
+            .where(DarshanSlot.id == booking.darshan_booking.darshan_slot_id)
+            .values(booked_count=DarshanSlot.booked_count - booking.darshan_booking.num_persons)
+        )
+    if booking.vehicle_booking:
+        await db.execute(
+            sql_update(Vehicle)
+            .where(Vehicle.id == booking.vehicle_booking.vehicle_id)
+            .values(status="ACTIVE")
+        )
+ 
     await db.commit()
 
     # TODO: trigger refund via payment_service when M12 ready
