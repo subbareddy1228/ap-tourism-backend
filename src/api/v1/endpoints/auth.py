@@ -243,6 +243,11 @@ async def logout(data: LogoutRequest):
 
 
 # ── 9. Logout All Devices ─────────────────────────────────────
+@router.post(
+    "/logout-all",
+    response_model=APIResponse,
+    summary="Logout from all devices"
+) 
 async def logout_all(data: LogoutRequest):
     from src.core.security import decode_token
     payload = decode_token(data.access_token)

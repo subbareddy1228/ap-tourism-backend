@@ -4780,3 +4780,178 @@ elastic_transport.ConnectionError: Connection error caused by: ClientConnectorEr
 2026-03-26 10:22:38,227 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 20 times in a row, putting on 30 second timeout
 2026-03-26 10:22:38,228 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 5/5 failed: Connection error caused by: ConnectionError(Connection error caused by: ClientConnectorError(Cannot connect to host localhost:9200 ssl:default [Multiple exceptions: [Errno 10061] Connect call failed ('::1', 9200, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 9200)]))
 2026-03-26 10:22:38,229 | ERROR | src.core.elasticsearch | Could not connect to Elasticsearch after 5 attempts
+2026-03-26 10:24:13,807 | INFO | src.core.elasticsearch | Elasticsearch connection closed
+2026-03-26 10:50:17,860 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:401 duration:0.025s]
+2026-03-26 10:50:17,862 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 1/5 failed: AuthenticationException(401, 'security_exception', 'missing authentication credentials for REST request [/]')
+2026-03-26 10:50:20,875 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:401 duration:0.003s]
+2026-03-26 10:50:20,876 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 2/5 failed: AuthenticationException(401, 'security_exception', 'missing authentication credentials for REST request [/]')
+2026-03-26 10:50:23,890 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:401 duration:0.002s]
+2026-03-26 10:50:23,890 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 3/5 failed: AuthenticationException(401, 'security_exception', 'missing authentication credentials for REST request [/]')
+2026-03-26 10:50:26,921 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:401 duration:0.002s]
+2026-03-26 10:50:26,921 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 4/5 failed: AuthenticationException(401, 'security_exception', 'missing authentication credentials for REST request [/]')
+2026-03-26 10:50:29,937 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:401 duration:0.002s]
+2026-03-26 10:50:29,938 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 5/5 failed: AuthenticationException(401, 'security_exception', 'missing authentication credentials for REST request [/]')
+2026-03-26 10:50:29,938 | ERROR | src.core.elasticsearch | Could not connect to Elasticsearch after 5 attempts
+2026-03-26 10:55:45,938 | INFO | src.core.elasticsearch | Elasticsearch connection closed
+2026-03-26 10:55:55,341 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:401 duration:0.036s]
+2026-03-26 10:55:55,343 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 1/5 failed: AuthenticationException(401, 'security_exception', 'missing authentication credentials for REST request [/]')
+2026-03-26 10:55:58,350 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:401 duration:0.004s]
+2026-03-26 10:55:58,351 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 2/5 failed: AuthenticationException(401, 'security_exception', 'missing authentication credentials for REST request [/]')
+2026-03-26 10:56:01,376 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:401 duration:0.004s]
+2026-03-26 10:56:01,376 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 3/5 failed: AuthenticationException(401, 'security_exception', 'missing authentication credentials for REST request [/]')
+2026-03-26 10:56:04,393 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:401 duration:0.003s]
+2026-03-26 10:56:04,394 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 4/5 failed: AuthenticationException(401, 'security_exception', 'missing authentication credentials for REST request [/]')
+2026-03-26 10:56:07,411 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:401 duration:0.002s]
+2026-03-26 10:56:07,412 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 5/5 failed: AuthenticationException(401, 'security_exception', 'missing authentication credentials for REST request [/]')
+2026-03-26 10:56:07,412 | ERROR | src.core.elasticsearch | Could not connect to Elasticsearch after 5 attempts
+2026-03-26 10:57:41,852 | INFO | src.core.elasticsearch | Elasticsearch connection closed
+2026-03-26 11:06:02,501 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:400 duration:0.035s]
+2026-03-26 11:06:02,502 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 1/5 failed: BadRequestError(400, 'media_type_header_exception', 'Invalid media-type value on headers [Accept, Content-Type]', Accept version must be either version 8 or 7, but found 9. Accept=application/vnd.elasticsearch+json; compatible-with=9)
+2026-03-26 11:06:05,507 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:400 duration:0.003s]
+2026-03-26 11:06:05,508 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 2/5 failed: BadRequestError(400, 'media_type_header_exception', 'Invalid media-type value on headers [Accept, Content-Type]', Accept version must be either version 8 or 7, but found 9. Accept=application/vnd.elasticsearch+json; compatible-with=9)
+2026-03-26 11:06:08,523 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:400 duration:0.004s]
+2026-03-26 11:06:08,523 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 3/5 failed: BadRequestError(400, 'media_type_header_exception', 'Invalid media-type value on headers [Accept, Content-Type]', Accept version must be either version 8 or 7, but found 9. Accept=application/vnd.elasticsearch+json; compatible-with=9)
+2026-03-26 11:06:11,534 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:400 duration:0.005s]
+2026-03-26 11:06:11,535 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 4/5 failed: BadRequestError(400, 'media_type_header_exception', 'Invalid media-type value on headers [Accept, Content-Type]', Accept version must be either version 8 or 7, but found 9. Accept=application/vnd.elasticsearch+json; compatible-with=9)
+2026-03-26 11:06:14,548 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:400 duration:0.003s]
+2026-03-26 11:06:14,548 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 5/5 failed: BadRequestError(400, 'media_type_header_exception', 'Invalid media-type value on headers [Accept, Content-Type]', Accept version must be either version 8 or 7, but found 9. Accept=application/vnd.elasticsearch+json; compatible-with=9)
+2026-03-26 11:06:14,549 | ERROR | src.core.elasticsearch | Could not connect to Elasticsearch after 5 attempts
+2026-03-26 11:09:54,914 | INFO | src.core.elasticsearch | Elasticsearch connection closed
+2026-03-26 11:10:04,654 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:400 duration:0.143s]
+2026-03-26 11:10:04,655 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 1/5 failed: BadRequestError(400, 'media_type_header_exception', 'Invalid media-type value on headers [Accept, Content-Type]', Accept version must be either version 8 or 7, but found 9. Accept=application/vnd.elasticsearch+json; compatible-with=9)
+2026-03-26 11:10:07,674 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:400 duration:0.003s]
+2026-03-26 11:10:07,675 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 2/5 failed: BadRequestError(400, 'media_type_header_exception', 'Invalid media-type value on headers [Accept, Content-Type]', Accept version must be either version 8 or 7, but found 9. Accept=application/vnd.elasticsearch+json; compatible-with=9)
+2026-03-26 11:10:10,692 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:400 duration:0.005s]
+2026-03-26 11:10:10,694 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 3/5 failed: BadRequestError(400, 'media_type_header_exception', 'Invalid media-type value on headers [Accept, Content-Type]', Accept version must be either version 8 or 7, but found 9. Accept=application/vnd.elasticsearch+json; compatible-with=9)
+2026-03-26 11:10:13,705 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:400 duration:0.003s]
+2026-03-26 11:10:13,706 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 4/5 failed: BadRequestError(400, 'media_type_header_exception', 'Invalid media-type value on headers [Accept, Content-Type]', Accept version must be either version 8 or 7, but found 9. Accept=application/vnd.elasticsearch+json; compatible-with=9)
+2026-03-26 11:10:16,718 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:400 duration:0.003s]
+2026-03-26 11:10:16,719 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 5/5 failed: BadRequestError(400, 'media_type_header_exception', 'Invalid media-type value on headers [Accept, Content-Type]', Accept version must be either version 8 or 7, but found 9. Accept=application/vnd.elasticsearch+json; compatible-with=9)
+2026-03-26 11:10:16,720 | ERROR | src.core.elasticsearch | Could not connect to Elasticsearch after 5 attempts
+2026-03-26 11:12:32,468 | INFO | src.core.elasticsearch | Elasticsearch connection closed
+2026-03-26 11:12:41,998 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:400 duration:0.036s]
+2026-03-26 11:12:42,000 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 1/5 failed: BadRequestError(400, 'media_type_header_exception', 'Invalid media-type value on headers [Accept, Content-Type]', Accept version must be either version 8 or 7, but found 9. Accept=application/vnd.elasticsearch+json; compatible-with=9)
+2026-03-26 11:12:45,019 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:400 duration:0.004s]
+2026-03-26 11:12:45,020 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 2/5 failed: BadRequestError(400, 'media_type_header_exception', 'Invalid media-type value on headers [Accept, Content-Type]', Accept version must be either version 8 or 7, but found 9. Accept=application/vnd.elasticsearch+json; compatible-with=9)
+2026-03-26 11:12:48,030 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:400 duration:0.003s]
+2026-03-26 11:12:48,031 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 3/5 failed: BadRequestError(400, 'media_type_header_exception', 'Invalid media-type value on headers [Accept, Content-Type]', Accept version must be either version 8 or 7, but found 9. Accept=application/vnd.elasticsearch+json; compatible-with=9)
+2026-03-26 11:12:51,042 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:400 duration:0.003s]
+2026-03-26 11:12:51,042 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 4/5 failed: BadRequestError(400, 'media_type_header_exception', 'Invalid media-type value on headers [Accept, Content-Type]', Accept version must be either version 8 or 7, but found 9. Accept=application/vnd.elasticsearch+json; compatible-with=9)
+2026-03-26 11:12:54,047 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:400 duration:0.003s]
+2026-03-26 11:12:54,047 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 5/5 failed: BadRequestError(400, 'media_type_header_exception', 'Invalid media-type value on headers [Accept, Content-Type]', Accept version must be either version 8 or 7, but found 9. Accept=application/vnd.elasticsearch+json; compatible-with=9)
+2026-03-26 11:12:54,048 | ERROR | src.core.elasticsearch | Could not connect to Elasticsearch after 5 attempts
+2026-03-26 11:15:32,849 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:200 duration:0.022s]
+2026-03-26 11:15:32,850 | INFO | src.core.elasticsearch | Connected to Elasticsearch 8.13.0
+2026-03-26 11:15:32,859 | INFO | elastic_transport.transport | HEAD http://localhost:9200/temples [status:404 duration:0.008s]
+2026-03-26 11:15:33,357 | INFO | elastic_transport.transport | PUT http://localhost:9200/temples [status:200 duration:0.497s]
+2026-03-26 11:15:33,358 | INFO | src.core.elasticsearch | Created index: temples
+2026-03-26 11:15:33,362 | INFO | elastic_transport.transport | HEAD http://localhost:9200/hotels [status:404 duration:0.003s]
+2026-03-26 11:15:33,848 | INFO | elastic_transport.transport | PUT http://localhost:9200/hotels [status:200 duration:0.485s]
+2026-03-26 11:15:33,849 | INFO | src.core.elasticsearch | Created index: hotels
+2026-03-26 11:15:33,853 | INFO | elastic_transport.transport | HEAD http://localhost:9200/packages [status:404 duration:0.003s]
+2026-03-26 11:15:34,339 | INFO | elastic_transport.transport | PUT http://localhost:9200/packages [status:200 duration:0.485s]
+2026-03-26 11:15:34,340 | INFO | src.core.elasticsearch | Created index: packages
+2026-03-26 11:15:34,345 | INFO | elastic_transport.transport | HEAD http://localhost:9200/destinations [status:404 duration:0.004s]
+2026-03-26 11:15:34,836 | INFO | elastic_transport.transport | PUT http://localhost:9200/destinations [status:200 duration:0.491s]
+2026-03-26 11:15:34,837 | INFO | src.core.elasticsearch | Created index: destinations
+2026-03-26 11:19:52,713 | INFO | src.core.elasticsearch | Elasticsearch connection closed
+2026-03-26 11:19:59,038 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:200 duration:0.034s]
+2026-03-26 11:19:59,039 | INFO | src.core.elasticsearch | Connected to Elasticsearch 8.13.0
+2026-03-26 11:19:59,051 | INFO | elastic_transport.transport | HEAD http://localhost:9200/temples [status:200 duration:0.011s]
+2026-03-26 11:19:59,051 | INFO | src.core.elasticsearch | Index already exists: temples
+2026-03-26 11:19:59,056 | INFO | elastic_transport.transport | HEAD http://localhost:9200/hotels [status:200 duration:0.004s]
+2026-03-26 11:19:59,057 | INFO | src.core.elasticsearch | Index already exists: hotels
+2026-03-26 11:19:59,063 | INFO | elastic_transport.transport | HEAD http://localhost:9200/packages [status:200 duration:0.005s]
+2026-03-26 11:19:59,063 | INFO | src.core.elasticsearch | Index already exists: packages
+2026-03-26 11:19:59,069 | INFO | elastic_transport.transport | HEAD http://localhost:9200/destinations [status:200 duration:0.004s]
+2026-03-26 11:19:59,069 | INFO | src.core.elasticsearch | Index already exists: destinations
+2026-03-26 11:30:40,584 | INFO | src.core.elasticsearch | Elasticsearch connection closed
+2026-03-26 11:30:46,446 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:200 duration:0.163s]
+2026-03-26 11:30:46,448 | INFO | src.core.elasticsearch | Connected to Elasticsearch 8.13.0
+2026-03-26 11:30:46,455 | INFO | elastic_transport.transport | HEAD http://localhost:9200/temples [status:200 duration:0.006s]
+2026-03-26 11:30:46,456 | INFO | src.core.elasticsearch | Index already exists: temples
+2026-03-26 11:30:46,462 | INFO | elastic_transport.transport | HEAD http://localhost:9200/hotels [status:200 duration:0.005s]
+2026-03-26 11:30:46,465 | INFO | src.core.elasticsearch | Index already exists: hotels
+2026-03-26 11:30:46,471 | INFO | elastic_transport.transport | HEAD http://localhost:9200/packages [status:200 duration:0.006s]
+2026-03-26 11:30:46,472 | INFO | src.core.elasticsearch | Index already exists: packages
+2026-03-26 11:30:46,479 | INFO | elastic_transport.transport | HEAD http://localhost:9200/destinations [status:200 duration:0.005s]
+2026-03-26 11:30:46,481 | INFO | src.core.elasticsearch | Index already exists: destinations
+2026-03-26 11:31:28,114 | INFO | src.core.elasticsearch | Elasticsearch connection closed
+2026-03-26 11:31:35,000 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:200 duration:0.035s]
+2026-03-26 11:31:35,002 | INFO | src.core.elasticsearch | Connected to Elasticsearch 8.13.0
+2026-03-26 11:31:35,007 | INFO | elastic_transport.transport | HEAD http://localhost:9200/temples [status:200 duration:0.004s]
+2026-03-26 11:31:35,008 | INFO | src.core.elasticsearch | Index already exists: temples
+2026-03-26 11:31:35,014 | INFO | elastic_transport.transport | HEAD http://localhost:9200/hotels [status:200 duration:0.005s]
+2026-03-26 11:31:35,015 | INFO | src.core.elasticsearch | Index already exists: hotels
+2026-03-26 11:31:35,021 | INFO | elastic_transport.transport | HEAD http://localhost:9200/packages [status:200 duration:0.004s]
+2026-03-26 11:31:35,022 | INFO | src.core.elasticsearch | Index already exists: packages
+2026-03-26 11:31:35,027 | INFO | elastic_transport.transport | HEAD http://localhost:9200/destinations [status:200 duration:0.004s]
+2026-03-26 11:31:35,028 | INFO | src.core.elasticsearch | Index already exists: destinations
+2026-03-26 11:34:58,286 | INFO | src.core.elasticsearch | Elasticsearch connection closed
+2026-03-26 11:35:04,828 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:200 duration:0.027s]
+2026-03-26 11:35:04,829 | INFO | src.core.elasticsearch | Connected to Elasticsearch 8.13.0
+2026-03-26 11:35:04,834 | INFO | elastic_transport.transport | HEAD http://localhost:9200/temples [status:200 duration:0.005s]
+2026-03-26 11:35:04,835 | INFO | src.core.elasticsearch | Index already exists: temples
+2026-03-26 11:35:04,840 | INFO | elastic_transport.transport | HEAD http://localhost:9200/hotels [status:200 duration:0.004s]
+2026-03-26 11:35:04,841 | INFO | src.core.elasticsearch | Index already exists: hotels
+2026-03-26 11:35:04,845 | INFO | elastic_transport.transport | HEAD http://localhost:9200/packages [status:200 duration:0.004s]
+2026-03-26 11:35:04,845 | INFO | src.core.elasticsearch | Index already exists: packages
+2026-03-26 11:35:04,850 | INFO | elastic_transport.transport | HEAD http://localhost:9200/destinations [status:200 duration:0.004s]
+2026-03-26 11:35:04,850 | INFO | src.core.elasticsearch | Index already exists: destinations
+2026-03-26 11:36:24,430 | INFO | src.core.elasticsearch | Elasticsearch connection closed
+2026-03-26 12:02:45,583 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:200 duration:0.137s]
+2026-03-26 12:02:45,584 | INFO | src.core.elasticsearch | Connected to Elasticsearch 8.13.0
+2026-03-26 12:02:45,590 | INFO | elastic_transport.transport | HEAD http://localhost:9200/temples [status:200 duration:0.005s]
+2026-03-26 12:02:45,591 | INFO | src.core.elasticsearch | Index already exists: temples
+2026-03-26 12:02:45,596 | INFO | elastic_transport.transport | HEAD http://localhost:9200/hotels [status:200 duration:0.004s]
+2026-03-26 12:02:45,597 | INFO | src.core.elasticsearch | Index already exists: hotels
+2026-03-26 12:02:45,604 | INFO | elastic_transport.transport | HEAD http://localhost:9200/packages [status:200 duration:0.005s]
+2026-03-26 12:02:45,652 | INFO | src.core.elasticsearch | Index already exists: packages
+2026-03-26 12:02:45,663 | INFO | elastic_transport.transport | HEAD http://localhost:9200/destinations [status:200 duration:0.005s]
+2026-03-26 12:02:45,709 | INFO | src.core.elasticsearch | Index already exists: destinations
+2026-03-26 12:06:43,190 | INFO | src.core.elasticsearch | Elasticsearch connection closed
+2026-03-26 12:06:49,512 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:200 duration:0.029s]
+2026-03-26 12:06:49,513 | INFO | src.core.elasticsearch | Connected to Elasticsearch 8.13.0
+2026-03-26 12:06:49,518 | INFO | elastic_transport.transport | HEAD http://localhost:9200/temples [status:200 duration:0.005s]
+2026-03-26 12:06:49,519 | INFO | src.core.elasticsearch | Index already exists: temples
+2026-03-26 12:06:49,524 | INFO | elastic_transport.transport | HEAD http://localhost:9200/hotels [status:200 duration:0.004s]
+2026-03-26 12:06:49,525 | INFO | src.core.elasticsearch | Index already exists: hotels
+2026-03-26 12:06:49,529 | INFO | elastic_transport.transport | HEAD http://localhost:9200/packages [status:200 duration:0.004s]
+2026-03-26 12:06:49,530 | INFO | src.core.elasticsearch | Index already exists: packages
+2026-03-26 12:06:49,535 | INFO | elastic_transport.transport | HEAD http://localhost:9200/destinations [status:200 duration:0.004s]
+2026-03-26 12:06:49,536 | INFO | src.core.elasticsearch | Index already exists: destinations
+2026-03-26 12:13:42,954 | INFO | src.core.elasticsearch | Elasticsearch connection closed
+2026-03-26 12:17:28,165 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:200 duration:0.029s]
+2026-03-26 12:17:28,166 | INFO | src.core.elasticsearch | Connected to Elasticsearch 8.13.0
+2026-03-26 12:17:28,172 | INFO | elastic_transport.transport | HEAD http://localhost:9200/temples [status:200 duration:0.005s]
+2026-03-26 12:17:28,173 | INFO | src.core.elasticsearch | Index already exists: temples
+2026-03-26 12:17:28,178 | INFO | elastic_transport.transport | HEAD http://localhost:9200/hotels [status:200 duration:0.004s]
+2026-03-26 12:17:28,178 | INFO | src.core.elasticsearch | Index already exists: hotels
+2026-03-26 12:17:28,184 | INFO | elastic_transport.transport | HEAD http://localhost:9200/packages [status:200 duration:0.004s]
+2026-03-26 12:17:28,185 | INFO | src.core.elasticsearch | Index already exists: packages
+2026-03-26 12:17:28,189 | INFO | elastic_transport.transport | HEAD http://localhost:9200/destinations [status:200 duration:0.003s]
+2026-03-26 12:17:28,190 | INFO | src.core.elasticsearch | Index already exists: destinations
+2026-03-26 12:17:55,384 | INFO | src.core.elasticsearch | Elasticsearch connection closed
+2026-03-26 12:18:11,528 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:200 duration:0.022s]
+2026-03-26 12:18:11,529 | INFO | src.core.elasticsearch | Connected to Elasticsearch 8.13.0
+2026-03-26 12:18:11,534 | INFO | elastic_transport.transport | HEAD http://localhost:9200/temples [status:200 duration:0.004s]
+2026-03-26 12:18:11,535 | INFO | src.core.elasticsearch | Index already exists: temples
+2026-03-26 12:18:11,539 | INFO | elastic_transport.transport | HEAD http://localhost:9200/hotels [status:200 duration:0.003s]
+2026-03-26 12:18:11,539 | INFO | src.core.elasticsearch | Index already exists: hotels
+2026-03-26 12:18:11,544 | INFO | elastic_transport.transport | HEAD http://localhost:9200/packages [status:200 duration:0.003s]
+2026-03-26 12:18:11,544 | INFO | src.core.elasticsearch | Index already exists: packages
+2026-03-26 12:18:11,549 | INFO | elastic_transport.transport | HEAD http://localhost:9200/destinations [status:200 duration:0.004s]
+2026-03-26 12:18:11,549 | INFO | src.core.elasticsearch | Index already exists: destinations
+2026-03-26 12:25:42,235 | INFO | src.core.elasticsearch | Elasticsearch connection closed
+2026-03-26 12:25:48,630 | INFO | src.core.elasticsearch | Connected to Elasticsearch 8.13.0
+2026-03-26 12:25:48,634 | INFO | src.core.elasticsearch | Index already exists: temples
+2026-03-26 12:25:48,637 | INFO | src.core.elasticsearch | Index already exists: hotels
+2026-03-26 12:25:48,641 | INFO | src.core.elasticsearch | Index already exists: packages
+2026-03-26 12:25:48,644 | INFO | src.core.elasticsearch | Index already exists: destinations
+2026-03-26 12:25:48,764 | INFO | src.core.elasticsearch | Elasticsearch connection closed
+2026-03-26 12:25:56,009 | INFO | src.core.elasticsearch | Connected to Elasticsearch 8.13.0
+2026-03-26 12:25:56,014 | INFO | src.core.elasticsearch | Index already exists: temples
+2026-03-26 12:25:56,018 | INFO | src.core.elasticsearch | Index already exists: hotels
+2026-03-26 12:25:56,022 | INFO | src.core.elasticsearch | Index already exists: packages
+2026-03-26 12:25:56,025 | INFO | src.core.elasticsearch | Index already exists: destinations
+2026-03-26 12:31:01,903 | INFO | src.core.elasticsearch | Elasticsearch connection closed

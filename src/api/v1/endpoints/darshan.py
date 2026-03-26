@@ -37,7 +37,7 @@ from src.schemas.darshan import (
 )
 from src.common.responses import APIResponse
  
-router = APIRouter(prefix="/temples", tags=["Darshan"])
+router = APIRouter(prefix="/darshan", tags=["Darshan"])
  
  
 # ── Redis dependency (optional) ───────────────────────────────

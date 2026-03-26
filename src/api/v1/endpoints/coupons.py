@@ -19,7 +19,7 @@ from src.services.coupon_service import (
     get_active_coupons, get_by_code_public,
 )
 
-router = APIRouter(prefix="/coupon", tags=["Coupons"])
+router = APIRouter(prefix="/coupons", tags=["Coupons"])
 logger = logging.getLogger(__name__)
 
 

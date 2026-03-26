@@ -16,7 +16,7 @@ from src.schemas.user import (
 from src.common.responses import APIResponse
 from src.services import user_service
 
-router = APIRouter(prefix="/user", tags=["Users"])
+router = APIRouter(prefix="/users", tags=["Users"])
 
 
 # ══════════════════ PROFILE ══════════════════
@@ -36,6 +36,22 @@ async def get_profile(
     """
     result = await user_service.get_full_profile(current_user, db)
     return APIResponse.success(message="Profile fetched successfully", data=result)
+
+@router.post(
+    "/me/verify-email",
+    response_model=APIResponse,
+    summary="Send email verification link"
+)
+async def verify_email_send(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Send a verification code to the user's registered email.
+    Use POST /auth/verify-otp to complete verification.
+    """
+    result = await user_service.send_email_verification(current_user, db)
+    return APIResponse.success(message=result["message"], data=result)
 
 
 @router.put(

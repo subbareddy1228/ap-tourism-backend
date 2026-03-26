@@ -295,6 +295,9 @@ async def request_withdrawal(
     if wallet.status != "active":
         raise ValueError("Your wallet is frozen. Contact support.")
 
+    if data.amount < Decimal("500"):
+        raise ValueError("Minimum withdrawal amount is ₹500")
+ 
     if wallet.balance < data.amount:
         raise ValueError(
             f"Insufficient balance. Available: ₹{wallet.balance}"

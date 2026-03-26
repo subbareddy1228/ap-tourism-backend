@@ -1,5 +1,10 @@
 from fastapi import APIRouter
-from src.api.v1.endpoints import admin, auth, bookings, coupons, destination, guide, notifications, packages, payments, reviews, users, vehicles, wallet, partner, temple, darshan, hotels, search, support, tracking
+from src.api.v1.endpoints import (
+    admin, auth, bookings, coupons, 
+    destination, guide, notifications, packages, payments, 
+    reviews, users, vehicles, wallet, partner, temple, darshan, 
+    hotels, search, support, tracking
+)
 from src.api.v1.endpoints.public import misc
 router = APIRouter()
 

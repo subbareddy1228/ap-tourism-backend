@@ -495,3 +495,26 @@ async def revoke_session(session_id: str, current_user: User, db: AsyncSession) 
     await db.commit()
 
     return {"message": "Session revoked successfully"}
+
+
+async def send_email_verification(current_user: User, db: AsyncSession) -> dict:
+ 
+        if current_user.is_email_verified:
+            raise HTTPException(status_code=400, detail="Email is already verified")
+ 
+        from src.integrations.sendgrid import send_email
+        token = generate_otp()  # reuse OTP helper as a simple token
+        await store_otp(current_user.email, token, purpose="verify_email")
+ 
+        try:
+            await send_email(
+            to=current_user.email,
+            subject="Verify your email — AP Tourism",
+            body=f"Your email verification code is: {token}. Valid for {settings.OTP_EXPIRE_SECONDS // 60} minutes."
+        )
+        except Exception as e:
+            await delete_otp(current_user.email, purpose="verify_email")
+            logger.error("Email send failed user=%s error=%s", current_user.id, str(e))
+            raise HTTPException(status_code=503, detail="Failed to send verification email. Please try again.")
+ 
+        return {"message": "Verification email sent", "expires_in": settings.OTP_EXPIRE_SECONDS}

@@ -25,8 +25,10 @@ from fastapi import APIRouter, Depends, Query, status, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.database import get_db
-from src.api.deps.auth import get_admin_user
+from src.api.deps.auth import get_admin_user, get_current_user, get_current_user
 from src.models.user import User
+from src.services import temple_service
+from src.services import temple_service
 from src.services.temple_service import TempleService
 from src.schemas.temple import TempleCreate, TempleUpdate
 from src.common.responses import APIResponse
@@ -225,3 +227,286 @@ async def update_temple(
         return APIResponse.success(message="Temple updated successfully", data=temple.model_dump())
     except Exception as e:
         raise HTTPException(status_code=404, detail=str(e))
+    
+ 
+# ══════════════════ ADMIN ENDPOINTS ══════════════════
+ 
+@router.delete(
+
+    "/{temple_id}",
+
+    response_model=APIResponse,
+
+    summary="[Admin] Delete temple"
+
+)
+
+async def delete_temple(
+
+    temple_id: str,
+
+    current_user: User = Depends(get_admin_user),
+
+    db: AsyncSession = Depends(get_db)
+
+):
+
+    result = await temple_service.delete_temple(temple_id, db)
+
+    return APIResponse.success(message=result["message"])
+ 
+ 
+@router.post(
+
+    "/{temple_id}/darshan-types",
+
+    response_model=APIResponse,
+
+    status_code=201,
+
+    summary="[Admin] Add darshan type"
+
+)
+
+async def create_darshan_type(
+
+    temple_id: str,
+
+    data: dict,
+
+    current_user: User = Depends(get_admin_user),
+
+    db: AsyncSession = Depends(get_db)
+
+):
+
+    result = await temple_service.create_darshan_type(temple_id, data, db)
+
+    return APIResponse.success(message="Darshan type created", data=result)
+ 
+ 
+@router.put(
+
+    "/{temple_id}/darshan-types/{type_id}",
+
+    response_model=APIResponse,
+
+    summary="[Admin] Update darshan type"
+
+)
+
+async def update_darshan_type(
+
+    temple_id: str,
+
+    type_id: str,
+
+    data: dict,
+
+    current_user: User = Depends(get_admin_user),
+
+    db: AsyncSession = Depends(get_db)
+
+):
+
+    result = await temple_service.update_darshan_type(temple_id, type_id, data, db)
+
+    return APIResponse.success(message="Darshan type updated", data=result)
+ 
+ 
+@router.delete(
+
+    "/{temple_id}/darshan-types/{type_id}",
+
+    response_model=APIResponse,
+
+    summary="[Admin] Delete darshan type"
+
+)
+
+async def delete_darshan_type(
+
+    temple_id: str,
+
+    type_id: str,
+
+    current_user: User = Depends(get_admin_user),
+
+    db: AsyncSession = Depends(get_db)
+
+):
+
+    result = await temple_service.delete_darshan_type(temple_id, type_id, db)
+
+    return APIResponse.success(message=result["message"])
+ 
+ 
+@router.post(
+
+    "/{temple_id}/darshan-slots/bulk-generate",
+
+    response_model=APIResponse,
+
+    status_code=201,
+
+    summary="[Admin] Bulk generate darshan slots"
+
+)
+
+async def bulk_generate_darshan_slots(
+
+    temple_id: str,
+
+    data: dict,
+
+    current_user: User = Depends(get_admin_user),
+
+    db: AsyncSession = Depends(get_db)
+
+):
+
+    result = await temple_service.bulk_generate_darshan_slots(temple_id, data, db)
+
+    return APIResponse.success(message="Slots generated", data=result)
+ 
+ 
+@router.put(
+
+    "/{temple_id}/darshan-slots/{slot_id}",
+
+    response_model=APIResponse,
+
+    summary="[Admin] Update darshan slot"
+
+)
+
+async def update_darshan_slot(
+
+    temple_id: str,
+
+    slot_id: str,
+
+    data: dict,
+
+    current_user: User = Depends(get_admin_user),
+
+    db: AsyncSession = Depends(get_db)
+
+):
+
+    result = await temple_service.update_darshan_slot(temple_id, slot_id, data, db)
+
+    return APIResponse.success(message="Slot updated", data=result)
+ 
+ 
+@router.post(
+
+    "/{temple_id}/events",
+
+    response_model=APIResponse,
+
+    status_code=201,
+
+    summary="[Admin] Create temple event"
+
+)
+
+async def create_temple_event(
+
+    temple_id: str,
+
+    data: dict,
+
+    current_user: User = Depends(get_admin_user),
+
+    db: AsyncSession = Depends(get_db)
+
+):
+
+    result = await temple_service.create_event(temple_id, data, db)
+
+    return APIResponse.success(message="Event created", data=result)
+ 
+ 
+@router.put(
+
+    "/{temple_id}/events/{event_id}",
+
+    response_model=APIResponse,
+
+    summary="[Admin] Update temple event"
+
+)
+
+async def update_temple_event(
+
+    temple_id: str,
+
+    event_id: str,
+
+    data: dict,
+
+    current_user: User = Depends(get_admin_user),
+
+    db: AsyncSession = Depends(get_db)
+
+):
+
+    result = await temple_service.update_event(temple_id, event_id, data, db)
+
+    return APIResponse.success(message="Event updated", data=result)
+ 
+ 
+@router.delete(
+
+    "/{temple_id}/events/{event_id}",
+
+    response_model=APIResponse,
+
+    summary="[Admin] Delete temple event"
+
+)
+
+async def delete_temple_event(
+
+    temple_id: str,
+
+    event_id: str,
+
+    current_user: User = Depends(get_admin_user),
+
+    db: AsyncSession = Depends(get_db)
+
+):
+
+    result = await temple_service.delete_event(temple_id, event_id, db)
+
+    return APIResponse.success(message=result["message"])
+ 
+ 
+@router.post(
+
+    "/{temple_id}/sync-ttd",
+
+    response_model=APIResponse,
+
+    summary="[Admin] Sync darshan slots from TTD API"
+
+)
+
+async def sync_ttd(
+
+    temple_id: str,
+
+    current_user: User = Depends(get_admin_user),
+
+    db: AsyncSession = Depends(get_db)
+
+):
+
+    from src.integrations.ttd_api import sync_temple_slots
+
+    result = await sync_temple_slots(temple_id, db)
+
+    return APIResponse.success(message="TTD sync complete", data=result)
+ 

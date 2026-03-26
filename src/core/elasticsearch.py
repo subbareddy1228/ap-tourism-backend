@@ -6,43 +6,56 @@ from src.core.config import settings
 
 logger = logging.getLogger(__name__)
 
-# global client
+# Global Elasticsearch client
 _es_client: AsyncElasticsearch | None = None
 
 
+# Index Names
 INDEX_TEMPLES = "temples"
 INDEX_HOTELS = "hotels"
 INDEX_PACKAGES = "packages"
 INDEX_DESTINATIONS = "destinations"
 
 
+# ───────────────── Client Getter ─────────────────
+
 def get_es_client() -> AsyncElasticsearch:
     """Return initialized Elasticsearch client."""
     if _es_client is None:
-        raise RuntimeError("Elasticsearch client not initialized. Is Elasticsearch running?")
+        raise RuntimeError("Elasticsearch client not initialized.")
     return _es_client
 
 
+# ───────────────── Initialize Elasticsearch ─────────────────
+
 async def init_elasticsearch() -> None:
-    """Initialize Elasticsearch connection."""
+    """Initialize Elasticsearch connection with retry."""
     global _es_client
 
     _es_client = AsyncElasticsearch(
         hosts=[settings.ELASTICSEARCH_URL],
-        verify_certs=False,   # allow self-signed cert (for local dev)
-        ssl_show_warn=False
+        basic_auth=(
+            settings.ELASTICSEARCH_USERNAME,
+            settings.ELASTICSEARCH_PASSWORD
+        ),
+        verify_certs=False
     )
 
     for attempt in range(1, settings.ELASTICSEARCH_MAX_RETRIES + 1):
         try:
             info = await _es_client.info()
-            logger.info("Connected to Elasticsearch %s", info["version"]["number"])
+
+            logger.info(
+                "Connected to Elasticsearch %s",
+                info["version"]["number"]
+            )
 
             await _create_indices()
 
             return
 
         except Exception as exc:
+
             logger.warning(
                 "Elasticsearch connection attempt %d/%d failed: %s",
                 attempt,
@@ -60,6 +73,8 @@ async def init_elasticsearch() -> None:
                 raise
 
 
+# ───────────────── Close Connection ─────────────────
+
 async def close_elasticsearch() -> None:
     """Close Elasticsearch connection."""
     global _es_client
@@ -70,7 +85,10 @@ async def close_elasticsearch() -> None:
         logger.info("Elasticsearch connection closed")
 
 
+# ───────────────── Index Mappings ─────────────────
+
 _INDEX_MAPPINGS: dict[str, dict] = {
+
     INDEX_TEMPLES: {
         "mappings": {
             "properties": {
@@ -86,6 +104,7 @@ _INDEX_MAPPINGS: dict[str, dict] = {
             }
         }
     },
+
     INDEX_HOTELS: {
         "mappings": {
             "properties": {
@@ -101,6 +120,7 @@ _INDEX_MAPPINGS: dict[str, dict] = {
             }
         }
     },
+
     INDEX_PACKAGES: {
         "mappings": {
             "properties": {
@@ -116,6 +136,7 @@ _INDEX_MAPPINGS: dict[str, dict] = {
             }
         }
     },
+
     INDEX_DESTINATIONS: {
         "mappings": {
             "properties": {
@@ -132,15 +153,28 @@ _INDEX_MAPPINGS: dict[str, dict] = {
 }
 
 
+# ───────────────── Create Indices ─────────────────
+
 async def _create_indices() -> None:
-    """Create indices if they do not exist."""
+    """Create Elasticsearch indices if they do not exist."""
+
     es = get_es_client()
 
     for index_name, mapping in _INDEX_MAPPINGS.items():
-        try:
-            await es.indices.get(index=index_name)
-            logger.info("Index already exists: %s", index_name)
 
-        except NotFoundError:
-            await es.indices.create(index=index_name, mappings=mapping["mappings"])
-            logger.info("Created index: %s", index_name)
+        try:
+            exists = await es.indices.exists(index=index_name)
+
+            if not exists:
+                await es.indices.create(
+                    index=index_name,
+                    mappings=mapping["mappings"]
+                )
+
+                logger.info("Created index: %s", index_name)
+
+            else:
+                logger.info("Index already exists: %s", index_name)
+
+        except Exception as exc:
+            logger.error("Failed creating index %s: %s", index_name, exc)
