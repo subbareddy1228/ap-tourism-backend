@@ -33,6 +33,7 @@ from src.models.support import SupportTicket, TicketMessage
 from src.models.coupon import Coupon
 from src.models.review import Review
 from src.models.notification import Notification
+from src.schemas import partner
 from src.schemas.admin import (
     UserStatusUpdate, UserRoleUpdate,
     PartnerStatusUpdate, VerifySchema, CommissionSchema,
@@ -285,6 +286,11 @@ async def update_partner_status(
     db: AsyncSession = Depends(get_db),
 ):
     partner = await _get_or_404(db, Partner, partner_id)
+    if data.status.upper() == "ACTIVE" and partner.verification_status != "VERIFIED":
+        raise HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail="Cannot activate a partner that is not verified. Use the verify endpoint first."
+    )
     partner.is_active = data.status.upper() == "ACTIVE"
     await db.commit()
     return APIResponse.success(message=f"Partner {data.status}", data=_partner_dict(partner))

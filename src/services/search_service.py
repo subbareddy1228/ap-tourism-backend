@@ -113,19 +113,20 @@ async def global_search(q: str, user_id: Optional[str], limit: int = 5) -> Globa
 # ---------------- SUGGESTIONS ----------------
 
 async def get_suggestions(q: str) -> list[SuggestionItem]:
-
+ 
     redis = await get_redis()
-
+ 
     if redis:
         try:
             cached = await redis.get(f"suggestions:{q.lower()}")
-
             if cached:
                 return [SuggestionItem(**i) for i in json.loads(cached)]
-
         except Exception as e:
             logger.warning("Redis error: %s", e)
-
+ 
+    if not ES_AVAILABLE:          # ← ADD THIS
+        return []                 # ← return empty list gracefully
+ 
     es = get_es_client()
 
     es_query = {

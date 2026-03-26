@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 # ─────────────────────────────────────────────
 
 async def _get_by_code(db: AsyncSession, code: str) -> Optional[Coupon]:
-    result = await db.execute(select(Coupon).where(Coupon.code == code.upper()))
+    result = await db.execute(select(Coupon).where(Coupon.code == code.upper()).with_for_update())
     return result.scalar_one_or_none()
 
 

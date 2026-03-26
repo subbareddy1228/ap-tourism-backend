@@ -1046,7 +1046,7 @@ def _build_list_response(
             status=b.status,
             payment_status=b.payment_status,
             total_amount=b.total_amount,
-            paid_amount=b.paid_amount,
+            paid_amount=b.total_amount,
             start_date=b.start_date,
             end_date=b.end_date,
             created_at=b.created_at,
@@ -1100,7 +1100,7 @@ async def get_booking_detail(
         tax_amount=booking.tax_amount,
         convenience_fee=booking.convenience_fee,
         total_amount=booking.total_amount,
-        paid_amount=booking.paid_amount,
+        paid_amount=booking.total_amount,
         coupon_code=booking.coupon_code,
         special_requests=booking.special_requests,
         contact_details=booking.contact_details,
@@ -1241,7 +1241,7 @@ async def get_invoice(
         total_tax=booking.tax_amount,
         convenience_fee=booking.convenience_fee,
         total_amount=booking.total_amount,
-        paid_amount=booking.paid_amount,
+        paid_amount=booking.total_amount,
         payment_method=txn.get("payment_method") if txn else None,
         payment_proof=txn.get("razorpay_payment_id") if txn else None,
         pdf_url=None,   # Generated async by booking_tasks.generate_invoice_pdf
@@ -1365,7 +1365,16 @@ async def cancel_booking(
  
     await db.commit()
 
-    # TODO: trigger refund via payment_service when M12 ready
+    # Trigger refund if payment was already made
+    if refund_amount > 0 and booking.payment_status == PaymentStatus.SUCCESS:
+        from src.services import payment_service
+        from src.schemas.payment import RefundRequest
+        await payment_service.request_refund(db, RefundRequest(
+            transaction_id=booking.transaction_id,
+            user_id=user_id,
+            amount=float(refund_amount),
+            reason=req.reason or "Booking cancelled",
+        ))
     # TODO: publish booking.cancelled event to RabbitMQ when notification service ready
 
     logger.info(f"endpoint=PUT /cancel status=200 user={user_id} booking={booking.booking_number} refund_amount={refund_amount} refund_percent={refund_percent}")

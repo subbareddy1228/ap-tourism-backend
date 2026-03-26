@@ -210,3 +210,4 @@ async def delete_all_refresh_tokens(user_id: str) -> None:
 async def get_redis_client():
     """Compatibility function for modules importing get_redis_client."""
     return await get_redis()
+

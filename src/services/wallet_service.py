@@ -168,7 +168,7 @@ async def verify_topup(
         hashlib.sha256
     ).hexdigest()
 
-    if expected_signature != data.razorpay_signature:
+    if not hmac.compare_digest(expected_signature, data.razorpay_signature):
         raise ValueError("Invalid payment signature. Payment verification failed.")
 
     # ── Step 2: Fetch payment details from Razorpay ───────────

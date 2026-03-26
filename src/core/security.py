@@ -53,10 +53,6 @@ def create_refresh_token(subject: Union[str, int], role: str, expires_delta=None
     }
     return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
  
- 
-from src.core.config import settings
-
-
 def decode_token(token: str) -> dict | None:
     try:
         payload = jwt.decode(
