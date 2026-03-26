@@ -25,6 +25,8 @@ from fastapi import APIRouter, Depends, Query, status, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.database import get_db
+from src.api.deps.auth import get_admin_user
+from src.models.user import User
 from src.services.temple_service import TempleService
 from src.schemas.temple import TempleCreate, TempleUpdate
 from src.common.responses import APIResponse
@@ -204,6 +206,7 @@ async def get_detail(
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=APIResponse, summary="[Admin] Add new temple")
 async def create_temple(
     data: TempleCreate,
+    current_user: User = Depends(get_admin_user),
     svc: TempleService = Depends(get_service)
 ):
     temple = await svc.create_temple(data)
@@ -214,6 +217,7 @@ async def create_temple(
 async def update_temple(
     temple_id: UUID,
     data: TempleUpdate,
+    current_user: User = Depends(get_admin_user),
     svc: TempleService = Depends(get_service)
 ):
     try:

@@ -1,6 +1,8 @@
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Query
+from src.api.deps.auth import get_admin_user
+from src.models.user import User
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.database import get_db
@@ -146,6 +148,7 @@ async def retrieve_package(package_id: str, db: AsyncSession = Depends(get_db)):
 @router.post("/")
 async def create_package(
     data: PackageCreate,
+    current_user: User = Depends(get_admin_user),
     db: AsyncSession = Depends(get_db),
 ):
     return await create_new_package(db, data)
@@ -159,6 +162,7 @@ async def create_package(
 async def update_package(
     package_id: str,
     data: PackageUpdate,
+    current_user: User = Depends(get_admin_user),
     db: AsyncSession = Depends(get_db),
 ):
     return await update_existing_package(db, package_id, data)

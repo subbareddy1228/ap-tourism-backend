@@ -34,7 +34,7 @@ async def lifespan(app: FastAPI):
     print("Starting services...")
     await init_redis()
     try:
-        await init_elasticsearch()   # ← try, don't crash if ES is down
+        await init_elasticsearch()   
     except Exception as e:
         print(f"Elasticsearch unavailable: {e}. Search endpoints disabled.")
     yield

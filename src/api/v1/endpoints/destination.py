@@ -11,6 +11,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 
 from src.core.database import get_db
+from src.api.deps.auth import get_admin_user
+from src.models.user import User
 from src.models.destination import DestinationType
 from src.schemas.destination import DestinationCreate, DestinationUpdate
 from src.common.responses import APIResponse
@@ -69,6 +71,7 @@ async def retrieve_destination(
 @router.post("", response_model=APIResponse, status_code=201, summary="[Admin] Create destination")
 async def create_new_destination(
     data: DestinationCreate,
+    current_user: User = Depends(get_admin_user),
     db: AsyncSession = Depends(get_db),
 ):
     result = await create_destination(db, data)
@@ -79,6 +82,7 @@ async def create_new_destination(
 async def update_existing_destination(
     destination_id: str,
     data: DestinationUpdate,
+    current_user: User = Depends(get_admin_user),
     db: AsyncSession = Depends(get_db),
 ):
     result = await update_destination(db, destination_id, data)

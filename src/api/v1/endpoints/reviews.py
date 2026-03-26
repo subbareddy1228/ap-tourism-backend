@@ -98,13 +98,13 @@ async def get_review(
 )
 async def create_review(
     payload: ReviewCreateRequest,
-    current_user: User = Depends(get_current_user),   # uncomment when auth is ready
+    current_user: User = Depends(get_current_user),
     service: ReviewService = Depends(get_review_service),
 ):
     return await service.create_review(
         payload=payload,
-        user_id=current_user.id ,       # swap with current_user.id after auth
-        booking_service=None,        # swap with BookingService(db) after it's ready
+        user_id=current_user.id ,       
+        booking_service=None,       
     )
 
 
