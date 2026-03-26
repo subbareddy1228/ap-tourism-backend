@@ -16,6 +16,7 @@ from src.models.user import User
 from src.models.destination import DestinationType
 from src.schemas.destination import DestinationCreate, DestinationUpdate
 from src.common.responses import APIResponse
+from src.services import destination_service
 from src.services.destination_service import (
     get_destinations,
     get_featured_destinations,
@@ -87,3 +88,56 @@ async def update_existing_destination(
 ):
     result = await update_destination(db, destination_id, data)
     return APIResponse.success(message=result["message"], data=result["data"])
+
+@router.get("/{destination_id}/packages", response_model=APIResponse, summary="Packages at this destination")
+async def get_destination_packages(
+    destination_id: str,
+    page: int = Query(default=1, ge=1),
+    limit: int = Query(default=20, ge=1, le=100),
+    db: AsyncSession = Depends(get_db)
+):
+    result = await destination_service.get_destination_packages(destination_id, page, limit, db)
+    return APIResponse.success(message="Packages fetched", data=result)
+ 
+ 
+@router.get("/{destination_id}/hotels", response_model=APIResponse, summary="Hotels at this destination")
+async def get_destination_hotels(
+    destination_id: str,
+    page: int = Query(default=1, ge=1),
+    limit: int = Query(default=20, ge=1, le=100),
+    db: AsyncSession = Depends(get_db)
+):
+    result = await destination_service.get_destination_hotels(destination_id, page, limit, db)
+    return APIResponse.success(message="Hotels fetched", data=result)
+ 
+ 
+@router.get("/{destination_id}/guides", response_model=APIResponse, summary="Guides at this destination")
+async def get_destination_guides(
+    destination_id: str,
+    page: int = Query(default=1, ge=1),
+    limit: int = Query(default=20, ge=1, le=100),
+    db: AsyncSession = Depends(get_db)
+):
+    result = await destination_service.get_destination_guides(destination_id, page, limit, db)
+    return APIResponse.success(message="Guides fetched", data=result)
+ 
+ 
+@router.get("/{destination_id}/temples", response_model=APIResponse, summary="Temples at this destination")
+async def get_destination_temples(
+    destination_id: str,
+    page: int = Query(default=1, ge=1),
+    limit: int = Query(default=20, ge=1, le=100),
+    db: AsyncSession = Depends(get_db)
+):
+    result = await destination_service.get_destination_temples(destination_id, page, limit, db)
+    return APIResponse.success(message="Temples fetched", data=result)
+ 
+ 
+@router.delete("/{destination_id}", response_model=APIResponse, summary="[Admin] Delete destination")
+async def delete_destination(
+    destination_id: str,
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db)
+):
+    result = await destination_service.delete_destination(destination_id, db)
+    return APIResponse.success(message=result["message"])

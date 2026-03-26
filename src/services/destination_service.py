@@ -1,4 +1,7 @@
+import datetime
+
 from fastapi import HTTPException, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 
@@ -208,3 +211,60 @@ async def update_destination(
         DestinationListResponse.model_validate(result),
         "Destination updated successfully"
     )
+
+async def get_destination_packages(destination_id: str, page: int, limit: int, db: AsyncSession):
+    from src.models.package import Package
+    offset = (page - 1) * limit
+    result = await db.execute(
+        select(Package).where(Package.destination_id == destination_id)
+        .offset(offset).limit(limit)
+    )
+    packages = result.scalars().all()
+    return {"packages": [{"id": str(p.id), "name": p.name, "price": str(p.base_price)} for p in packages], "page": page, "limit": limit}
+ 
+ 
+async def get_destination_hotels(destination_id: str, page: int, limit: int, db: AsyncSession):
+    from src.models.hotel import Hotel
+    offset = (page - 1) * limit
+    result = await db.execute(
+        select(Hotel).where(Hotel.destination_id == destination_id)
+        .offset(offset).limit(limit)
+    )
+    hotels = result.scalars().all()
+    return {"hotels": [{"id": str(h.id), "name": h.name, "star_rating": h.star_rating} for h in hotels], "page": page, "limit": limit}
+ 
+ 
+async def get_destination_guides(destination_id: str, page: int, limit: int, db: AsyncSession):
+    from src.models.guide import Guide
+    offset = (page - 1) * limit
+    result = await db.execute(
+        select(Guide).where(Guide.destination_id == destination_id)
+        .offset(offset).limit(limit)
+    )
+    guides = result.scalars().all()
+    return {"guides": [{"id": str(g.id), "name": g.name, "rating": str(g.rating)} for g in guides], "page": page, "limit": limit}
+ 
+ 
+async def get_destination_temples(destination_id: str, page: int, limit: int, db: AsyncSession):
+    from src.models.temple import Temple
+    offset = (page - 1) * limit
+    result = await db.execute(
+        select(Temple).where(Temple.destination_id == destination_id)
+        .offset(offset).limit(limit)
+    )
+    temples = result.scalars().all()
+    return {"temples": [{"id": str(t.id), "name": t.name, "deity": t.deity} for t in temples], "page": page, "limit": limit}
+ 
+ 
+async def delete_destination(destination_id: str, db: AsyncSession):
+    from src.models.destination import Destination
+    result = await db.execute(
+        select(Destination).where(Destination.id == destination_id)
+    )
+    destination = result.scalar_one_or_none()
+    if not destination:
+        raise HTTPException(status_code=404, detail="Destination not found")
+    destination.is_active = False
+    destination.updated_at = datetime.datetime.utcnow()
+    await db.commit()
+    return {"message": "Destination deleted successfully"}

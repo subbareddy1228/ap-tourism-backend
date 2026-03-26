@@ -1,13 +1,15 @@
 from typing import Optional
-
+from fastapi import Depends
 from fastapi import APIRouter, Depends, Query
-from src.api.deps.auth import get_admin_user
+from src.api.deps.auth import get_admin_user,get_current_user
+from src.api.v1.endpoints.bookings import APIResponse
 from src.models.user import User
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.database import get_db
 from src.models.package import PackageType
 from src.schemas.package import PackageCreate, PackageUpdate
+from src.services import package_service
 from src.services.package_service import (
     get_all_packages,
     get_featured_packages_list,
@@ -166,3 +168,49 @@ async def update_package(
     db: AsyncSession = Depends(get_db),
 ):
     return await update_existing_package(db, package_id, data)
+
+@router.post("/calculate-price", response_model=APIResponse, summary="Calculate package price dynamically")
+async def calculate_price(
+    data: dict,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Calculate dynamic price based on group size, dates, season.
+    Applies surge pricing for peak seasons and weekends.
+    """
+    result = await package_service.calculate_price(data, db)
+    return APIResponse.success(message="Price calculated", data=result)
+ 
+ 
+@router.post("/customize", response_model=APIResponse, status_code=201, summary="Build a custom package")
+async def customize_package(
+    data: dict,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Custom package builder — select destinations, hotels, vehicle, guide.
+    Returns a price quote and saves as a draft booking.
+    """
+    result = await package_service.customize_package(data, current_user, db)
+    return APIResponse.success(message="Custom package created", data=result)
+ 
+ 
+@router.get("/{package_id}/itinerary", response_model=APIResponse, summary="Get day-wise itinerary")
+async def get_itinerary(
+    package_id: str,
+    db: AsyncSession = Depends(get_db)
+):
+    """Returns day-wise itinerary breakdown for the package."""
+    result = await package_service.get_itinerary(package_id, db)
+    return APIResponse.success(message="Itinerary fetched", data=result)
+ 
+ 
+@router.delete("/{package_id}", response_model=APIResponse, summary="[Admin] Delete package")
+async def delete_package(
+    package_id: str,
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db)
+):
+    result = await package_service.delete_package(package_id, db)
+    return APIResponse.success(message=result["message"])

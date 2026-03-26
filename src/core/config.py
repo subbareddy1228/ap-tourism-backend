@@ -68,6 +68,12 @@ class Settings(BaseSettings):
     GMAIL_SENDER:       str = ""
     GMAIL_APP_PASSWORD: str = ""
 
+
+    #_________________fIREBASE____________________________________________
+
+    FIREBASE_PROJECT_ID:      str = ""
+    FIREBASE_SERVICE_ACCOUNT: str = ""
+
     class Config:
         env_file = ".env"
         case_sensitive = True

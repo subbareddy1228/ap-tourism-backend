@@ -491,7 +491,13 @@ async def create_package(
     current_user: User = Depends(get_admin_user),
     db: AsyncSession = Depends(get_db),
 ):
-    pkg = Package(**data.model_dump())
+    pkg = Package(
+    name=data.name,
+    type=data.type,
+    duration_days=data.duration_days,
+    price=data.price,
+    is_featured=data.is_featured or False,
+)
     db.add(pkg)
     await db.commit()
     await db.refresh(pkg)
@@ -674,7 +680,7 @@ async def broadcast_notification(
             user_id=user.id,
             title=title,
             message=message,
-            notification_type="SYSTEM",
+            type="SYSTEM",
         )
         db.add(notif)
     await db.commit()
@@ -731,7 +737,7 @@ def _user_dict(u: User) -> dict:
 def _booking_dict(b: Booking) -> dict:
     return {
         "id":             str(b.id),
-        "booking_number": b.booking_number,
+        
         "user_id":        str(b.user_id),
         "booking_type":   b.booking_type if hasattr(b, "booking_type") else None,
         "status":         str(b.status),

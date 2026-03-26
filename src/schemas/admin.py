@@ -78,8 +78,7 @@ class DestinationUpdateSchema(BaseModel):
 class PackageCreateSchema(BaseModel):
     name:            str
     duration_days:   int
-    package_type:    str
-    budget_category: str
+    type:            str
     price:           float
     is_featured:     Optional[bool] = False
 
@@ -87,8 +86,7 @@ class PackageCreateSchema(BaseModel):
 class PackageUpdateSchema(BaseModel):
     name:            Optional[str]   = None
     duration_days:   Optional[int]   = None
-    package_type:    Optional[str]   = None
-    budget_category: Optional[str]   = None
+    type:            Optional[str]   = None
     price:           Optional[float] = None
     is_featured:     Optional[bool]  = None
     is_active:       Optional[bool]  = None

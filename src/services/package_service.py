@@ -1,3 +1,5 @@
+from select import select
+
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
@@ -326,3 +328,86 @@ async def update_existing_package(
         PackageResponse.model_validate(result),
         "Package updated successfully"
     )
+
+async def calculate_price(data: dict, db: AsyncSession) -> dict:
+    package_id = data.get("package_id")
+    group_size = data.get("group_size", 1)
+    travel_date = data.get("travel_date")
+ 
+    result = await db.execute(select(Package).where(Package.id == package_id))
+    package = result.scalar_one_or_none()
+    if not package:
+        raise HTTPException(status_code=404, detail="Package not found")
+ 
+    base_price = float(package.base_price) * group_size
+ 
+    # Basic surge pricing — weekends +10%, peak months (Oct-Jan) +20%
+    surge_multiplier = 1.0
+    if travel_date:
+        from datetime import date
+        td = date.fromisoformat(travel_date)
+        if td.weekday() >= 5:
+            surge_multiplier += 0.10
+        if td.month in [10, 11, 12, 1]:
+            surge_multiplier += 0.20
+ 
+    final_price = round(base_price * surge_multiplier, 2)
+ 
+    return {
+        "package_id": package_id,
+        "group_size": group_size,
+        "base_price": base_price,
+        "surge_multiplier": surge_multiplier,
+        "final_price": final_price,
+        "currency": "INR"
+    }
+ 
+ 
+async def customize_package(data: dict, current_user, db: AsyncSession) -> dict:
+    destination_ids = data.get("destination_ids", [])
+    hotel_id = data.get("hotel_id")
+    vehicle_id = data.get("vehicle_id")
+    guide_id = data.get("guide_id")
+    num_days = data.get("num_days", 1)
+    group_size = data.get("group_size", 1)
+ 
+    # Basic price estimate — DS engine integration in PEND-015
+    estimated_price = num_days * group_size * 2500
+ 
+    return {
+        "destination_ids": destination_ids,
+        "hotel_id": hotel_id,
+        "vehicle_id": vehicle_id,
+        "guide_id": guide_id,
+        "num_days": num_days,
+        "group_size": group_size,
+        "estimated_price": estimated_price,
+        "currency": "INR",
+        "note": "This is an estimate. Final price confirmed at booking."
+    }
+ 
+ 
+async def get_itinerary(package_id: str, db: AsyncSession) -> dict:
+    result = await db.execute(select(Package).where(Package.id == package_id))
+    package = result.scalar_one_or_none()
+    if not package:
+        raise HTTPException(status_code=404, detail="Package not found")
+ 
+    itinerary = package.itinerary if hasattr(package, "itinerary") and package.itinerary else []
+ 
+    return {
+        "package_id": package_id,
+        "package_name": package.name,
+        "num_days": package.duration_days,
+        "itinerary": itinerary
+    }
+ 
+ 
+async def delete_package(package_id: str, db: AsyncSession) -> dict:
+    result = await db.execute(select(Package).where(Package.id == package_id))
+    package = result.scalar_one_or_none()
+    if not package:
+        raise HTTPException(status_code=404, detail="Package not found")
+    package.is_active = False
+    await db.commit()
+    return {"message": "Package deleted successfully"}
