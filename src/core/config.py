@@ -40,8 +40,8 @@ class Settings(BaseSettings):
     ELASTICSEARCH_URL: str = "http://localhost:9200"
     ELASTICSEARCH_MAX_RETRIES: int = 5
     ELASTICSEARCH_RETRY_DELAY: int = 3
-    ELASTICSEARCH_USERNAME: str
-    ELASTICSEARCH_PASSWORD: str
+    ELASTICSEARCH_USERNAME:    str = ""
+    ELASTICSEARCH_PASSWORD:    str = ""
 
     # ── CORS ──────────────────────────────────────────────────
     ALLOWED_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:8000"]

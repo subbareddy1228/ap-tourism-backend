@@ -15,6 +15,7 @@ from typing import Optional
 from uuid import UUID
 
 from fastapi import HTTPException
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.common.enums import BookingStatus, BookingType, PaymentStatus   # [FIX-1] from common not model
@@ -1426,3 +1427,100 @@ async def modify_booking(
         status=booking.status,
         message="Modification request submitted. Admin will review and confirm within 24 hours.",
     )
+
+async def assign_guide(booking_id: str, data: dict, db: AsyncSession) -> dict:
+    from src.models.booking import Booking, GuideBooking
+    from src.models.guide import Guide
+ 
+    result = await db.execute(select(Booking).where(Booking.id == booking_id))
+    booking = result.scalar_one_or_none()
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+ 
+    guide_id = data.get("guide_id")
+    guide_result = await db.execute(select(Guide).where(Guide.id == guide_id))
+    guide = guide_result.scalar_one_or_none()
+    if not guide:
+        raise HTTPException(status_code=404, detail="Guide not found")
+ 
+    guide_booking_result = await db.execute(
+        select(GuideBooking).where(GuideBooking.booking_id == booking.id)
+    )
+    guide_booking = guide_booking_result.scalar_one_or_none()
+    if guide_booking:
+        guide_booking.guide_id = guide_id
+ 
+    await db.commit()
+ 
+    try:
+        from src.services.notification_service import send_notification
+        from src.schemas.notification import SendNotificationRequest
+ 
+        await send_notification(
+            data=SendNotificationRequest(
+                user_ids=[guide.user_id],
+                type="GUIDE_ASSIGNED",
+                title="New Trip Assigned",
+                body=f"You have been assigned to booking #{booking.booking_number}.",
+                channel="push"
+            ),
+            db=db
+        )
+        await send_notification(
+            data=SendNotificationRequest(
+                user_ids=[booking.user_id],
+                type="GUIDE_ASSIGNED",
+                title="Guide Assigned",
+                body="Your guide has been assigned to your trip.",
+                channel="push"
+            ),
+            db=db
+        )
+    except Exception as e:
+        logger.warning("Notification failed after guide assignment: %s", e)
+ 
+    return {"booking_id": booking_id, "guide_id": guide_id}
+ 
+ 
+async def assign_vehicle(booking_id: str, data: dict, db: AsyncSession) -> dict:
+    from src.models.booking import Booking, VehicleBooking
+    from src.models.vehicle import Vehicle
+ 
+    result = await db.execute(select(Booking).where(Booking.id == booking_id))
+    booking = result.scalar_one_or_none()
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+ 
+    vehicle_id = data.get("vehicle_id")
+    vehicle_result = await db.execute(select(Vehicle).where(Vehicle.id == vehicle_id))
+    vehicle = vehicle_result.scalar_one_or_none()
+    if not vehicle:
+        raise HTTPException(status_code=404, detail="Vehicle not found")
+ 
+    vehicle_booking_result = await db.execute(
+        select(VehicleBooking).where(VehicleBooking.booking_id == booking.id)
+    )
+    vehicle_booking = vehicle_booking_result.scalar_one_or_none()
+    if vehicle_booking:
+        vehicle_booking.vehicle_id = vehicle_id
+ 
+    await db.commit()
+ 
+    try:
+        from src.services.notification_service import send_notification
+        from src.schemas.notification import SendNotificationRequest
+ 
+        await send_notification(
+            data=SendNotificationRequest(
+                user_ids=[booking.user_id],
+                type="VEHICLE_ASSIGNED",
+                title="Vehicle Assigned",
+                body=f"Your vehicle has been assigned for booking #{booking.booking_number}.",
+                channel="push"
+            ),
+            db=db
+        )
+    except Exception as e:
+        logger.warning("Notification failed after vehicle assignment: %s", e)
+ 
+    return {"booking_id": booking_id, "vehicle_id": vehicle_id}
