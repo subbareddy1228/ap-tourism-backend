@@ -4561,3 +4561,131 @@ elastic_transport.ConnectionError: Connection error caused by: ClientConnectorEr
 2026-03-26 10:11:56,035 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 5/5 failed: Connection error caused by: ConnectionError(Connection error caused by: ClientConnectorError(Cannot connect to host localhost:9200 ssl:default [Multiple exceptions: [Errno 10061] Connect call failed ('::1', 9200, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 9200)]))
 2026-03-26 10:11:56,035 | ERROR | src.core.elasticsearch | Could not connect to Elasticsearch after 5 attempts
 2026-03-26 10:21:20,991 | INFO | src.core.elasticsearch | Elasticsearch connection closed
+2026-03-26 10:21:42,513 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:2.333s]
+2026-03-26 10:21:42,515 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 1 times in a row, putting on 1 second timeout
+2026-03-26 10:21:42,517 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 0 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ClientConnectorError(Cannot connect to host localhost:9200 ssl:default [Multiple exceptions: [Errno 10061] Connect call failed ('::1', 9200, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 9200)])
+2026-03-26 10:21:44,812 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:2.285s]
+2026-03-26 10:21:44,813 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 2 times in a row, putting on 2 second timeout
+2026-03-26 10:21:44,815 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 1 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ClientConnectorError(Cannot connect to host localhost:9200 ssl:default [Multiple exceptions: [Errno 10061] Connect call failed ('127.0.0.1', 9200), [Errno 10061] Connect call failed ('::1', 9200, 0, 0)])
+2026-03-26 10:21:44,818 | INFO | elastic_transport.node_pool | Resurrected node <AiohttpHttpNode(http://localhost:9200)> (force=False)
+2026-03-26 10:21:47,084 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:2.265s]
+2026-03-26 10:21:47,086 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 3 times in a row, putting on 4 second timeout
+2026-03-26 10:21:47,086 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 2 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ClientConnectorError(Cannot connect to host localhost:9200 ssl:default [Multiple exceptions: [Errno 10061] Connect call failed ('::1', 9200, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 9200)])
+2026-03-26 10:21:47,090 | INFO | elastic_transport.node_pool | Resurrected node <AiohttpHttpNode(http://localhost:9200)> (force=False)
+2026-03-26 10:21:49,390 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:2.296s]
+2026-03-26 10:21:49,392 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 4 times in a row, putting on 8 second timeout
+2026-03-26 10:21:49,392 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 1/5 failed: Connection error caused by: ConnectionError(Connection error caused by: ClientConnectorError(Cannot connect to host localhost:9200 ssl:default [Multiple exceptions: [Errno 10061] Connect call failed ('::1', 9200, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 9200)]))
+2026-03-26 10:21:52,400 | INFO | elastic_transport.node_pool | Resurrected node <AiohttpHttpNode(http://localhost:9200)> (force=False)
+2026-03-26 10:21:54,706 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:2.305s]
+2026-03-26 10:21:54,707 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 5 times in a row, putting on 16 second timeout
+2026-03-26 10:21:54,708 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 0 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ClientConnectorError(Cannot connect to host localhost:9200 ssl:default [Multiple exceptions: [Errno 10061] Connect call failed ('::1', 9200, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 9200)])
+2026-03-26 10:21:56,989 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:2.278s]
+2026-03-26 10:21:56,991 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 6 times in a row, putting on 30 second timeout
+2026-03-26 10:21:56,992 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 1 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ClientConnectorError(Cannot connect to host localhost:9200 ssl:default [Multiple exceptions: [Errno 10061] Connect call failed ('127.0.0.1', 9200), [Errno 10061] Connect call failed ('::1', 9200, 0, 0)])
+2026-03-26 10:21:59,290 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:2.294s]
+2026-03-26 10:21:59,292 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 7 times in a row, putting on 30 second timeout
+2026-03-26 10:21:59,294 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 2 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ClientConnectorError(Cannot connect to host localhost:9200 ssl:default [Multiple exceptions: [Errno 10061] Connect call failed ('::1', 9200, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 9200)])
+2026-03-26 10:21:59,299 | INFO | elastic_transport.node_pool | Resurrected node <AiohttpHttpNode(http://localhost:9200)> (force=False)
+2026-03-26 10:22:01,590 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:2.290s]
+2026-03-26 10:22:01,592 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 8 times in a row, putting on 30 second timeout
+2026-03-26 10:22:01,594 | WARNING | src.core.elasticsearch | Elasticsearch connection attempt 2/5 failed: Connection error caused by: ConnectionError(Connection error caused by: ClientConnectorError(Cannot connect to host localhost:9200 ssl:default [Multiple exceptions: [Errno 10061] Connect call failed ('::1', 9200, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 9200)]))
+2026-03-26 10:22:06,904 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:2.308s]
+2026-03-26 10:22:06,905 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 9 times in a row, putting on 30 second timeout
+2026-03-26 10:22:06,906 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 0 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ClientConnectorError(Cannot connect to host localhost:9200 ssl:default [Multiple exceptions: [Errno 10061] Connect call failed ('::1', 9200, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 9200)])
+2026-03-26 10:22:09,199 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:2.289s]
+2026-03-26 10:22:09,200 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 10 times in a row, putting on 30 second timeout
+2026-03-26 10:22:09,200 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 1 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ClientConnectorError(Cannot connect to host localhost:9200 ssl:default [Multiple exceptions: [Errno 10061] Connect call failed ('127.0.0.1', 9200), [Errno 10061] Connect call failed ('::1', 9200, 0, 0)])
+2026-03-26 10:22:11,499 | INFO | elastic_transport.transport | GET http://localhost:9200/ [status:N/A duration:2.297s]
+2026-03-26 10:22:11,500 | WARNING | elastic_transport.node_pool | Node <AiohttpHttpNode(http://localhost:9200)> has failed for 11 times in a row, putting on 30 second timeout
+2026-03-26 10:22:11,501 | WARNING | elastic_transport.transport | Retrying request after failure (attempt 2 of 3)
+Traceback (most recent call last):
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_async_transport.py", line 270, in perform_request
+    resp = await node.perform_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "C:\Users\psubb\anaconda3\Lib\site-packages\elastic_transport\_node\_http_aiohttp.py", line 230, in perform_request
+    raise err from None
+elastic_transport.ConnectionError: Connection error caused by: ClientConnectorError(Cannot connect to host localhost:9200 ssl:default [Multiple exceptions: [Errno 10061] Connect call failed ('::1', 9200, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 9200)])
+2026-03-26 10:22:11,508 | INFO | elastic_transport.node_pool | Resurrected node <AiohttpHttpNode(http://localhost:9200)> (force=False)
