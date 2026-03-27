@@ -4986,3 +4986,4 @@ For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/St
 2026-03-26 14:25:46,383 | INFO | src.integrations.twilio | Twilio OTP sent successfully to 9381772845
 2026-03-26 14:26:31,641 | INFO | src.services.auth_service | Login success user_id=9e97f277-39ab-4660-8e65-730f78d53a37
 2026-03-27 09:32:31,870 | ERROR | src.core.elasticsearch | Could not connect to Elasticsearch after 5 attempts
+2026-03-27 12:20:12,926 | ERROR | src.core.elasticsearch | Could not connect to Elasticsearch after 5 attempts
