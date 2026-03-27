@@ -19,15 +19,25 @@ from src.core.config import settings
 from src.core.database import Base
 
 # Import every model so Alembic sees them in Base.metadata
-from src.models.user import User          # noqa: F401
 from src.models.user_profile import UserProfile, Address, FamilyMember, UserSession
-# Add more models here as you create them:
-# from src.models.hotel import Hotel      # noqa: F401
-# from src.models.booking import Booking  # noqa: F401
-# from src.models.temple import Temple    # noqa: F401
-# from src.models.vehicle import Vehicle  # noqa: F401
-# from src.models.partner import Partner  # noqa: F401
-# from src.models.wallet import Wallet    # noqa: F401
+from src.models.user import User
+from src.models.user_profile import UserProfile, Address, FamilyMember, UserSession
+from src.models.partner import Partner, PartnerDocument
+from src.models.temple import Temple, TempleEvent, TempleReview
+from src.models.darshan import DarshanType, DarshanSlot, DarshanBooking, PoojaService, PoojaBooking, PrasadamItem, PrasadamOrder
+from src.models.hotel import Hotel, HotelRoom, HotelImage, HotelAmenity
+from src.models.vehicle import Vehicle
+from src.models.guide import Guide
+from src.models.destination import Destination
+from src.models.package import Package
+from src.models.booking import Booking, HotelBooking, VehicleBooking, PackageBooking, GuideBooking, BookingTraveler, BookingAddon
+from src.models.transaction import Transaction, SavedCard, Refund
+from src.models.wallet import Wallet, WalletTransaction, WithdrawalRequest
+from src.models.coupon import Coupon
+from src.models.review import Review
+from src.models.notification import Notification
+from src.models.support import SupportTicket, TicketMessage
+from src.models.tracking import TrackingEvent
 
 # ── Alembic Config ────────────────────────────────────────────
 config = context.config

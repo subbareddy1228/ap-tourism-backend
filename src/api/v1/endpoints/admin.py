@@ -492,12 +492,12 @@ async def create_package(
     db: AsyncSession = Depends(get_db),
 ):
     pkg = Package(
-    name=data.name,
-    type=data.type,
-    duration_days=data.duration_days,
-    price=data.price,
-    is_featured=data.is_featured or False,
-)
+        name=data.name,
+        type=data.type,
+        duration_days=data.duration_days,
+        price=data.price,
+        is_featured=data.is_featured or False,
+    )
     db.add(pkg)
     await db.commit()
     await db.refresh(pkg)
@@ -677,11 +677,12 @@ async def broadcast_notification(
     users = result.scalars().all()
     for user in users:
         notif = Notification(
-            user_id=user.id,
-            title=title,
-            message=message,
-            type="SYSTEM",
-        )
+    user_id=user.id,
+    title=title,
+    body=message,       # ← correct field name
+    type="SYSTEM",
+    channel="in_app",   # ← required field
+)
         db.add(notif)
     await db.commit()
     return APIResponse.success(message=f"Notification sent to {len(users)} users")

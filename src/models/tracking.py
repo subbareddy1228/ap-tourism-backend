@@ -16,7 +16,7 @@ import enum
 from datetime import datetime
 
 from sqlalchemy import (
-    Column, String, Float, Boolean, DateTime,
+    Column, Integer, String, Float, Boolean, DateTime,
     ForeignKey, Enum as SAEnum, Index,
 )
 from sqlalchemy.dialects.postgresql import UUID
@@ -80,6 +80,14 @@ class TrackingSession(Base):
 
     def __repr__(self):
         return f"<TrackingSession booking={self.booking_id} status={self.status}>"
+    
+class TrackingEvent(Base):
+    __tablename__ = "tracking_events"
+
+    id = Column(Integer, primary_key=True, index=True)
+    event_type = Column(String, nullable=False)
+    description = Column(String)
+    created_at = Column(DateTime, default=datetime.utcnow)
 
 
 class TripLocation(Base):
