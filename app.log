@@ -4987,3 +4987,129 @@ For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/St
 2026-03-26 14:26:31,641 | INFO | src.services.auth_service | Login success user_id=9e97f277-39ab-4660-8e65-730f78d53a37
 2026-03-27 09:32:31,870 | ERROR | src.core.elasticsearch | Could not connect to Elasticsearch after 5 attempts
 2026-03-27 12:20:12,926 | ERROR | src.core.elasticsearch | Could not connect to Elasticsearch after 5 attempts
+2026-03-27 14:07:11,072 | ERROR | src.core.elasticsearch | Could not connect to Elasticsearch after 5 attempts
+2026-03-27 14:07:11,489 | ERROR | asyncio | Unclosed client session
+client_session: <aiohttp.client.ClientSession object at 0x00000299F575DA10>
+2026-03-27 14:07:11,493 | ERROR | asyncio | Unclosed connector
+connections: ['deque([(<aiohttp.client_proto.ResponseHandler object at 0x00000299F5C43A10>, 855152.765)])']
+connector: <aiohttp.connector.TCPConnector object at 0x00000299F6C88F10>
+2026-03-27 14:07:37,545 | ERROR | src.core.elasticsearch | Could not connect to Elasticsearch after 5 attempts
+2026-03-27 14:07:37,922 | ERROR | asyncio | Unclosed client session
+client_session: <aiohttp.client.ClientSession object at 0x000002615736E9D0>
+2026-03-27 14:07:37,924 | ERROR | asyncio | Unclosed connector
+connections: ['deque([(<aiohttp.client_proto.ResponseHandler object at 0x00000261580E3A10>, 855179.234)])']
+connector: <aiohttp.connector.TCPConnector object at 0x0000026155F46210>
+2026-03-27 14:08:06,483 | ERROR | src.core.elasticsearch | Could not connect to Elasticsearch after 5 attempts
+2026-03-27 14:08:06,914 | ERROR | asyncio | Unclosed client session
+client_session: <aiohttp.client.ClientSession object at 0x000001C4993E27D0>
+2026-03-27 14:08:06,918 | ERROR | asyncio | Unclosed connector
+connections: ['deque([(<aiohttp.client_proto.ResponseHandler object at 0x000001C499743A10>, 855208.171)])']
+connector: <aiohttp.connector.TCPConnector object at 0x000001C498BAA650>
+2026-03-27 14:08:41,473 | ERROR | src.core.elasticsearch | Could not connect to Elasticsearch after 5 attempts
+2026-03-27 14:08:41,887 | ERROR | asyncio | Unclosed client session
+client_session: <aiohttp.client.ClientSession object at 0x000001F1933C6F50>
+2026-03-27 14:08:41,889 | ERROR | asyncio | Unclosed connector
+connections: ['deque([(<aiohttp.client_proto.ResponseHandler object at 0x000001F195513A10>, 855243.156)])']
+connector: <aiohttp.connector.TCPConnector object at 0x000001F194908310>
+2026-03-27 14:09:10,553 | ERROR | src.core.elasticsearch | Could not connect to Elasticsearch after 5 attempts
+2026-03-27 14:09:10,978 | ERROR | asyncio | Unclosed client session
+client_session: <aiohttp.client.ClientSession object at 0x0000029FC5550110>
+2026-03-27 14:09:10,980 | ERROR | asyncio | Unclosed connector
+connections: ['deque([(<aiohttp.client_proto.ResponseHandler object at 0x0000029FC6133A10>, 855272.234)])']
+connector: <aiohttp.connector.TCPConnector object at 0x0000029FC7200F10>
+2026-03-27 14:09:34,748 | ERROR | src.core.elasticsearch | Could not connect to Elasticsearch after 5 attempts
+2026-03-27 14:09:35,186 | ERROR | asyncio | Unclosed client session
+client_session: <aiohttp.client.ClientSession object at 0x000002AADB333A90>
+2026-03-27 14:09:35,188 | ERROR | asyncio | Unclosed connector
+connections: ['deque([(<aiohttp.client_proto.ResponseHandler object at 0x000002AADC383A10>, 855296.437)])']
+connector: <aiohttp.connector.TCPConnector object at 0x000002AADB476C10>
+2026-03-27 14:10:01,579 | ERROR | src.core.elasticsearch | Could not connect to Elasticsearch after 5 attempts
+2026-03-27 14:10:01,900 | ERROR | asyncio | Unclosed client session
+client_session: <aiohttp.client.ClientSession object at 0x00000216EB54A510>
+2026-03-27 14:10:01,900 | ERROR | asyncio | Unclosed connector
+connections: ['deque([(<aiohttp.client_proto.ResponseHandler object at 0x00000216EA3E3A10>, 855323.265)])']
+connector: <aiohttp.connector.TCPConnector object at 0x00000216E822A650>
+2026-03-27 14:10:27,787 | ERROR | src.core.elasticsearch | Could not connect to Elasticsearch after 5 attempts
+2026-03-27 14:10:28,241 | ERROR | asyncio | Unclosed client session
+client_session: <aiohttp.client.ClientSession object at 0x000001CFEF7FD050>
+2026-03-27 14:10:28,241 | ERROR | asyncio | Unclosed connector
+connections: ['deque([(<aiohttp.client_proto.ResponseHandler object at 0x000001CFF0523A10>, 855349.468)])']
+connector: <aiohttp.connector.TCPConnector object at 0x000001CFEE3D8790>
+2026-03-27 14:10:55,327 | ERROR | src.core.elasticsearch | Could not connect to Elasticsearch after 5 attempts
+2026-03-27 14:10:55,878 | ERROR | asyncio | Unclosed client session
+client_session: <aiohttp.client.ClientSession object at 0x00000197B52C5C50>
+2026-03-27 14:10:55,880 | ERROR | asyncio | Unclosed connector
+connections: ['deque([(<aiohttp.client_proto.ResponseHandler object at 0x00000197B62B3A10>, 855377.015)])']
+connector: <aiohttp.connector.TCPConnector object at 0x00000197B57B7690>
+2026-03-27 14:11:21,375 | ERROR | src.core.elasticsearch | Could not connect to Elasticsearch after 5 attempts
+2026-03-27 14:11:21,780 | ERROR | asyncio | Unclosed client session
+client_session: <aiohttp.client.ClientSession object at 0x000002A8B8882550>
+2026-03-27 14:11:21,780 | ERROR | asyncio | Unclosed connector
+connections: ['deque([(<aiohttp.client_proto.ResponseHandler object at 0x000002A8B95B3A10>, 855403.062)])']
+connector: <aiohttp.connector.TCPConnector object at 0x000002A8B86A2D10>
+2026-03-27 14:11:45,706 | ERROR | src.core.elasticsearch | Could not connect to Elasticsearch after 5 attempts
+2026-03-27 14:11:46,097 | ERROR | asyncio | Unclosed client session
+client_session: <aiohttp.client.ClientSession object at 0x000001ABEE89E010>
+2026-03-27 14:11:46,097 | ERROR | asyncio | Unclosed connector
+connections: ['deque([(<aiohttp.client_proto.ResponseHandler object at 0x000001ABF0A73A10>, 855427.39)])']
+connector: <aiohttp.connector.TCPConnector object at 0x000001ABF07940D0>
+2026-03-27 14:12:10,795 | ERROR | src.core.elasticsearch | Could not connect to Elasticsearch after 5 attempts
+2026-03-27 14:12:11,209 | ERROR | asyncio | Unclosed client session
+client_session: <aiohttp.client.ClientSession object at 0x00000218E258A510>
+2026-03-27 14:12:11,211 | ERROR | asyncio | Unclosed connector
+connections: ['deque([(<aiohttp.client_proto.ResponseHandler object at 0x00000218E2C43A10>, 855452.484)])']
+connector: <aiohttp.connector.TCPConnector object at 0x00000218E0B90310>
+2026-03-27 14:12:35,570 | ERROR | src.core.elasticsearch | Could not connect to Elasticsearch after 5 attempts
+2026-03-27 14:12:36,187 | ERROR | asyncio | Unclosed client session
+client_session: <aiohttp.client.ClientSession object at 0x000001C577CFE9D0>
+2026-03-27 14:12:36,200 | ERROR | asyncio | Unclosed connector
+connections: ['deque([(<aiohttp.client_proto.ResponseHandler object at 0x000001C578AD3A10>, 855477.25)])']
+connector: <aiohttp.connector.TCPConnector object at 0x000001C575E10310>
+2026-03-27 14:13:01,508 | ERROR | src.core.elasticsearch | Could not connect to Elasticsearch after 5 attempts
+2026-03-27 14:13:01,921 | ERROR | asyncio | Unclosed client session
+client_session: <aiohttp.client.ClientSession object at 0x00000179A5867CD0>
+2026-03-27 14:13:01,923 | ERROR | asyncio | Unclosed connector
+connections: ['deque([(<aiohttp.client_proto.ResponseHandler object at 0x00000179A6623A10>, 855503.187)])']
+connector: <aiohttp.connector.TCPConnector object at 0x00000179A58EE950>
+2026-03-27 14:13:25,763 | ERROR | src.core.elasticsearch | Could not connect to Elasticsearch after 5 attempts
+2026-03-27 14:13:26,149 | ERROR | asyncio | Unclosed client session
+client_session: <aiohttp.client.ClientSession object at 0x0000018A56159D10>
+2026-03-27 14:13:26,149 | ERROR | asyncio | Unclosed connector
+connections: ['deque([(<aiohttp.client_proto.ResponseHandler object at 0x0000018A58313A10>, 855527.453)])']
+connector: <aiohttp.connector.TCPConnector object at 0x0000018A5615A310>
+2026-03-27 14:13:50,958 | ERROR | src.core.elasticsearch | Could not connect to Elasticsearch after 5 attempts
+2026-03-27 14:13:51,398 | ERROR | asyncio | Unclosed client session
+client_session: <aiohttp.client.ClientSession object at 0x0000015AA6B98B50>
+2026-03-27 14:13:51,398 | ERROR | asyncio | Unclosed connector
+connections: ['deque([(<aiohttp.client_proto.ResponseHandler object at 0x0000015AAA373A10>, 855552.64)])']
+connector: <aiohttp.connector.TCPConnector object at 0x0000015AA7257890>
+2026-03-27 14:14:17,777 | ERROR | src.core.elasticsearch | Could not connect to Elasticsearch after 5 attempts
+2026-03-27 14:14:18,124 | ERROR | asyncio | Unclosed client session
+client_session: <aiohttp.client.ClientSession object at 0x00000249EE256990>
+2026-03-27 14:14:18,125 | ERROR | asyncio | Unclosed connector
+connections: ['deque([(<aiohttp.client_proto.ResponseHandler object at 0x00000249F03A3A10>, 855579.468)])']
+connector: <aiohttp.connector.TCPConnector object at 0x00000249EF938950>
+2026-03-27 14:14:41,693 | ERROR | src.core.elasticsearch | Could not connect to Elasticsearch after 5 attempts
+2026-03-27 14:14:42,218 | ERROR | asyncio | Unclosed client session
+client_session: <aiohttp.client.ClientSession object at 0x00000180B2235F90>
+2026-03-27 14:14:42,218 | ERROR | asyncio | Unclosed connector
+connections: ['deque([(<aiohttp.client_proto.ResponseHandler object at 0x00000180B3223A10>, 855603.375)])']
+connector: <aiohttp.connector.TCPConnector object at 0x00000180B27B8FD0>
+2026-03-27 14:15:04,882 | ERROR | src.core.elasticsearch | Could not connect to Elasticsearch after 5 attempts
+2026-03-27 14:15:05,207 | ERROR | asyncio | Unclosed client session
+client_session: <aiohttp.client.ClientSession object at 0x000001B294CC27D0>
+2026-03-27 14:15:05,207 | ERROR | asyncio | Unclosed connector
+connections: ['deque([(<aiohttp.client_proto.ResponseHandler object at 0x000001B294E13A10>, 855626.562)])']
+connector: <aiohttp.connector.TCPConnector object at 0x000001B293FA2D10>
+2026-03-27 14:15:27,181 | ERROR | src.core.elasticsearch | Could not connect to Elasticsearch after 5 attempts
+2026-03-27 14:15:27,522 | ERROR | asyncio | Unclosed client session
+client_session: <aiohttp.client.ClientSession object at 0x00000167A42ED550>
+2026-03-27 14:15:27,526 | ERROR | asyncio | Unclosed connector
+connections: ['deque([(<aiohttp.client_proto.ResponseHandler object at 0x00000167A5333A10>, 855648.875)])']
+connector: <aiohttp.connector.TCPConnector object at 0x00000167A2496890>
+2026-03-27 14:15:52,167 | ERROR | src.core.elasticsearch | Could not connect to Elasticsearch after 5 attempts
+2026-03-27 14:15:52,514 | ERROR | asyncio | Unclosed client session
+client_session: <aiohttp.client.ClientSession object at 0x0000024AC3C5A690>
+2026-03-27 14:15:52,514 | ERROR | asyncio | Unclosed connector
+connections: ['deque([(<aiohttp.client_proto.ResponseHandler object at 0x0000024AC47F3A10>, 855673.859)])']
+connector: <aiohttp.connector.TCPConnector object at 0x0000024AC3C5A790>
