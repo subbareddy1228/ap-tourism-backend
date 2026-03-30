@@ -333,3 +333,31 @@ async def admin_add_message(
         message="Message added",
         data=TicketMessageResponse.model_validate(message).model_dump(),
     )
+
+@router.get(
+    "/admin/tickets/{ticket_id}",
+    response_model=APIResponse,
+    summary="[Admin] Get ticket detail"
+)
+async def admin_get_ticket(
+    ticket_id: str,
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get full detail of any support ticket including all messages."""
+    result = await support_service.get_ticket_by_id(ticket_id, db, is_admin=True)
+    return APIResponse.success(message="Ticket fetched", data=result)
+
+@router.get(
+    "/admin/tickets/{ticket_id}/messages",
+    response_model=APIResponse,
+    summary="[Admin] Get all messages in a ticket"
+)
+async def admin_get_ticket_messages(
+    ticket_id: str,
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get all messages in a support ticket thread."""
+    result = await support_service.get_ticket_messages(ticket_id, db)
+    return APIResponse.success(message="Messages fetched", data=result)

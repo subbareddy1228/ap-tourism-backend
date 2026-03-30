@@ -109,3 +109,15 @@ class PendingReviewItem(BaseModel):
     entity_id:    UUID
     entity_name:  Optional[str] = None
     booking_date: Optional[datetime] = None
+
+
+class ReviewModerateRequest(BaseModel):
+    status: str  # approved | rejected
+    reason: Optional[str] = None
+
+    @field_validator("status")
+    @classmethod
+    def status_valid(cls, v):
+        if v not in ["approved", "rejected"]:
+            raise ValueError("status must be approved or rejected")
+        return v
