@@ -121,3 +121,17 @@ class CouponUpdateSchema(BaseModel):
 # ── Settings ──────────────────────────────────────────
 class SettingUpdateSchema(BaseModel):
     value: str
+
+class StatusUpdateRequest(BaseModel):
+    status: str
+
+class WithdrawalProcessRequest(BaseModel):
+    status: str  # completed | rejected
+    rejection_reason: Optional[str] = None
+
+    @field_validator("status")
+    @classmethod
+    def status_valid(cls, v):
+        if v not in ["completed", "rejected"]:
+            raise ValueError("status must be completed or rejected")
+        return v

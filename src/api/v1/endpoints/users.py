@@ -365,3 +365,120 @@ async def revoke_session(
     """
     result = await user_service.revoke_session(session_id, current_user, db)
     return APIResponse.success(message=result["message"])
+
+# ══════════════════ KYC ══════════════════
+@router.get(
+    "/me/kyc",
+    response_model=APIResponse,
+    summary="Get KYC status"
+)
+async def get_kyc_status(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get KYC verification status for the current user."""
+    profile = await user_service.get_or_create_profile(str(current_user.id), db)
+    return APIResponse.success(
+        message="KYC status fetched",
+        data={
+            "kyc_status": profile.kyc_status,
+            "user_id": str(current_user.id),
+        }
+    )
+
+# ══════════════════ wallet ══════════════════
+@router.get(
+    "/me/wallet",
+    response_model=APIResponse,
+    summary="Get wallet summary from user profile"
+)
+async def get_wallet_summary(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Returns wallet balance linked to the current user."""
+    from src.services import wallet_service
+    wallet = await wallet_service.get_balance(current_user, db)
+    return APIResponse.success(
+        message="Wallet summary fetched",
+        data={
+            "wallet_id": str(wallet.id),
+            "balance": str(wallet.balance),
+            "currency": "INR",
+            "status": wallet.status,
+        }
+    )
+# ══════════════════ bookings ══════════════════
+@router.get(
+    "/me/bookings",
+    response_model=APIResponse,
+    summary="Get current user's bookings"
+)
+async def get_my_bookings(
+    page: int = Query(default=1, ge=1),
+    per_page: int = Query(default=10, ge=1, le=50),
+    status: Optional[str] = Query(default=None),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """List all bookings for the current user. Shortcut to /bookings/?user context."""
+    from src.services import booking_service
+    result = await booking_service.list_bookings(
+        user=current_user, db=db,
+        page=page, per_page=per_page, status_filter=status
+    )
+    return APIResponse.success(message="Bookings fetched", data=result)
+
+# ══════════════════ reviews ══════════════════
+@router.get(
+    "/me/reviews",
+    response_model=APIResponse,
+    summary="Get reviews submitted by current user"
+)
+async def get_my_reviews(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """List all reviews the current user has submitted."""
+    from src.services import review_service
+    reviews = await review_service.get_user_reviews(str(current_user.id), db)
+    return APIResponse.success(message="Reviews fetched", data=reviews)
+
+# ══════════════════ notifications ══════════════════
+@router.get(
+    "/me/notifications",
+    response_model=APIResponse,
+    summary="Get user notifications"
+)
+async def get_my_notifications(
+    page: int = Query(default=1, ge=1),
+    per_page: int = Query(default=20, ge=1, le=100),
+    unread_only: bool = Query(default=False),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """List notifications for the current user."""
+    from src.services import notification_service
+    result = await notification_service.get_user_notifications(
+        user_id=str(current_user.id), db=db,
+        page=page, per_page=per_page, unread_only=unread_only
+    )
+    return APIResponse.success(message="Notifications fetched", data=result)
+
+# ══════════════════ fmc token ══════════════════
+@router.put(
+    "/me/fcm-token",
+    response_model=APIResponse,
+    summary="Register FCM device token for push notifications"
+)
+async def update_fcm_token(
+    data: FCMTokenRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Register or update the device FCM token.
+    Called on every app launch to keep push notifications working.
+    """
+    result = await user_service.update_fcm_token(data.fcm_token, current_user, db)
+    return APIResponse.success(message=result["message"])

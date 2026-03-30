@@ -214,3 +214,19 @@ async def delete_package(
 ):
     result = await package_service.delete_package(package_id, db)
     return APIResponse.success(message=result["message"])
+
+@router.post(
+    "/{package_id}/itinerary",
+    response_model=APIResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="[Admin] Add itinerary day to package"
+)
+async def add_itinerary_day(
+    package_id: str,
+    data: ItineraryDayCreate,
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Add a day-wise itinerary entry to a package."""
+    result = await package_service.add_itinerary_day(package_id, data, db)
+    return APIResponse.success(message="Itinerary day added", data=result)

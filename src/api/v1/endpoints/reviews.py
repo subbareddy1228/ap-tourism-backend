@@ -214,3 +214,22 @@ async def get_my_reviews(
         page=page,
         page_size=page_size,
     )
+
+
+@router.put(
+    "/{review_id}/moderate",
+    response_model=APIResponse,
+    summary="[Admin] Approve or reject a review"
+)
+async def moderate_review(
+    review_id: str,
+    data: ReviewModerateRequest,
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Admin action to approve or reject a flagged/reported review.
+    status: 'approved' | 'rejected'
+    """
+    result = await review_service.moderate_review(review_id, data, db)
+    return APIResponse.success(message="Review moderated", data=result)

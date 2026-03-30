@@ -226,3 +226,7 @@ class SessionResponse(BaseModel):
     @field_validator("id", mode="before")
     @classmethod
     def convert_uuid(cls, v): return str(v)
+
+class FCMTokenRequest(BaseModel):
+    """PUT /me/fcm-token"""
+    fcm_token: str

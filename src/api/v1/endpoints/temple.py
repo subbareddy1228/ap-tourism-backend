@@ -198,8 +198,24 @@ async def get_detail(
         return APIResponse.success(message="Temple fetched", data=data.model_dump())
     except Exception as e:
         raise HTTPException(status_code=404, detail=str(e))
-
-
+    
+# ══════════════════ TEMPLE REVIEW ══════════════════
+@router.post(
+    "/{temple_id}/reviews",
+    response_model=APIResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Submit a temple review"
+)
+async def create_temple_review(
+    temple_id: str,
+    data: TempleReviewCreate,
+    current_user: User = Depends(get_verified_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Submit a review for a temple. Requires a completed booking at this temple."""
+    svc = TempleService(db)
+    result = await svc.create_review(temple_id, data, str(current_user.id))
+    return APIResponse.success(message="Review submitted", data=result)
 # ═══════════════════════════════════════════════════════════════
 # ADMIN
 # ═══════════════════════════════════════════════════════════════
@@ -226,7 +242,42 @@ async def update_temple(
         return APIResponse.success(message="Temple updated successfully", data=temple.model_dump())
     except Exception as e:
         raise HTTPException(status_code=404, detail=str(e))
-    
+
+# ══════════════════ ADD POOJA SERVICE ══════════════════
+@router.post(
+    "/{temple_id}/pooja-services",
+    response_model=APIResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="[Admin] Add pooja service to temple"
+)
+async def add_pooja_service(
+    temple_id: str,
+    data: PoojaServiceCreate,
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Add a new pooja/seva service to a temple."""
+    svc = TempleService(db)
+    result = await svc.create_pooja_service(temple_id, data)
+    return APIResponse.success(message="Pooja service added", data=result)
+
+# ══════════════════ UPDATE POOJA SERVICE ══════════════════
+@router.put(
+    "/{temple_id}/pooja-services/{service_id}",
+    response_model=APIResponse,
+    summary="[Admin] Update pooja service"
+)
+async def update_pooja_service(
+    temple_id: str,
+    service_id: str,
+    data: PoojaServiceUpdate,
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Update a pooja service details — price, duration, description."""
+    svc = TempleService(db)
+    result = await svc.update_pooja_service(temple_id, service_id, data)
+    return APIResponse.success(message="Pooja service updated", data=result)
  
 # ══════════════════ ADMIN ENDPOINTS ══════════════════
  
@@ -509,3 +560,37 @@ async def sync_ttd(
 
     return APIResponse.success(message="TTD sync complete", data=result)
  
+ # ══════════════════ UPLOAD TEMPLE IMAGE ══════════════════
+ @router.post(
+    "/{temple_id}/images",
+    response_model=APIResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="[Admin] Upload temple image"
+)
+async def upload_temple_image(
+    temple_id: str,
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Upload an image for a temple to S3."""
+    svc = TempleService(db)
+    result = await svc.upload_temple_image(temple_id, file)
+    return APIResponse.success(message="Image uploaded", data=result)
+
+# ══════════════════ DELETE TEMPLE IMAGE ══════════════════
+@router.delete(
+    "/{temple_id}/images/{image_id}",
+    response_model=APIResponse,
+    summary="[Admin] Delete temple image"
+)
+async def delete_temple_image(
+    temple_id: str,
+    image_id: str,
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Delete a specific temple image from S3."""
+    svc = TempleService(db)
+    result = await svc.delete_temple_image(temple_id, image_id)
+    return APIResponse.success(message="Image deleted", data=result)
