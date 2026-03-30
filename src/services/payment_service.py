@@ -46,7 +46,7 @@ def _map_method(method: str) -> str:
 # PAYMENT METHODS (sync — no DB needed)
 # ─────────────────────────────────────────────
 
-def get_payment_methods() -> PaymentMethodsResponse:
+async def get_payment_methods() -> PaymentMethodsResponse:
     return PaymentMethodsResponse(success=True, methods=[
         PaymentMethodItem(id="UPI",         name="UPI",               type="upi"),
         PaymentMethodItem(id="CARD",        name="Credit/Debit Card",  type="card"),
@@ -199,7 +199,7 @@ async def get_transaction(db: AsyncSession, transaction_id: UUID) -> Optional[Tr
 # VALIDATE UPI (sync — no DB)
 # ─────────────────────────────────────────────
 
-def validate_upi(data: ValidateUPIRequest) -> ValidateUPIResponse:
+async def validate_upi(data: ValidateUPIRequest) -> ValidateUPIResponse:
     upi = data.upi_id.strip()
     is_valid = "@" in upi and len(upi) > 3
     return ValidateUPIResponse(
@@ -333,7 +333,7 @@ async def get_refunds(db: AsyncSession, user_id: UUID) -> RefundsListResponse:
 # PAY LATER
 # ─────────────────────────────────────────────
 
-def check_pay_later(data: PayLaterCheckRequest) -> PayLaterCheckResponse:
+async def check_pay_later(data: PayLaterCheckRequest) -> PayLaterCheckResponse:
     eligible = data.amount <= 10000.0
     return PayLaterCheckResponse(
         success=True, eligible=eligible,

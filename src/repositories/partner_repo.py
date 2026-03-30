@@ -1,70 +1,73 @@
-from sqlalchemy.orm import Session
+# ✅ Correct version of partner_repo.py
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from fastapi import HTTPException
 from src.models.partner import Partner, PartnerDocument, PartnerPayout
+from uuid import UUID
 
-
-async def get_partner_by_id(db: Session, partner_id: int) -> Partner:
-    partner = db.query(Partner).filter(
-        Partner.id == partner_id,
-        Partner.deleted_at == None
-    ).first()
+async def get_partner_by_id(db: AsyncSession, partner_id: UUID) -> Partner:
+    result = await db.execute(
+        select(Partner).where(Partner.id == partner_id, Partner.deleted_at == None)
+    )
+    partner = result.scalar_one_or_none()
     if not partner:
         raise HTTPException(status_code=404, detail="Partner not found")
     return partner
 
+async def get_partner_by_user_id(db: AsyncSession, user_id: UUID) -> Partner:
+    result = await db.execute(
+        select(Partner).where(Partner.user_id == user_id, Partner.deleted_at == None)
+    )
+    return result.scalar_one_or_none()
 
-async def get_partner_by_user_id(db: Session, user_id: int) -> Partner:
-    return db.query(Partner).filter(
-        Partner.user_id == user_id,
-        Partner.deleted_at == None
-    ).first()
-
-
-async def create_partner(db: Session, partner: Partner) -> Partner:
+async def create_partner(db: AsyncSession, partner: Partner) -> Partner:
     db.add(partner)
-    db.commit()
-    db.refresh(partner)
+    await db.commit()
+    await db.refresh(partner)
     return partner
 
-
-async def update_partner(db: Session, partner: Partner) -> Partner:
-    db.commit()
-    db.refresh(partner)
+async def update_partner(db: AsyncSession, partner: Partner) -> Partner:
+    await db.commit()
+    await db.refresh(partner)
     return partner
 
+async def get_all_documents(db: AsyncSession, partner_id: UUID):
+    result = await db.execute(
+        select(PartnerDocument).where(PartnerDocument.partner_id == partner_id)
+    )
+    return result.scalars().all()
 
-async def get_all_documents(db: Session, partner_id: int):
-    return db.query(PartnerDocument).filter(
-        PartnerDocument.partner_id == partner_id
-    ).all()
+async def get_document_by_id(db: AsyncSession, doc_id: UUID, partner_id: UUID):
+    result = await db.execute(
+        select(PartnerDocument).where(
+            PartnerDocument.id == doc_id,
+            PartnerDocument.partner_id == partner_id
+        )
+    )
+    return result.scalar_one_or_none()
 
-
-async def get_document_by_id(db: Session, doc_id: int, partner_id: int):
-    return db.query(PartnerDocument).filter(
-        PartnerDocument.id == doc_id,
-        PartnerDocument.partner_id == partner_id
-    ).first()
-
-
-async def create_document(db: Session, doc: PartnerDocument) -> PartnerDocument:
+async def create_document(db: AsyncSession, doc: PartnerDocument) -> PartnerDocument:
     db.add(doc)
-    db.commit()
-    db.refresh(doc)
+    await db.commit()
+    await db.refresh(doc)
     return doc
 
+async def delete_document(db: AsyncSession, doc: PartnerDocument):
+    await db.delete(doc)
+    await db.commit()
 
-async def delete_document(db: Session, doc: PartnerDocument):
-    db.delete(doc)
-    db.commit()
+async def get_all_payouts(db: AsyncSession, partner_id: UUID, page: int, limit: int):
+    result = await db.execute(
+        select(PartnerPayout)
+        .where(PartnerPayout.partner_id == partner_id)
+        .order_by(PartnerPayout.created_at.desc())
+        .offset((page - 1) * limit)
+        .limit(limit)
+    )
+    return result.scalars().all()
 
-
-async def get_all_payouts(db: Session, partner_id: int, page: int, limit: int):
-    return db.query(PartnerPayout).filter(
-        PartnerPayout.partner_id == partner_id
-    ).order_by(PartnerPayout.created_at.desc()).offset((page - 1) * limit).limit(limit).all()
-
-
-async def get_payout_by_id(db: Session, payout_id: int):
-    return db.query(PartnerPayout).filter(
-        PartnerPayout.id == payout_id
-    ).first()
+async def get_payout_by_id(db: AsyncSession, payout_id: UUID):
+    result = await db.execute(
+        select(PartnerPayout).where(PartnerPayout.id == payout_id)
+    )
+    return result.scalar_one_or_none()

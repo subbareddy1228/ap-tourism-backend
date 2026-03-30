@@ -98,7 +98,7 @@ class VehicleService:
 
     # ── Public Endpoints ──────────────────────────────────────
 
-    def get_vehicle_types(self) -> List[VehicleTypeInfo]:
+    async def get_vehicle_types(self) -> List[VehicleTypeInfo]:
         return [
             VehicleTypeInfo(
                 type=vtype.value,

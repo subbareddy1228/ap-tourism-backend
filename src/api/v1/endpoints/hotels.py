@@ -36,13 +36,13 @@ Hotel module — all 25 endpoints.
   DELETE /hotels/partner/{id}/amenities/{a_id}  Delete amenity
 """
 
-from datetime import datetime
 from typing import Optional, List
-from fastapi import APIRouter, Depends, Query, UploadFile, File, HTTPException, status
+from fastapi import APIRouter, Depends, Query, UploadFile, File, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
 
 from src.core.database import get_db
+from src.core.redis import get_redis          # ← use project's async Redis
 from src.api.deps.auth import get_current_user, get_partner_user
 from src.models.user import User
 from src.schemas.hotel import (
@@ -56,17 +56,13 @@ from src.services import hotel_service
 router = APIRouter(prefix="/hotels", tags=["Hotels"])
 
 
-# ── Redis (optional — gracefully degrades if Redis is down) ──
-def get_redis():
-    import redis as redis_lib
-    from src.core.config import settings
-    client = None
+# ── Async Redis helper (gracefully degrades if Redis is down) ──
+async def _get_redis_optional():
+    """Returns Redis client or None if unavailable."""
     try:
-        client = redis_lib.from_url(settings.REDIS_URL, decode_responses=True)
-        client.ping()
+        return await get_redis()
     except Exception:
-        client = None
-    return client
+        return None
 
 
 # ══════════════════════════════════════════════════════════════
@@ -83,7 +79,7 @@ async def get_featured_hotels(
     db: AsyncSession = Depends(get_db),
 ):
     """Admin-curated featured hotels. Cached in Redis for 1 hour."""
-    redis = get_redis()
+    redis = await _get_redis_optional()          # ← async
     hotels = await hotel_service.get_featured_hotels(db, redis=redis)
     return APIResponse.success(message=f"{len(hotels)} featured hotels", data=hotels)
 
@@ -98,7 +94,7 @@ async def get_popular_hotels(
     db: AsyncSession = Depends(get_db),
 ):
     """Hotels sorted by booking_count. Cached for 30 minutes."""
-    redis = get_redis()
+    redis = await _get_redis_optional()          # ← async
     hotels = await hotel_service.get_popular_hotels(db, limit=limit, redis=redis)
     return APIResponse.success(message=f"{len(hotels)} popular hotels", data=hotels)
 

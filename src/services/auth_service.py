@@ -27,13 +27,17 @@ from src.core.redis import (
     increment_resend_count, get_resend_count, get_resend_ttl,
     increment_otp_attempts, clear_otp_attempts,
     blacklist_jti, store_refresh_jti, get_refresh_jti,
-    delete_refresh_jti, delete_all_refresh_jtis
+    delete_refresh_jti, delete_all_refresh_jtis,
+    store_email_otp, get_email_otp, delete_email_otp,
+    increment_email_otp_attempts, clear_email_otp_attempts,
+    increment_email_resend_count, get_email_resend_count,
 )
 
 from src.common.utils import generate_otp
 from src.common.enums import UserStatus
 from src.core.config import settings
 from src.integrations.twilio import send_sms
+from src.integrations.email import send_email_otp
 
 logger = logging.getLogger(__name__)
 
@@ -523,6 +527,124 @@ async def logout_all(user_id: str, access_token: str) -> dict:
     await delete_all_refresh_jtis(user_id)
 
     return {"message": "Logged out from all devices"}
+
+
+# ═════════════════ SEND EMAIL VERIFICATION OTP ═════════════════
+
+async def send_email_verification_otp(user: User) -> dict:
+    """
+    Generate a 6-digit OTP, store it in Redis (10 min TTL),
+    and email it to the user's registered address.
+
+    Rate-limited to OTP_RESEND_MAX sends per OTP_RESEND_WINDOW_SECONDS.
+    """
+    if not user.email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No email address on your account. Add one in profile settings first."
+        )
+
+    if user.is_email_verified:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email is already verified."
+        )
+
+    # ── Rate limit ────────────────────────────────────────────
+    resend_count = await get_email_resend_count(user.email)
+    if resend_count >= settings.OTP_RESEND_MAX:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many requests. Please wait before requesting another OTP."
+        )
+    await increment_email_resend_count(user.email)
+
+    # ── Generate + store + send ───────────────────────────────
+    otp = generate_otp()
+    await store_email_otp(user.email, otp, purpose="verify_email")
+
+    sent = await send_email_otp(user.email, otp, purpose="verify_email")
+    if not sent:
+        logger.error("Failed to send email OTP to=%s user_id=%s", user.email, user.id)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Could not send email. Please check your address or try again later."
+        )
+
+    logger.info("Email verification OTP sent user_id=%s email=%s", user.id, user.email)
+    return {
+        "message": "OTP sent to your email address.",
+        "email":   _mask_email(user.email),
+        "expires_in": 600,
+    }
+
+
+# ═════════════════ VERIFY EMAIL OTP ═════════════════
+
+async def verify_email_otp(otp: str, user: User, db: AsyncSession) -> dict:
+    """
+    Validate the OTP the user received by email and mark is_email_verified = True.
+    Brute-force: max OTP_MAX_ATTEMPTS attempts before the OTP is invalidated.
+    """
+    if user.is_email_verified:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email is already verified."
+        )
+
+    if not user.email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No email address on your account."
+        )
+
+    # ── Brute-force guard ─────────────────────────────────────
+    attempts = await increment_email_otp_attempts(user.email)
+    if attempts > settings.OTP_MAX_ATTEMPTS:
+        await delete_email_otp(user.email, purpose="verify_email")
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many incorrect attempts. Please request a new OTP."
+        )
+
+    # ── Fetch stored OTP ──────────────────────────────────────
+    stored_otp = await get_email_otp(user.email, purpose="verify_email")
+    if not stored_otp:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="OTP expired or not found. Please request a new one."
+        )
+
+    if stored_otp != otp:
+        remaining = settings.OTP_MAX_ATTEMPTS - attempts
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Incorrect OTP. {remaining} attempt(s) remaining."
+        )
+
+    # ── Mark verified ─────────────────────────────────────────
+    await delete_email_otp(user.email, purpose="verify_email")
+    await clear_email_otp_attempts(user.email)
+
+    user.is_email_verified = True
+    user.updated_at = datetime.utcnow()
+    await db.commit()
+    await db.refresh(user)
+
+    logger.info("Email verified user_id=%s email=%s", user.id, user.email)
+    return {"message": "Email verified successfully."}
+
+
+# ── Internal helper ───────────────────────────────────────────
+
+def _mask_email(email: str) -> str:
+    """Return a masked email like  j***@gmail.com for display."""
+    try:
+        local, domain = email.split("@", 1)
+        visible = local[:1] if len(local) <= 3 else local[:2]
+        return f"{visible}***@{domain}"
+    except Exception:
+        return "***"
 
 
 # ═════════════════ CHANGE PASSWORD ═════════════════

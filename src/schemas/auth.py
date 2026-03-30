@@ -155,6 +155,25 @@ class ChangePasswordRequest(BaseModel):
     def password_valid(cls, v): return validate_password(v)
 
 
+class SendEmailOTPRequest(BaseModel):
+    """POST /auth/send-email-otp — send OTP to the user's registered email"""
+    # No body needed — email is taken from the authenticated user's record.
+    # Kept as an explicit schema for future extensibility (e.g. change-email flow).
+    pass
+
+
+class VerifyEmailOTPRequest(BaseModel):
+    """POST /auth/verify-email — verify OTP sent to email"""
+    otp: str
+
+    @field_validator("otp")
+    @classmethod
+    def otp_valid(cls, v):
+        if not v.isdigit() or len(v) != 6:
+            raise ValueError("OTP must be a 6-digit number")
+        return v
+
+
 # ═══════════════════════════════════════════════════════════════
 # RESPONSE SCHEMAS
 # ═══════════════════════════════════════════════════════════════

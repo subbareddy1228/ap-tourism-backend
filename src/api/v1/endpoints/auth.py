@@ -29,6 +29,7 @@ from src.schemas.auth import (
     ResendOTPRequest, LoginRequest, OTPLoginRequest,
     RefreshTokenRequest, ForgotPasswordRequest,
     ResetPasswordRequest, ChangePasswordRequest,
+    SendEmailOTPRequest, VerifyEmailOTPRequest,
     TokenResponse, OTPSentResponse, UserResponse, LogoutRequest
 )
 from src.common.responses import APIResponse
@@ -331,3 +332,47 @@ async def change_password(
         return APIResponse.success(message=result["message"])
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+# ── 13. Send Email Verification OTP ──────────────────────────
+@router.post(
+    "/send-email-otp",
+    response_model=APIResponse,
+    summary="Send OTP to registered email for verification"
+)
+async def send_email_otp(
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Send a 6-digit OTP to the authenticated user's registered email address.
+
+    - Requires a valid Bearer token.
+    - Rate-limited: max 3 sends per 10-minute window.
+    - OTP expires in **10 minutes**.
+
+    **Next step:** Call `/auth/verify-email` with the OTP received.
+    """
+    result = await auth_service.send_email_verification_otp(current_user)
+    return APIResponse.success(message=result["message"], data=result)
+
+
+# ── 14. Verify Email OTP ──────────────────────────────────────
+@router.post(
+    "/verify-email",
+    response_model=APIResponse,
+    summary="Verify email address using OTP"
+)
+async def verify_email(
+    data: VerifyEmailOTPRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Confirm the 6-digit OTP sent to the user's email and mark it as verified.
+
+    - Requires a valid Bearer token.
+    - Max **5 incorrect attempts** before the OTP is invalidated.
+    - After verification, `is_email_verified` becomes `true` on the user object.
+    """
+    result = await auth_service.verify_email_otp(data.otp, current_user, db)
+    return APIResponse.success(message=result["message"])
