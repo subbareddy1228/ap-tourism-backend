@@ -27,3 +27,5 @@ from src.models.notification import Notification, NotificationPreference
 from src.models.support import SupportTicket, TicketMessage
 
 from src.models.tracking import TrackingSession, TripLocation, LocationHistory
+
+from src.models.auth import OTPCode, RefreshToken, BlacklistedToken
