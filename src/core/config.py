@@ -74,6 +74,12 @@ class Settings(BaseSettings):
     FIREBASE_PROJECT_ID:      str = ""
     FIREBASE_SERVICE_ACCOUNT: str = ""
 
+
+    #_________________SENDGRID_API_KEY_____________________________________
+    
+    SENDGRID_API_KEY: str | None = None
+    FROM_EMAIL: str | None = None
+
     class Config:
         env_file = ".env"
         case_sensitive = True

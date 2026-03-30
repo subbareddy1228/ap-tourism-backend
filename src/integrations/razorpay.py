@@ -12,6 +12,7 @@ Covers:
   - Refund status fetch   → get_refund_status
 """
 
+import asyncio
 import hashlib
 import hmac
 import logging
@@ -34,39 +35,28 @@ def _client() -> razorpay.Client:
 # ORDER CREATION
 # ─────────────────────────────────────────────
 
-def create_order(amount_inr: float, booking_id: str, notes: dict = None) -> dict:
+async def create_order(amount_inr: float, booking_id: str, notes: dict = None) -> dict:
     """
     Create a Razorpay order.
-
-    Args:
-        amount_inr:  Amount in INR (e.g. 1500.00). Converted to paise internally.
-        booking_id:  Your internal booking/transaction reference.
-        notes:       Optional key-value metadata (shown in Razorpay dashboard).
-
-    Returns:
-        Razorpay order dict — keys: id, amount, currency, receipt, status.
-
-    Raises:
-        RuntimeError on Razorpay API failure.
+    Runs the blocking SDK call in a thread pool to avoid blocking the event loop.
     """
-    amount_paise = int(round(amount_inr * 100))  # Razorpay expects paise
-
-    payload = {
-        "amount":   amount_paise,
-        "currency": "INR",
-        "receipt":  str(booking_id)[:40],  # Razorpay max 40 chars
-        "notes":    notes or {},
-    }
-
-    try:
-        client = _client()
-        order = client.order.create(data=payload)
+    def _sync():
+        amount_paise = int(round(amount_inr * 100))
+        payload = {
+            "amount":   amount_paise,
+            "currency": "INR",
+            "receipt":  str(booking_id)[:40],
+            "notes":    notes or {},
+        }
+        order = _client().order.create(data=payload)
         logger.info(
             "Razorpay order created order_id=%s booking_id=%s amount_paise=%d",
             order["id"], booking_id, amount_paise,
         )
         return order
 
+    try:
+        return await asyncio.to_thread(_sync)
     except Exception as e:
         logger.error("Razorpay order creation failed booking_id=%s error=%s", booking_id, str(e))
         raise RuntimeError(f"Razorpay order creation failed: {str(e)}")
@@ -83,6 +73,7 @@ def verify_payment_signature(
 ) -> bool:
     """
     Verify Razorpay HMAC-SHA256 payment signature.
+    Pure computation — no I/O, sync is correct here.
 
     Formula:  HMAC_SHA256(key=KEY_SECRET, msg="order_id|payment_id")
 
@@ -112,6 +103,7 @@ def verify_payment_signature(
 def verify_webhook_signature(raw_body: bytes, razorpay_signature: str) -> bool:
     """
     Verify Razorpay webhook X-Razorpay-Signature header.
+    Pure computation — no I/O, sync is correct here.
 
     Formula:  HMAC_SHA256(key=RAZORPAY_KEY_SECRET, msg=raw_request_body)
 
@@ -134,13 +126,14 @@ def verify_webhook_signature(raw_body: bytes, razorpay_signature: str) -> bool:
 # REFUND
 # ─────────────────────────────────────────────
 
-def create_refund(
+async def create_refund(
     razorpay_payment_id: str,
     amount_inr: float,
     notes: dict = None,
 ) -> dict:
     """
     Initiate a partial or full refund on a captured Razorpay payment.
+    Runs the blocking SDK call in a thread pool to avoid blocking the event loop.
 
     Args:
         razorpay_payment_id:  The pay_xxx ID from the original captured payment.
@@ -153,22 +146,21 @@ def create_refund(
     Raises:
         RuntimeError on failure.
     """
-    amount_paise = int(round(amount_inr * 100))
-
-    payload = {
-        "amount": amount_paise,
-        "notes":  notes or {},
-    }
-
-    try:
-        client = _client()
-        refund = client.payment.refund(razorpay_payment_id, payload)
+    def _sync():
+        amount_paise = int(round(amount_inr * 100))
+        payload = {
+            "amount": amount_paise,
+            "notes":  notes or {},
+        }
+        refund = _client().payment.refund(razorpay_payment_id, payload)
         logger.info(
             "Razorpay refund created refund_id=%s payment_id=%s amount_paise=%d",
             refund["id"], razorpay_payment_id, amount_paise,
         )
         return refund
 
+    try:
+        return await asyncio.to_thread(_sync)
     except Exception as e:
         logger.error(
             "Razorpay refund failed payment_id=%s error=%s",
@@ -177,15 +169,18 @@ def create_refund(
         raise RuntimeError(f"Razorpay refund failed: {str(e)}")
 
 
-def get_refund_status(razorpay_refund_id: str) -> dict:
+async def get_refund_status(razorpay_refund_id: str) -> dict:
     """
     Fetch current status of a Razorpay refund by refund ID.
+    Runs the blocking SDK call in a thread pool to avoid blocking the event loop.
 
     Returns refund dict with status: pending | processed | failed.
     """
+    def _sync():
+        return _client().refund.fetch(razorpay_refund_id)
+
     try:
-        client = _client()
-        return client.refund.fetch(razorpay_refund_id)
+        return await asyncio.to_thread(_sync)
     except Exception as e:
         logger.error(
             "Razorpay fetch refund failed refund_id=%s error=%s",
