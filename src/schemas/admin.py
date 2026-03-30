@@ -121,3 +121,18 @@ class CouponUpdateSchema(BaseModel):
 # ── Settings ──────────────────────────────────────────
 class SettingUpdateSchema(BaseModel):
     value: str
+
+@router.put("/wallet/withdrawals/{withdrawal_id}/process", response_model=APIResponse, summary="Process or reject withdrawal")
+async def admin_process_withdrawal(
+    withdrawal_id: str,
+    data: WithdrawalProcessRequest,
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Process or reject a withdrawal request.
+    status: 'completed' | 'rejected'
+    """
+    from src.services import wallet_service
+    result = await wallet_service.admin_process_withdrawal(withdrawal_id, data, db)
+    return APIResponse.success(message=f"Withdrawal {data.status}", data=result)
