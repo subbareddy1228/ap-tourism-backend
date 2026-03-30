@@ -131,6 +131,16 @@ async def register_user(data: RegisterRequest, db: AsyncSession) -> dict:
         "message": "OTP sent to your phone"
     }
 
+# ═════════════════ SEND OTP ═════════════════
+async def send_otp(phone: str, purpose: str) -> dict:
+    otp = generate_otp()
+    await store_otp(phone, otp, purpose=purpose)
+    await send_sms_otp(phone, otp)
+
+    return {
+        "phone": phone,
+        "expires_in": settings.OTP_EXPIRE_SECONDS,
+    }
 # ═════════════════ RESEND OTP ═════════════════
 
 async def resend_otp(phone: str, purpose: str) -> dict:
