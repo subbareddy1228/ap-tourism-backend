@@ -14,7 +14,7 @@ from typing import Optional, List, Dict, Any
 from uuid import UUID
 from datetime import datetime
 
-from fastapi import HTTPException, UploadFile
+from fastapi import UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.repositories.vehicle_repo import VehicleRepository, DriverRepository, VehicleDocumentRepository
@@ -26,7 +26,12 @@ from src.schemas.vehicle import (
     VehicleTypeInfo,
 )
 from src.integrations.google_maps import GoogleMapsClient
-
+from src.core.exceptions import (
+    BadRequestException,
+    ConflictException,
+    ForbiddenException,
+    NotFoundException,
+)
 
 VEHICLE_TYPE_DESCRIPTIONS = {
     VehicleType.SEDAN:           "Comfortable 4-seater car, ideal for city travel",
@@ -36,7 +41,6 @@ VEHICLE_TYPE_DESCRIPTIONS = {
     VehicleType.AUTO:            "3-wheeler for short city distances",
     VehicleType.BIKE:            "2-wheeler for solo quick travel",
 }
-
 
 class VehicleService:
     """Service layer for Vehicle business logic."""
@@ -128,13 +132,13 @@ class VehicleService:
     async def get_vehicle(self, vehicle_id: UUID):
         vehicle = await self.vehicle_repo.get_by_id(vehicle_id)
         if not vehicle:
-            raise HTTPException(status_code=404, detail="Vehicle not found")
+            raise NotFoundException("Vehicle not found")
         return vehicle
 
     async def get_vehicle_reviews(self, vehicle_id: UUID, page: int = 1, limit: int = 20):
         vehicle = await self.vehicle_repo.get_by_id(vehicle_id)
         if not vehicle:
-            raise HTTPException(status_code=404, detail="Vehicle not found")
+            raise NotFoundException("Vehicle not found")
         reviews, total = await self.vehicle_repo.get_reviews(vehicle_id, page, limit)
         pages = (total + limit - 1) // limit
         return reviews, total, page, pages
@@ -196,10 +200,7 @@ class VehicleService:
     async def create_vehicle(self, partner_id: UUID, data: VehicleCreate):
         existing = await self.vehicle_repo.get_by_registration(data.registration_number)
         if existing:
-            raise HTTPException(
-                status_code=409,
-                detail=f"Vehicle with registration '{data.registration_number}' already exists"
-            )
+            raise ConflictException(f"Vehicle with registration '{data.registration_number}' already exists")
         vehicle_data = data.model_dump()
         if not vehicle_data.get("price_per_km"):
             vehicle_data["price_per_km"] = VEHICLE_BASE_RATES[data.vehicle_type]
@@ -222,10 +223,10 @@ class VehicleService:
         vehicle = await self._get_partner_vehicle(partner_id, vehicle_id)
         allowed = ["image/jpeg", "image/png", "image/jpg", "image/webp"]
         if file.content_type not in allowed:
-            raise HTTPException(status_code=400, detail="Only JPG, PNG and WEBP images allowed")
+            raise BadRequestException("Only JPG, PNG and WEBP images allowed")
         contents = await file.read()
         if len(contents) > 5 * 1024 * 1024:
-            raise HTTPException(status_code=400, detail="Image size must be less than 5MB")
+            raise BadRequestException("Image size must be less than 5MB")
 
         upload_dir = "uploads/vehicles"
         os.makedirs(upload_dir, exist_ok=True)
@@ -258,9 +259,9 @@ class VehicleService:
         vehicle = await self._get_partner_vehicle(partner_id, vehicle_id)
         driver  = await self.driver_repo.get_by_id(driver_id)
         if not driver:
-            raise HTTPException(status_code=404, detail="Driver not found")
+            raise NotFoundException("Driver not found")
         if str(driver.partner_id) != str(partner_id):
-            raise HTTPException(status_code=403, detail="Driver does not belong to this partner")
+            raise ForbiddenException("Driver does not belong to this partner")
         return await self.vehicle_repo.assign_driver(vehicle, driver_id)
 
     # ── Driver Endpoints ──────────────────────────────────────
@@ -273,10 +274,7 @@ class VehicleService:
     async def create_driver(self, partner_id: UUID, data: DriverCreate):
         existing = await self.driver_repo.get_by_license(data.license_number)
         if existing:
-            raise HTTPException(
-                status_code=409,
-                detail=f"Driver with license '{data.license_number}' already registered"
-            )
+            raise ConflictException(f"Driver with license '{data.license_number}' already registered")
         return await self.driver_repo.create(partner_id=partner_id, data=data.model_dump())
 
     async def update_driver(self, partner_id: UUID, driver_id: UUID, data: DriverUpdate):
@@ -298,15 +296,15 @@ class VehicleService:
     async def _get_partner_vehicle(self, partner_id: UUID, vehicle_id: UUID):
         vehicle = await self.vehicle_repo.get_by_id(vehicle_id)
         if not vehicle:
-            raise HTTPException(status_code=404, detail="Vehicle not found")
+            raise NotFoundException("Vehicle not found")
         if str(vehicle.partner_id) != str(partner_id):
-            raise HTTPException(status_code=403, detail="You do not have permission to manage this vehicle")
+            raise ForbiddenException("You do not have permission to manage this vehicle")
         return vehicle
 
     async def _get_partner_driver(self, partner_id: UUID, driver_id: UUID):
         driver = await self.driver_repo.get_by_id(driver_id)
         if not driver:
-            raise HTTPException(status_code=404, detail="Driver not found")
+            raise NotFoundException("Driver not found")
         if str(driver.partner_id) != str(partner_id):
-            raise HTTPException(status_code=403, detail="You do not have permission to manage this driver")
+            raise ForbiddenException("You do not have permission to manage this driver")
         return driver

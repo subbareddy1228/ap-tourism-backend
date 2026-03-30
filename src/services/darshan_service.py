@@ -1,13 +1,18 @@
 from datetime import date
 from uuid import UUID
  
-from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
  
 from src.models.darshan import (
     DarshanBooking, PoojaBooking, PrasadamOrder, PrasadamOrderItem,
 )
 from src.repositories.darshan_repo import DarshanRepository
+
+from src.core.exceptions import (
+    BadRequestException,
+    ConflictException,
+    NotFoundException,
+)
 from src.schemas.darshan import (
     DarshanTypeResponse, DarshanSlotResponse,
     DarshanCheckAvailabilityRequest, DarshanCheckAvailabilityResponse,
@@ -38,7 +43,7 @@ class DarshanService:
     async def get_darshan_type_detail(self, temple_id: UUID, type_id: UUID):
         dt = await self.repo.get_darshan_type_by_id(temple_id, type_id)
         if not dt:
-            raise HTTPException(status_code=404, detail="Darshan type not found")
+            raise NotFoundException("Darshan type not found")
         return DarshanTypeResponse.model_validate(dt)
  
     # ─────────────────────────────────────────────
@@ -80,9 +85,9 @@ class DarshanService:
     async def check_availability(self, temple_id: UUID, req: DarshanCheckAvailabilityRequest):
         slot = await self.repo.get_slot_by_id(req.slot_id)
         if not slot:
-            raise HTTPException(status_code=404, detail="Slot not found")
+            raise NotFoundException("Slot not found")
         if slot.temple_id != temple_id:
-            raise HTTPException(status_code=400, detail="Slot does not belong to this temple")
+            raise BadRequestException("Slot does not belong to this temple")
  
         is_available = slot.available_count >= req.num_persons
         return DarshanCheckAvailabilityResponse(
@@ -108,21 +113,21 @@ class DarshanService:
         if self.redis:
             acquired = await self.redis.set(lock_key, str(user_id), nx=True, ex=900)
             if not acquired:
-                raise HTTPException(status_code=409, detail="Slot is being booked by another user. Try again.")
+                raise ConflictException("Slot is being booked by another user. Try again.")
  
         # STEP 2 — fresh DB read AFTER lock
         slot = await self.repo.get_slot_by_id(req.slot_id)
         if not slot:
             if self.redis: await self.redis.delete(lock_key)
-            raise HTTPException(status_code=404, detail="Slot not found")
+            raise NotFoundException("Slot not found")
  
         if slot.temple_id != temple_id:
             if self.redis: await self.redis.delete(lock_key)
-            raise HTTPException(status_code=400, detail="Slot does not belong to this temple")
+            raise BadRequestException("Slot does not belong to this temple")
  
         if slot.available_count < req.num_persons:
             if self.redis: await self.redis.delete(lock_key)
-            raise HTTPException(status_code=400, detail=f"Only {slot.available_count} slots available")
+            raise BadRequestException(f"Only {slot.available_count} slots available")
  
         # STEP 3 — calculate amount and create PENDING booking
         darshan_type = await self.repo.get_darshan_type_by_id(temple_id, slot.darshan_type_id)
@@ -158,7 +163,7 @@ class DarshanService:
     async def get_darshan_booking(self, temple_id: UUID, booking_id: UUID):
         booking = await self.repo.get_darshan_booking(temple_id, booking_id)
         if not booking:
-            raise HTTPException(status_code=404, detail="Booking not found")
+            raise NotFoundException("Booking not found")
         return DarshanBookingResponse.model_validate(booking)
  
     # ─────────────────────────────────────────────
@@ -174,7 +179,7 @@ class DarshanService:
     async def get_pooja_service_detail(self, temple_id: UUID, service_id: UUID):
         service = await self.repo.get_pooja_service_by_id(temple_id, service_id)
         if not service:
-            raise HTTPException(status_code=404, detail="Pooja service not found")
+            raise NotFoundException("Pooja service not found")
         return PoojaServiceResponse.model_validate(service)
  
     # ─────────────────────────────────────────────
@@ -192,24 +197,24 @@ class DarshanService:
     async def book_pooja(self, temple_id: UUID, service_id: UUID, user_id: UUID, req: PoojaBookRequest):
         service = await self.repo.get_pooja_service_by_id(temple_id, service_id)
         if not service:
-            raise HTTPException(status_code=404, detail="Pooja service not found")
+            raise NotFoundException("Pooja service not found")
  
         # STEP 1 — acquire lock FIRST
         lock_key = f"pooja_lock:{req.slot_id}"
         if self.redis:
             acquired = await self.redis.set(lock_key, str(user_id), nx=True, ex=900)
             if not acquired:
-                raise HTTPException(status_code=409, detail="Slot is being booked by another user. Try again.")
+                raise ConflictException("Slot is being booked by another user. Try again.")
  
         # STEP 2 — fresh read AFTER lock
         slot = await self.repo.get_pooja_slot_by_id(req.slot_id)
         if not slot:
             if self.redis: await self.redis.delete(lock_key)
-            raise HTTPException(status_code=404, detail="Pooja slot not found")
+            raise NotFoundException("Pooja slot not found")
  
         if slot.available_count < req.num_persons:
             if self.redis: await self.redis.delete(lock_key)
-            raise HTTPException(status_code=400, detail=f"Only {slot.available_count} slots available")
+            raise BadRequestException(f"Only {slot.available_count} slots available")
  
         # STEP 3 — create PENDING booking
         booking = PoojaBooking(
@@ -240,7 +245,7 @@ class DarshanService:
     async def get_prasadam_item(self, temple_id: UUID, item_id: UUID):
         item = await self.repo.get_prasadam_item_by_id(temple_id, item_id)
         if not item:
-            raise HTTPException(status_code=404, detail="Prasadam item not found")
+            raise NotFoundException("Prasadam item not found")
         return PrasadamItemResponse.model_validate(item)
  
     # ─────────────────────────────────────────────
@@ -253,9 +258,9 @@ class DarshanService:
         for item_req in req.items:
             item = await self.repo.get_prasadam_item_by_id(temple_id, item_req.item_id)
             if not item:
-                raise HTTPException(status_code=404, detail=f"Prasadam item {item_req.item_id} not found")
+                raise NotFoundException(f"Prasadam item {item_req.item_id} not found")
             if not item.is_available:
-                raise HTTPException(status_code=400, detail=f"{item.name} is currently not available")
+                raise BadRequestException(f"{item.name} is currently not available")
             subtotal = item.price * item_req.quantity
             total_amount += subtotal
             order_items.append(PrasadamOrderItem(

@@ -1,6 +1,6 @@
 from select import select
 
-from fastapi import HTTPException, status
+from fastapi import status
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 
@@ -8,13 +8,17 @@ from src.schemas.package import PackageCreate, PackageUpdate, PackageResponse
 from src.models.package import Package, PackageType
 from src.repositories import package_repo as repo
 
+from src.core.exceptions import (
+    BadRequestException,
+    NotFoundException,
+)
+
 # Budget range constants
 BUDGET_MIN   = 5000
 BUDGET_MAX   = 15000
 STANDARD_MIN = 15000
 STANDARD_MAX = 40000
 PREMIUM_MIN  = 40000
-
 
 # ─────────────────────────────────────────
 # TEMPORARY HELPERS
@@ -25,10 +29,8 @@ PREMIUM_MIN  = 40000
 async def success_response(data, message: str = "Success"):
     return {"success": True, "data": data, "message": message}
 
-
 async def error_response(error: str, code: int = 400):
     return {"success": False, "error": error, "code": code}
-
 
 async def paginate(items, total: int, page: int, limit: int):
     pages = (total + limit - 1) // limit
@@ -38,7 +40,6 @@ async def paginate(items, total: int, page: int, limit: int):
         "page": page,
         "pages": pages,
     }
-
 
 # ─────────────────────────────────────────
 # In-memory cache (temporary until redis.py is ready)
@@ -54,17 +55,13 @@ async def set_cache(key: str, value):
 async def clear_cache(key: str):
     _cache.pop(key, None)
 
-
 # ---------------------------------------------------
 # CREATE PACKAGE (ADMIN)
 # ---------------------------------------------------
 async def create_new_package(db: AsyncSession, data: PackageCreate):
 
     if await repo.slug_exists(db, slug=data.slug):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Slug '{data.slug}' is already taken"
-        )
+        raise BadRequestException(f"Slug '{data.slug}' is already taken")
 
     db_package = Package(
         name=data.name,
@@ -94,7 +91,6 @@ async def create_new_package(db: AsyncSession, data: PackageCreate):
         PackageResponse.model_validate(result),
         "Package created successfully"
     )
-
 
 # ---------------------------------------------------
 # GET ALL PACKAGES
@@ -131,7 +127,6 @@ async def get_all_packages(
 
     return await success_response(data)
 
-
 # ---------------------------------------------------
 # GET FEATURED PACKAGES
 # ---------------------------------------------------
@@ -150,7 +145,6 @@ async def get_featured_packages_list(db: AsyncSession):
 
     return await success_response(data, "Featured packages")
 
-
 # ---------------------------------------------------
 # GET POPULAR PACKAGES
 # ---------------------------------------------------
@@ -168,7 +162,6 @@ async def get_popular_packages_list(db: AsyncSession):
     await set_cache(cache_key, data)
 
     return await success_response(data, "Popular packages")
-
 
 # ---------------------------------------------------
 # GET PACKAGES BY DURATION
@@ -192,7 +185,6 @@ async def get_packages_duration(
 
     return await success_response(data)
 
-
 # ---------------------------------------------------
 # GET PACKAGES BY BUDGET RANGE
 # ---------------------------------------------------
@@ -212,10 +204,7 @@ async def get_packages_budget(
         elif budget_range == "premium":
             min_price, max_price = PREMIUM_MIN, None
         else:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid budget range. Use: budget | standard | premium"
-            )
+            raise BadRequestException("Invalid budget range. Use: budget | standard | premium")
 
     skip = (page - 1) * limit
     items = await repo.get_packages_by_budget(
@@ -234,7 +223,6 @@ async def get_packages_budget(
 
     return await success_response(data)
 
-
 # ---------------------------------------------------
 # GET PACKAGE DETAILS
 # ---------------------------------------------------
@@ -243,13 +231,9 @@ async def get_package_details(db: AsyncSession, value: str):
     package = await repo.get_package_by_id_or_slug(db, value)
 
     if not package:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Package '{value}' not found"
-        )
+        raise NotFoundException(f"Package '{value}' not found")
 
     return await success_response(PackageResponse.model_validate(package), "Package detail")
-
 
 # ---------------------------------------------------
 # GET PACKAGE IMAGES
@@ -259,13 +243,9 @@ async def get_package_images_list(db: AsyncSession, package_id: str):
     images = await repo.get_package_images(db, package_id)
 
     if images is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Package '{package_id}' not found"
-        )
+        raise NotFoundException(f"Package '{package_id}' not found")
 
     return await success_response(images, "Package images")
-
 
 # ---------------------------------------------------
 # GET PACKAGE REVIEWS
@@ -278,10 +258,7 @@ async def get_package_reviews_list(
 ):
     package = await repo.get_package_by_id(db, package_id)
     if not package:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Package '{package_id}' not found"
-        )
+        raise NotFoundException(f"Package '{package_id}' not found")
 
     skip = (page - 1) * limit
     items = await repo.get_package_reviews(db, package_id=package_id, skip=skip, limit=limit)
@@ -290,7 +267,6 @@ async def get_package_reviews_list(
     data = await paginate(items=items, total=total, page=page, limit=limit)
 
     return await success_response(data, "Package reviews")
-
 
 # ---------------------------------------------------
 # UPDATE PACKAGE (ADMIN)
@@ -302,17 +278,11 @@ async def update_existing_package(
 ):
     package = await repo.get_package_by_id(db, package_id)
     if not package:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Package '{package_id}' not found"
-        )
+        raise NotFoundException(f"Package '{package_id}' not found")
 
     if package_update.slug and package_update.slug != package.slug:
         if await repo.slug_exists(db, slug=package_update.slug, exclude_id=package_id):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Slug '{package_update.slug}' is already taken"
-            )
+            raise BadRequestException(f"Slug '{package_update.slug}' is already taken")
 
     update_data = package_update.model_dump(exclude_unset=True)
 
@@ -337,7 +307,7 @@ async def calculate_price(data: dict, db: AsyncSession) -> dict:
     result = await db.execute(select(Package).where(Package.id == package_id))
     package = result.scalar_one_or_none()
     if not package:
-        raise HTTPException(status_code=404, detail="Package not found")
+        raise NotFoundException("Package not found")
  
     base_price = float(package.base_price) * group_size
  
@@ -391,7 +361,7 @@ async def get_itinerary(package_id: str, db: AsyncSession) -> dict:
     result = await db.execute(select(Package).where(Package.id == package_id))
     package = result.scalar_one_or_none()
     if not package:
-        raise HTTPException(status_code=404, detail="Package not found")
+        raise NotFoundException("Package not found")
  
     itinerary = package.itinerary if hasattr(package, "itinerary") and package.itinerary else []
  
@@ -407,7 +377,7 @@ async def delete_package(package_id: str, db: AsyncSession) -> dict:
     result = await db.execute(select(Package).where(Package.id == package_id))
     package = result.scalar_one_or_none()
     if not package:
-        raise HTTPException(status_code=404, detail="Package not found")
+        raise NotFoundException("Package not found")
     package.is_active = False
     await db.commit()
     return {"message": "Package deleted successfully"}

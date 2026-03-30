@@ -9,12 +9,17 @@ import io
 from datetime import datetime, date
 from decimal import Decimal
  
-from fastapi import HTTPException, UploadFile, status
+from fastapi import UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
  
 from src.models.partner import Partner, PartnerDocument, PartnerPayout, PartnerBankDetails
 from src.models.user import User
+
+from src.core.exceptions import (
+    BadRequestException,
+    NotFoundException,
+)
 from src.schemas.partner import (
     PartnerRegisterRequest, PartnerUpdateRequest,
     BankDetailsRequest, AvailabilityRequest, SettingsRequest,
@@ -30,10 +35,7 @@ async def get_partner_or_404(user_id, db: AsyncSession) -> Partner:
     result = await db.execute(select(Partner).where(Partner.user_id == user_id))
     partner = result.scalar_one_or_none()
     if not partner:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Partner profile not found. Please register first via POST /partners/register"
-        )
+        raise NotFoundException("Partner profile not found. Please register first via POST /partners/register")
     return partner
  
  
@@ -43,7 +45,7 @@ async def register_partner(data: PartnerRegisterRequest, current_user: User, db:
  
     result = await db.execute(select(Partner).where(Partner.user_id == current_user.id))
     if result.scalar_one_or_none():
-        raise HTTPException(status_code=400, detail="Already registered as a partner")
+        raise BadRequestException("Already registered as a partner")
  
     partner = Partner(
         user_id=current_user.id,
@@ -102,7 +104,7 @@ async def get_partner_bookings(current_user: User, status_filter: str, db: Async
  
 async def get_partner_booking_detail(booking_id: str, current_user: User, db: AsyncSession) -> dict:
     await get_partner_or_404(current_user.id, db)
-    raise HTTPException(status_code=404, detail="Booking not found")
+    raise NotFoundException("Booking not found")
  
  
 async def accept_booking(booking_id: str, current_user: User, db: AsyncSession) -> dict:
@@ -113,7 +115,7 @@ async def accept_booking(booking_id: str, current_user: User, db: AsyncSession) 
  
 async def reject_booking(booking_id: str, data: BookingActionRequest, current_user: User, db: AsyncSession) -> dict:
     if not data.reason:
-        raise HTTPException(status_code=400, detail="Reason is required to reject a booking")
+        raise BadRequestException("Reason is required to reject a booking")
     await get_partner_or_404(current_user.id, db)
     return {"message": "Booking rejected. Admin will reassign."}
  
@@ -176,7 +178,7 @@ async def get_payout_detail(payout_id: str, current_user: User, db: AsyncSession
     )
     payout = result.scalar_one_or_none()
     if not payout:
-        raise HTTPException(status_code=404, detail="Payout not found")
+        raise NotFoundException("Payout not found")
     return payout
  
  
@@ -229,7 +231,7 @@ async def upload_document(doc_type: str, file: UploadFile, current_user: User, d
  
     doc_type = doc_type.upper()
     if doc_type not in ["GSTIN", "PAN", "BANK_PROOF", "PROPERTY_DOC", "OTHER"]:
-        raise HTTPException(status_code=400, detail="Invalid doc_type")
+        raise BadRequestException("Invalid doc_type")
  
     # S3 upload — stub until AWS S3 is configured
     # from src.integrations.aws_s3 import upload_file
@@ -259,9 +261,9 @@ async def delete_document(doc_id: str, current_user: User, db: AsyncSession) -> 
     )
     doc = result.scalar_one_or_none()
     if not doc:
-        raise HTTPException(status_code=404, detail="Document not found")
+        raise NotFoundException("Document not found")
     if doc.is_verified:
-        raise HTTPException(status_code=400, detail="Cannot delete a verified document")
+        raise BadRequestException("Cannot delete a verified document")
  
     await db.delete(doc)
     await db.commit()
@@ -324,7 +326,7 @@ async def get_reviews(current_user: User, db: AsyncSession) -> list:
 async def reply_to_review(review_id: str, data: ReviewReplyRequest, current_user: User, db: AsyncSession) -> dict:
     await get_partner_or_404(current_user.id, db)
     if not data.reply.strip():
-        raise HTTPException(status_code=400, detail="Reply cannot be empty")
+        raise BadRequestException("Reply cannot be empty")
     # Will connect to Reviews module once integrated
     return {"message": "Reply posted successfully"}
  

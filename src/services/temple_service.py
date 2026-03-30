@@ -17,6 +17,10 @@ from src.schemas.temple import (
 )
 
 from src.core.exceptions import NotFoundException
+
+from src.core.exceptions import (
+    NotFoundException,
+)
  
  
 class TempleService:

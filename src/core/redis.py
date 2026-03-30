@@ -205,16 +205,21 @@ async def delete_all_refresh_tokens(user_id: str) -> None:
     await delete_all_refresh_jtis(user_id)
 
 
-# ── Email OTP Storage ────────────────────────────────────────────
-# Separate key namespace from phone OTPs so the two never collide.
+# ── Compatibility function (Fix for your error) ─────────────────
 
-EMAIL_OTP_EXPIRE_SECONDS = 600  # 10 minutes
+async def get_redis_client():
+    """Compatibility function for modules importing get_redis_client."""
+    return await get_redis()
 
+
+
+# ── Email OTP Storage ─────────────────────────────────────────
+# Mirrors phone OTP functions but keyed by email address.
 
 async def store_email_otp(email: str, otp: str, purpose: str = "verify_email") -> None:
     r = await get_redis()
     key = f"email_otp:{purpose}:{email}"
-    await r.setex(key, EMAIL_OTP_EXPIRE_SECONDS, otp)
+    await r.setex(key, settings.OTP_EXPIRE_SECONDS, otp)
 
 
 async def get_email_otp(email: str, purpose: str = "verify_email") -> Optional[str]:
@@ -233,19 +238,19 @@ async def increment_email_otp_attempts(email: str) -> int:
     r = await get_redis()
     key = f"email_otp_attempts:{email}"
     count = await r.incr(key)
-    await r.expire(key, EMAIL_OTP_EXPIRE_SECONDS)
+    if count == 1:
+        await r.expire(key, settings.OTP_EXPIRE_SECONDS)
     return count
 
 
 async def clear_email_otp_attempts(email: str) -> None:
     r = await get_redis()
-    key = f"email_otp_attempts:{email}"
-    await r.delete(key)
+    await r.delete(f"email_otp_attempts:{email}")
 
 
 async def increment_email_resend_count(email: str) -> int:
     r = await get_redis()
-    key = f"email_resend_count:{email}"
+    key = f"email_resend:{email}"
     count = await r.incr(key)
     if count == 1:
         await r.expire(key, settings.OTP_RESEND_WINDOW_SECONDS)
@@ -254,14 +259,5 @@ async def increment_email_resend_count(email: str) -> int:
 
 async def get_email_resend_count(email: str) -> int:
     r = await get_redis()
-    key = f"email_resend_count:{email}"
-    val = await r.get(key)
+    val = await r.get(f"email_resend:{email}")
     return int(val) if val else 0
-
-
-# ── Compatibility function (Fix for your error) ─────────────────
-
-async def get_redis_client():
-    """Compatibility function for modules importing get_redis_client."""
-    return await get_redis()
-

@@ -14,12 +14,19 @@ from decimal import Decimal
 from typing import Optional
 from uuid import UUID
 
-from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.common.enums import BookingStatus, BookingType, PaymentStatus   # [FIX-1] from common not model
 from src.repositories import booking_repo
+
+from src.core.exceptions import (
+    BadRequestException,
+    ConflictException,
+    ForbiddenException,
+    InternalServerException,
+    NotFoundException,
+)
 from src.schemas.booking import (
     # Cart
     CartItemAddRequest, CartItemUpdateRequest, CartResponse, CartItemResponse,
@@ -42,7 +49,6 @@ logger = logging.getLogger(__name__)
 CGST_RATE       = Decimal("0.09")   # 9%
 SGST_RATE       = Decimal("0.09")   # 9%
 CONVENIENCE_FEE = Decimal("29.00")  # flat fee per booking
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # INTERNAL HELPERS
@@ -73,7 +79,6 @@ def _calculate_totals(
         "total_amount":     total,
     }
 
-
 def _calculate_refund(booking, reason: str) -> tuple[Decimal, int]:
     """
     Refund policy per SOW:
@@ -98,7 +103,6 @@ def _calculate_refund(booking, reason: str) -> tuple[Decimal, int]:
     refund_amount = (booking.total_amount * Decimal(percent) / 100).quantize(Decimal("0.01"))
     return refund_amount, percent
 
-
 async def _apply_coupon(coupon_code: Optional[str], subtotal: Decimal) -> Decimal:
     """
     Validate coupon and return discount amount.
@@ -111,14 +115,12 @@ async def _apply_coupon(coupon_code: Optional[str], subtotal: Decimal) -> Decima
     # TODO: integrate with M16 coupon service
     return Decimal("0")
 
-
 # ─────────────────────────────────────────────────────────────────────────────
 # CART  (Redis only — no DB writes)
 # Key: cart:{user_id}   TTL: 1hr (3600 seconds)
 # ─────────────────────────────────────────────────────────────────────────────
 
 CART_TTL = 3600   # 1 hour per Excel spec
-
 
 async def get_cart(redis, user_id: UUID) -> CartResponse:
     """GET /cart — Get current cart items from Redis."""
@@ -148,7 +150,6 @@ async def get_cart(redis, user_id: UUID) -> CartResponse:
         expires_at=expires_at,
     )
 
-
 async def add_to_cart(redis, user_id: UUID, req: CartItemAddRequest) -> CartResponse:
     """
     POST /cart/add — Add item to Redis cart.
@@ -174,7 +175,6 @@ async def add_to_cart(redis, user_id: UUID, req: CartItemAddRequest) -> CartResp
     logger.info(f"endpoint=POST /cart/add user={user_id} entity_type={req.entity_type} entity_id={req.entity_id}")
     return await get_cart(redis, user_id)
 
-
 async def update_cart_item(
     redis, user_id: UUID, item_id: str, req: CartItemUpdateRequest
 ) -> CartResponse:
@@ -182,7 +182,7 @@ async def update_cart_item(
     cart_key  = f"cart:{user_id}"
     raw       = await redis.get(cart_key)
     if not raw:
-        raise HTTPException(status_code=404, detail="Cart is empty")
+        raise NotFoundException("Cart is empty")
 
     cart_data = json.loads(raw)
     found     = False
@@ -198,35 +198,32 @@ async def update_cart_item(
             break
 
     if not found:
-        raise HTTPException(status_code=404, detail="Cart item not found")
+        raise NotFoundException("Cart item not found")
 
     await redis.set(cart_key, json.dumps(cart_data), ex=CART_TTL)
     return await get_cart(redis, user_id)
-
 
 async def remove_cart_item(redis, user_id: UUID, item_id: str) -> CartResponse:
     """DELETE /cart/{item_id} — Remove item from cart."""
     cart_key  = f"cart:{user_id}"
     raw       = await redis.get(cart_key)
     if not raw:
-        raise HTTPException(status_code=404, detail="Cart is empty")
+        raise NotFoundException("Cart is empty")
 
     cart_data         = json.loads(raw)
     original_count    = len(cart_data["items"])
     cart_data["items"] = [i for i in cart_data["items"] if i["item_id"] != item_id]
 
     if len(cart_data["items"]) == original_count:
-        raise HTTPException(status_code=404, detail="Cart item not found")
+        raise NotFoundException("Cart item not found")
 
     await redis.set(cart_key, json.dumps(cart_data), ex=CART_TTL)
     return await get_cart(redis, user_id)
-
 
 async def clear_cart(redis, user_id: UUID) -> None:
     """DELETE /cart/clear — Clear entire cart. Endpoint returns standard success response."""
     await redis.delete(f"cart:{user_id}")
     logger.info(f"endpoint=DELETE /cart/clear user={user_id}")
-
 
 async def checkout_cart(
     db: AsyncSession, redis, user_id: UUID
@@ -238,12 +235,12 @@ async def checkout_cart(
     cart_key  = f"cart:{user_id}"
     raw       = await redis.get(cart_key)
     if not raw:
-        raise HTTPException(status_code=400, detail="Cart is empty")
+        raise BadRequestException("Cart is empty")
 
     cart_data = json.loads(raw)
     items     = cart_data.get("items", [])
     if not items:
-        raise HTTPException(status_code=400, detail="Cart is empty")
+        raise BadRequestException("Cart is empty")
 
     # Lock all slots before creating booking
     for item in items:
@@ -251,10 +248,7 @@ async def checkout_cart(
             redis, item["entity_type"], item["entity_id"], str(user_id)
         )
         if not locked:
-            raise HTTPException(
-                status_code=409,
-                detail=f"{item['entity_type']} {item['entity_id']} is no longer available"
-            )
+            raise ConflictException(f"{item['entity_type']} {item['entity_id']} is no longer available")
 
     # Determine booking type from first item (combo if multiple types)
     entity_types = {item["entity_type"] for item in items}
@@ -293,7 +287,6 @@ async def checkout_cart(
         message="Booking created. Please complete payment to confirm.",
     )
 
-
 # ─────────────────────────────────────────────────────────────────────────────
 # CREATE BOOKINGS
 # ─────────────────────────────────────────────────────────────────────────────
@@ -310,13 +303,13 @@ async def book_hotel(
         redis, "hotel_room", str(req.room_id), str(user_id)
     )
     if not locked:
-        raise HTTPException(status_code=409, detail="Room is no longer available. Please try another room.")
+        raise ConflictException("Room is no longer available. Please try another room.")
 
     try:
         # Calculate nights
         nights    = (req.check_out - req.check_in).days
         if nights <= 0:
-            raise HTTPException(status_code=400, detail="check_out must be after check_in")
+            raise BadRequestException("check_out must be after check_in")
 
         # Pricing — stub rate until M5 is ready
         # TODO: fetch room_rate from hotel_service when M5 ready
@@ -386,8 +379,7 @@ async def book_hotel(
         await booking_repo.release_booking_slot(redis, "hotel_room", str(req.room_id))
         await db.rollback()
         logger.error(f"Hotel booking failed user={user_id} error={e}")
-        raise HTTPException(status_code=500, detail="Booking failed. Please try again.")
-
+        raise InternalServerException("Booking failed. Please try again.")
 
 async def book_vehicle(
     db: AsyncSession, redis, user_id: UUID, req: BookVehicleRequest
@@ -397,7 +389,7 @@ async def book_vehicle(
         redis, "vehicle", str(req.vehicle_id), str(user_id)
     )
     if not locked:
-        raise HTTPException(status_code=409, detail="Vehicle is not available for selected date.")
+        raise ConflictException("Vehicle is not available for selected date.")
 
     try:
         # TODO: fetch rate_per_km from vehicle_service when M6 ready
@@ -464,8 +456,7 @@ async def book_vehicle(
         await booking_repo.release_booking_slot(redis, "vehicle", str(req.vehicle_id))
         await db.rollback()
         logger.error(f"Vehicle booking failed user={user_id} error={e}")
-        raise HTTPException(status_code=500, detail="Booking failed. Please try again.")
-
+        raise InternalServerException("Booking failed. Please try again.")
 
 async def book_darshan(
     db: AsyncSession, redis, user_id: UUID, req: BookDarshanRequest
@@ -476,13 +467,13 @@ async def book_darshan(
     """
     # Check slot not already locked
     if await booking_repo.check_slot_locked(redis, "darshan_slot", str(req.darshan_slot_id)):
-        raise HTTPException(status_code=409, detail="Darshan slot is no longer available.")
+        raise ConflictException("Darshan slot is no longer available.")
 
     locked = await booking_repo.lock_booking_slot(
         redis, "darshan_slot", str(req.darshan_slot_id), str(user_id)
     )
     if not locked:
-        raise HTTPException(status_code=409, detail="Darshan slot is no longer available.")
+        raise ConflictException("Darshan slot is no longer available.")
 
     try:
         num_persons = len(req.devotees)
@@ -548,8 +539,7 @@ async def book_darshan(
         await booking_repo.release_booking_slot(redis, "darshan_slot", str(req.darshan_slot_id))
         await db.rollback()
         logger.error(f"Darshan booking failed user={user_id} error={e}")
-        raise HTTPException(status_code=500, detail="Booking failed. Please try again.")
-
+        raise InternalServerException("Booking failed. Please try again.")
 
 async def book_pooja(
     db: AsyncSession, redis, user_id: UUID, req: BookPoojaRequest
@@ -559,7 +549,7 @@ async def book_pooja(
         redis, "pooja_service", str(req.pooja_service_id), str(user_id)
     )
     if not locked:
-        raise HTTPException(status_code=409, detail="Pooja slot is not available.")
+        raise ConflictException("Pooja slot is not available.")
 
     try:
         # TODO: fetch price from pooja_service when M7 ready
@@ -608,8 +598,7 @@ async def book_pooja(
         await booking_repo.release_booking_slot(redis, "pooja_service", str(req.pooja_service_id))
         await db.rollback()
         logger.error(f"Pooja booking failed user={user_id} error={e}")
-        raise HTTPException(status_code=500, detail="Booking failed. Please try again.")
-
+        raise InternalServerException("Booking failed. Please try again.")
 
 async def book_prasadam(
     db: AsyncSession, redis, user_id: UUID, req: BookPrasadamRequest
@@ -661,8 +650,7 @@ async def book_prasadam(
     except Exception as e:
         await db.rollback()
         logger.error(f"Prasadam order failed user={user_id} error={e}")
-        raise HTTPException(status_code=500, detail="Order failed. Please try again.")
-
+        raise InternalServerException("Order failed. Please try again.")
 
 async def book_package(
     db: AsyncSession, redis, user_id: UUID, req: BookPackageRequest
@@ -672,7 +660,7 @@ async def book_package(
         redis, "package", str(req.package_id), str(user_id)
     )
     if not locked:
-        raise HTTPException(status_code=409, detail="Package is fully booked for selected date.")
+        raise ConflictException("Package is fully booked for selected date.")
 
     try:
         # TODO: fetch package_price from package_service when M9 ready
@@ -738,8 +726,7 @@ async def book_package(
         await booking_repo.release_booking_slot(redis, "package", str(req.package_id))
         await db.rollback()
         logger.error(f"Package booking failed user={user_id} error={e}")
-        raise HTTPException(status_code=500, detail="Booking failed. Please try again.")
-
+        raise InternalServerException("Booking failed. Please try again.")
 
 async def book_guide(
     db: AsyncSession, redis, user_id: UUID, req: BookGuideRequest
@@ -749,7 +736,7 @@ async def book_guide(
         redis, "guide", str(req.guide_id), str(user_id)
     )
     if not locked:
-        raise HTTPException(status_code=409, detail="Guide is not available for selected dates.")
+        raise ConflictException("Guide is not available for selected dates.")
 
     try:
         num_days = (req.end_date - req.start_date).days + 1
@@ -803,8 +790,7 @@ async def book_guide(
         await booking_repo.release_booking_slot(redis, "guide", str(req.guide_id))
         await db.rollback()
         logger.error(f"Guide booking failed user={user_id} error={e}")
-        raise HTTPException(status_code=500, detail="Booking failed. Please try again.")
-
+        raise InternalServerException("Booking failed. Please try again.")
 
 async def book_combo(
     db: AsyncSession, redis, user_id: UUID, req: BookComboRequest
@@ -814,7 +800,7 @@ async def book_combo(
     Creates one master booking with multiple sub-bookings.
     """
     if not any([req.package, req.hotel, req.vehicle]):
-        raise HTTPException(status_code=400, detail="At least one of package, hotel, or vehicle is required.")
+        raise BadRequestException("At least one of package, hotel, or vehicle is required.")
 
     locked_slots = []
     try:
@@ -827,7 +813,7 @@ async def book_combo(
                 redis, "hotel_room", str(req.hotel.room_id), str(user_id)
             )
             if not locked:
-                raise HTTPException(status_code=409, detail="Selected room is not available.")
+                raise ConflictException("Selected room is not available.")
             locked_slots.append(("hotel_room", str(req.hotel.room_id)))
             nights = (req.hotel.check_out - req.hotel.check_in).days
             total_subtotal += Decimal("2000.00") * nights   # stub
@@ -838,7 +824,7 @@ async def book_combo(
                 redis, "vehicle", str(req.vehicle.vehicle_id), str(user_id)
             )
             if not locked:
-                raise HTTPException(status_code=409, detail="Selected vehicle is not available.")
+                raise ConflictException("Selected vehicle is not available.")
             locked_slots.append(("vehicle", str(req.vehicle.vehicle_id)))
             total_subtotal += Decimal("1600.00")   # stub
 
@@ -847,7 +833,7 @@ async def book_combo(
                 redis, "package", str(req.package.package_id), str(user_id)
             )
             if not locked:
-                raise HTTPException(status_code=409, detail="Selected package is fully booked.")
+                raise ConflictException("Selected package is fully booked.")
             locked_slots.append(("package", str(req.package.package_id)))
             total_subtotal += Decimal("15000.00")   # stub
             if not start_date:
@@ -934,8 +920,7 @@ async def book_combo(
             await booking_repo.release_booking_slot(redis, entity_type, entity_id)
         await db.rollback()
         logger.error(f"Combo booking failed user={user_id} error={e}")
-        raise HTTPException(status_code=500, detail="Booking failed. Please try again.")
-
+        raise InternalServerException("Booking failed. Please try again.")
 
 async def book_custom(
     db: AsyncSession, user_id: UUID, req: BookCustomRequest
@@ -987,8 +972,7 @@ async def book_custom(
     except Exception as e:
         await db.rollback()
         logger.error(f"Custom booking failed user={user_id} error={e}")
-        raise HTTPException(status_code=500, detail="Request failed. Please try again.")
-
+        raise InternalServerException("Request failed. Please try again.")
 
 # ─────────────────────────────────────────────────────────────────────────────
 # MY BOOKINGS
@@ -1010,14 +994,12 @@ async def get_my_bookings(
     )
     return _build_list_response(items, total, filters.page, filters.per_page)
 
-
 async def get_upcoming_bookings(
     db: AsyncSession, user_id: UUID, page: int = 1, per_page: int = 10
 ) -> BookingListResponse:
     """GET /upcoming — start_date >= today AND status = CONFIRMED."""
     items, total = await booking_repo.get_upcoming_bookings(db, user_id, page, per_page)
     return _build_list_response(items, total, page, per_page)
-
 
 async def get_past_bookings(
     db: AsyncSession, user_id: UUID, page: int = 1, per_page: int = 10
@@ -1026,14 +1008,12 @@ async def get_past_bookings(
     items, total = await booking_repo.get_past_bookings(db, user_id, page, per_page)
     return _build_list_response(items, total, page, per_page)
 
-
 async def get_cancelled_bookings(
     db: AsyncSession, user_id: UUID, page: int = 1, per_page: int = 10
 ) -> BookingListResponse:
     """GET /cancelled — Cancelled bookings with refund status."""
     items, total = await booking_repo.get_cancelled_bookings(db, user_id, page, per_page)
     return _build_list_response(items, total, page, per_page)
-
 
 def _build_list_response(
     items, total: int, page: int, per_page: int
@@ -1064,16 +1044,15 @@ def _build_list_response(
         total_pages=math.ceil(total / per_page) if total else 0,   # [FIX-7] was pages=
     )
 
-
 async def get_booking_detail(
     db: AsyncSession, booking_id: UUID, user_id: UUID
 ) -> BookingDetailResponse:
     """GET /{id} — Full booking detail including items, payment, guide, driver, itinerary."""
     booking = await booking_repo.get_booking_by_id(db, booking_id)
     if not booking:
-        raise HTTPException(status_code=404, detail="Booking not found")
+        raise NotFoundException("Booking not found")
     if booking.user_id != user_id:
-        raise HTTPException(status_code=403, detail="Access denied")
+        raise ForbiddenException("Access denied")
 
     # Get payment info from transactions table
     payment_info = None
@@ -1123,7 +1102,6 @@ async def get_booking_detail(
         addons=booking.addons or [],
     )
 
-
 # ─────────────────────────────────────────────────────────────────────────────
 # INVOICE & TICKET
 # ─────────────────────────────────────────────────────────────────────────────
@@ -1138,9 +1116,9 @@ async def get_invoice(
     """
     booking = await booking_repo.get_invoice_data(db, booking_id)
     if not booking:
-        raise HTTPException(status_code=404, detail="Booking not found")
+        raise NotFoundException("Booking not found")
     if booking.user_id != user_id:
-        raise HTTPException(status_code=403, detail="Access denied")
+        raise ForbiddenException("Access denied")
 
     contact = booking.contact_details or {}
     line_items = []
@@ -1248,7 +1226,6 @@ async def get_invoice(
         pdf_url=None,   # Generated async by booking_tasks.generate_invoice_pdf
     )
 
-
 async def get_ticket(
     db: AsyncSession, booking_id: UUID, user_id: UUID
 ) -> TicketResponse:
@@ -1257,14 +1234,11 @@ async def get_ticket(
     """
     booking = await booking_repo.get_darshan_ticket_data(db, booking_id)
     if not booking:
-        raise HTTPException(
-            status_code=404,
-            detail="Ticket not found. Only darshan and pooja bookings have tickets."
-        )
+        raise NotFoundException("Ticket not found. Only darshan and pooja bookings have tickets.")
     if booking.user_id != user_id:
-        raise HTTPException(status_code=403, detail="Access denied")
+        raise ForbiddenException("Access denied")
     if booking.status != BookingStatus.CONFIRMED:
-        raise HTTPException(status_code=400, detail="Ticket available only after payment confirmation.")
+        raise BadRequestException("Ticket available only after payment confirmation.")
 
     # Build ticket from darshan or pooja booking
     if booking.darshan_booking:
@@ -1304,8 +1278,7 @@ async def get_ticket(
             instructions="Please arrive 30 minutes before pooja time.",
         )
 
-    raise HTTPException(status_code=400, detail="Ticket not available for this booking type.")
-
+    raise BadRequestException("Ticket not available for this booking type.")
 
 # ─────────────────────────────────────────────────────────────────────────────
 # CANCEL & MODIFY
@@ -1321,13 +1294,13 @@ async def cancel_booking(
     """
     booking = await booking_repo.get_booking_by_id(db, booking_id)
     if not booking:
-        raise HTTPException(status_code=404, detail="Booking not found")
+        raise NotFoundException("Booking not found")
     if booking.user_id != user_id:
-        raise HTTPException(status_code=403, detail="Access denied")
+        raise ForbiddenException("Access denied")
     if booking.status == BookingStatus.CANCELLED:
-        raise HTTPException(status_code=400, detail="Booking is already cancelled")
+        raise BadRequestException("Booking is already cancelled")
     if booking.status == BookingStatus.COMPLETED:
-        raise HTTPException(status_code=400, detail="Completed bookings cannot be cancelled")
+        raise BadRequestException("Completed bookings cannot be cancelled")
 
     refund_amount, refund_percent = _calculate_refund(booking, req.reason)
 
@@ -1391,7 +1364,6 @@ async def cancel_booking(
         if refund_amount > 0 else "Booking cancelled. No refund applicable as per cancellation policy.",
     )
 
-
 async def modify_booking(
     db: AsyncSession, booking_id: UUID, user_id: UUID,
     req: ModifyBookingRequest
@@ -1402,13 +1374,13 @@ async def modify_booking(
     """
     booking = await booking_repo.get_booking_for_modify(db, booking_id)
     if not booking:
-        raise HTTPException(status_code=404, detail="Booking not found")
+        raise NotFoundException("Booking not found")
     if booking.user_id != user_id:
-        raise HTTPException(status_code=403, detail="Access denied")
+        raise ForbiddenException("Access denied")
     if booking.status == BookingStatus.COMPLETED:
-        raise HTTPException(status_code=400, detail="Completed bookings cannot be modified")
+        raise BadRequestException("Completed bookings cannot be modified")
     if booking.status == BookingStatus.CANCELLED:
-        raise HTTPException(status_code=400, detail="Cancelled bookings cannot be modified")
+        raise BadRequestException("Cancelled bookings cannot be modified")
 
     await booking_repo.create_modify_request(db, booking_id, user_id, {
         "new_start_date":  req.new_start_date.isoformat() if req.new_start_date else None,
@@ -1435,13 +1407,13 @@ async def assign_guide(booking_id: str, data: dict, db: AsyncSession) -> dict:
     result = await db.execute(select(Booking).where(Booking.id == booking_id))
     booking = result.scalar_one_or_none()
     if not booking:
-        raise HTTPException(status_code=404, detail="Booking not found")
+        raise NotFoundException("Booking not found")
  
     guide_id = data.get("guide_id")
     guide_result = await db.execute(select(Guide).where(Guide.id == guide_id))
     guide = guide_result.scalar_one_or_none()
     if not guide:
-        raise HTTPException(status_code=404, detail="Guide not found")
+        raise NotFoundException("Guide not found")
  
     guide_booking_result = await db.execute(
         select(GuideBooking).where(GuideBooking.booking_id == booking.id)
@@ -1489,13 +1461,13 @@ async def assign_vehicle(booking_id: str, data: dict, db: AsyncSession) -> dict:
     result = await db.execute(select(Booking).where(Booking.id == booking_id))
     booking = result.scalar_one_or_none()
     if not booking:
-        raise HTTPException(status_code=404, detail="Booking not found")
+        raise NotFoundException("Booking not found")
  
     vehicle_id = data.get("vehicle_id")
     vehicle_result = await db.execute(select(Vehicle).where(Vehicle.id == vehicle_id))
     vehicle = vehicle_result.scalar_one_or_none()
     if not vehicle:
-        raise HTTPException(status_code=404, detail="Vehicle not found")
+        raise NotFoundException("Vehicle not found")
  
     vehicle_booking_result = await db.execute(
         select(VehicleBooking).where(VehicleBooking.booking_id == booking.id)

@@ -11,11 +11,18 @@ from datetime import datetime, timedelta
 from typing import List, Optional
 from uuid import UUID
 
-from fastapi import HTTPException, status
+from fastapi import status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.models.review import EntityType, Review, ReviewReport, ReviewStatus
 from src.repositories.review_repo import ReviewRepository
+
+from src.core.exceptions import (
+    BadRequestException,
+    ConflictException,
+    ForbiddenException,
+    NotFoundException,
+)
 from src.schemas.review import (
     PendingReviewItem,
     ReviewCreateRequest,
@@ -26,7 +33,6 @@ from src.schemas.review import (
 )
 
 EDIT_WINDOW_HOURS = 24
-
 
 class ReviewService:
     def __init__(self, db: AsyncSession):
@@ -86,9 +92,7 @@ class ReviewService:
     ) -> ReviewOut:
         review = await self.repo.get_by_id(review_id)
         if not review or review.status == ReviewStatus.REMOVED:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Review not found"
-            )
+            raise NotFoundException("Review not found")
         helpful_ids = []
         if current_user_id:
             helpful_ids = await self.repo.get_user_helpful_ids(
@@ -110,15 +114,9 @@ class ReviewService:
         if booking_service and payload.booking_id:
             booking = await booking_service.get_booking(payload.booking_id)
             if not booking or str(booking.user_id) != str(user_id):
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="Booking not found",
-                )
+                raise NotFoundException("Booking not found",)
             if str(getattr(booking, "status", "")).upper() != "COMPLETED":
-                raise HTTPException(
-                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                    detail="Reviews can only be submitted for completed bookings",
-                )
+                raise BadRequestException("Reviews can only be submitted for completed bookings",)
 
         # 2. Duplicate check
         existing = await self.repo.find_existing_review(
@@ -128,10 +126,7 @@ class ReviewService:
             entity_id=payload.entity_id,
         )
         if existing:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="You have already reviewed this entity for this booking",
-            )
+            raise ConflictException("You have already reviewed this entity for this booking",)
 
         # 3. Persist
         review = Review(
@@ -155,10 +150,7 @@ class ReviewService:
         review = await self._get_owned_review(review_id, user_id)
 
         if datetime.utcnow() - review.created_at > timedelta(hours=EDIT_WINDOW_HOURS):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Review can only be edited within 24 hours of submission",
-            )
+            raise ForbiddenException("Review can only be edited within 24 hours of submission",)
 
         data: dict = {}
         if payload.rating is not None:
@@ -187,17 +179,11 @@ class ReviewService:
         review = await self._get_active_review(review_id)
 
         if str(review.user_id) == str(user_id):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="You cannot mark your own review as helpful",
-            )
+            raise BadRequestException("You cannot mark your own review as helpful",)
 
         existing = await self.repo.get_helpful_mark(review_id, user_id)
         if existing:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="You have already marked this review as helpful",
-            )
+            raise ConflictException("You have already marked this review as helpful",)
 
         await self.repo.add_helpful_mark(review_id, user_id)
         await self.db.commit()
@@ -209,10 +195,7 @@ class ReviewService:
         review = await self._get_active_review(review_id)
         existing = await self.repo.get_helpful_mark(review_id, user_id)
         if not existing:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="You have not marked this review as helpful",
-            )
+            raise NotFoundException("You have not marked this review as helpful",)
         await self.repo.remove_helpful_mark(review_id, user_id)
         await self.db.commit()
         await self.db.refresh(review)
@@ -228,17 +211,11 @@ class ReviewService:
         review = await self._get_active_review(review_id)
 
         if str(review.user_id) == str(user_id):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="You cannot report your own review",
-            )
+            raise BadRequestException("You cannot report your own review",)
 
         existing = await self.repo.find_report(review_id, user_id)
         if existing:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="You have already reported this review",
-            )
+            raise ConflictException("You have already reported this review",)
 
         report = ReviewReport(
             review_id=review_id,
@@ -277,17 +254,13 @@ class ReviewService:
     async def _get_active_review(self, review_id: UUID) -> Review:
         review = await self.repo.get_by_id(review_id)
         if not review or review.status == ReviewStatus.REMOVED:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Review not found"
-            )
+            raise NotFoundException("Review not found")
         return review
 
     async def _get_owned_review(self, review_id: UUID, user_id: UUID) -> Review:
         review = await self._get_active_review(review_id)
         if str(review.user_id) != str(user_id):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied"
-            )
+            raise ForbiddenException("Permission denied")
         return review
 
     @staticmethod

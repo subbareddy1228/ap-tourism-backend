@@ -37,6 +37,26 @@ class ForbiddenException(HTTPException):
         super().__init__(status_code=status.HTTP_403_FORBIDDEN, detail=detail)
 
 
+class ConflictException(HTTPException):
+    def __init__(self, detail: str):
+        super().__init__(status_code=status.HTTP_409_CONFLICT, detail=detail)
+
+
+class InternalServerException(HTTPException):
+    def __init__(self, detail: str = "An unexpected error occurred. Please try again."):
+        super().__init__(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=detail)
+
+
+class ServiceUnavailableException(HTTPException):
+    def __init__(self, detail: str = "Service temporarily unavailable. Please try again."):
+        super().__init__(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=detail)
+
+
+class RateLimitException(HTTPException):
+    def __init__(self, detail: str = "Too many requests. Please try again later."):
+        super().__init__(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=detail)
+
+
 # ── Register All Handlers ─────────────────────────────────────
 
 def register_exception_handlers(app: FastAPI) -> None:

@@ -7,7 +7,7 @@ Owner: Dev 2
 import logging
 from datetime import datetime
 
-from fastapi import HTTPException, UploadFile, status
+from fastapi import UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
@@ -31,11 +31,18 @@ from src.integrations.twilio import send_sms
 from src.integrations.aws_s3 import upload_avatar, delete_avatar
 from src.common.enums import UserStatus
 
+from src.core.exceptions import (
+    BadRequestException,
+    NotFoundException,
+    RateLimitException,
+    ServiceUnavailableException,
+    UnauthorizedException,
+)
+
 logger = logging.getLogger(__name__)
 
 AVATAR_MAX_SIZE = 5 * 1024 * 1024
 AVATAR_ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/jpg"]
-
 
 # ───────────────── Helpers ─────────────────
 
@@ -54,7 +61,6 @@ async def get_or_create_profile(user_id: str, db: AsyncSession) -> UserProfile:
         await db.refresh(profile)
 
     return profile
-
 
 # ══════════════════ PROFILE ══════════════════
 
@@ -77,7 +83,6 @@ async def get_full_profile(current_user: User, db: AsyncSession) -> dict:
         "kyc_status": profile.kyc_status,
         "preferences": profile.preferences or {},
     }
-
 
 async def update_profile(data: UpdateProfileRequest, current_user: User, db: AsyncSession) -> dict:
  
@@ -103,22 +108,15 @@ async def update_profile(data: UpdateProfileRequest, current_user: User, db: Asy
  
     return await get_full_profile(current_user, db)
 
-
 async def upload_user_avatar(file: UploadFile, current_user: User, db: AsyncSession) -> dict:
 
     if file.content_type not in AVATAR_ALLOWED_TYPES:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid file type"
-        )
+        raise BadRequestException("Invalid file type")
 
     file_bytes = await file.read()
 
     if len(file_bytes) > AVATAR_MAX_SIZE:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="File too large (max 5MB)"
-        )
+        raise BadRequestException("File too large (max 5MB)")
 
     profile = await get_or_create_profile(str(current_user.id), db)
 
@@ -141,7 +139,6 @@ async def upload_user_avatar(file: UploadFile, current_user: User, db: AsyncSess
         "message": "Avatar uploaded successfully"
     }
 
-
 async def delete_account(current_user: User, db: AsyncSession) -> dict:
 
     current_user.status = UserStatus.DELETED
@@ -155,7 +152,6 @@ async def delete_account(current_user: User, db: AsyncSession) -> dict:
         "message": "Account deleted. Personal data will be removed after 30 days."
     }
 
-
 # ══════════════════ ADDRESSES ══════════════════
 
 async def list_addresses(current_user: User, db: AsyncSession):
@@ -165,7 +161,6 @@ async def list_addresses(current_user: User, db: AsyncSession):
     )
 
     return result.scalars().all()
-
 
 async def add_address(data: AddressRequest, current_user: User, db: AsyncSession):
 
@@ -198,7 +193,6 @@ async def add_address(data: AddressRequest, current_user: User, db: AsyncSession
 
     return address
 
-
 async def update_address(address_id: str, data: AddressRequest, current_user: User, db: AsyncSession):
 
     result = await db.execute(
@@ -211,7 +205,7 @@ async def update_address(address_id: str, data: AddressRequest, current_user: Us
     address = result.scalar_one_or_none()
 
     if not address:
-        raise HTTPException(status_code=404, detail="Address not found")
+        raise NotFoundException("Address not found")
 
     # ── If setting this address as default, un-default all others first ──
     if data.is_default:
@@ -254,13 +248,12 @@ async def delete_address(address_id: str, current_user: User, db: AsyncSession):
     address = result.scalar_one_or_none()
 
     if not address:
-        raise HTTPException(status_code=404, detail="Address not found")
+        raise NotFoundException("Address not found")
 
     await db.delete(address)
     await db.commit()
 
     return {"message": "Address deleted successfully"}
-
 
 # ══════════════════ FAMILY MEMBERS ══════════════════
 
@@ -273,7 +266,6 @@ async def list_family_members(current_user: User, db: AsyncSession):
     )
 
     return result.scalars().all()
-
 
 async def add_family_member(data: FamilyMemberRequest, current_user: User, db: AsyncSession):
 
@@ -293,7 +285,6 @@ async def add_family_member(data: FamilyMemberRequest, current_user: User, db: A
 
     return member
 
-
 async def update_family_member(member_id: str, data: FamilyMemberRequest, current_user: User, db: AsyncSession):
 
     result = await db.execute(
@@ -306,7 +297,7 @@ async def update_family_member(member_id: str, data: FamilyMemberRequest, curren
     member = result.scalar_one_or_none()
 
     if not member:
-        raise HTTPException(status_code=404, detail="Family member not found")
+        raise NotFoundException("Family member not found")
 
     member.name = data.name
     member.relation = data.relation
@@ -321,7 +312,6 @@ async def update_family_member(member_id: str, data: FamilyMemberRequest, curren
 
     return member
 
-
 async def delete_family_member(member_id: str, current_user: User, db: AsyncSession):
 
     result = await db.execute(
@@ -334,13 +324,12 @@ async def delete_family_member(member_id: str, current_user: User, db: AsyncSess
     member = result.scalar_one_or_none()
 
     if not member:
-        raise HTTPException(status_code=404, detail="Family member not found")
+        raise NotFoundException("Family member not found")
 
     await db.delete(member)
     await db.commit()
 
     return {"message": "Family member removed successfully"}
-
 
 # ══════════════════ PHONE VERIFICATION ══════════════════
 
@@ -350,13 +339,7 @@ async def send_phone_verification_otp(current_user: User):
  
     if current_user.is_phone_verified:
 
-        raise HTTPException(
-
-            status_code=400,
-
-            detail="Phone is already verified"
-
-        )
+        raise BadRequestException("Phone is already verified")
  
     otp = generate_otp()
  
@@ -374,13 +357,7 @@ async def send_phone_verification_otp(current_user: User):
 
         logger.error("SMS failed for phone verification phone=%s error=%s", current_user.phone, str(e))
 
-        raise HTTPException(
-
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-
-            detail="Failed to send OTP. Please try again."
-
-        )
+        raise ServiceUnavailableException("Failed to send OTP. Please try again.")
  
     return {
 
@@ -396,18 +373,15 @@ async def verify_phone_otp(data: VerifyPhoneRequest, current_user: User, db: Asy
     attempts = await increment_otp_attempts(current_user.phone)
 
     if attempts > settings.OTP_MAX_ATTEMPTS:
-        raise HTTPException(
-            status_code=429,
-            detail="Too many attempts"
-        )
+        raise RateLimitException("Too many attempts")
 
     stored = await get_otp(current_user.phone, purpose="verify_phone")
 
     if not stored:
-        raise HTTPException(status_code=400, detail="OTP expired")
+        raise BadRequestException("OTP expired")
 
     if stored != data.otp:
-        raise HTTPException(status_code=401, detail="Incorrect OTP")
+        raise UnauthorizedException("Incorrect OTP")
 
     await delete_otp(current_user.phone, purpose="verify_phone")
     await clear_otp_attempts(current_user.phone)
@@ -431,7 +405,6 @@ async def get_preferences(current_user: User, db: AsyncSession) -> dict:
         "accessibility": prefs.get("accessibility"),
         "notifications": prefs.get("notifications", {"email": True, "sms": True, "push": True}),
     }
-
 
 async def update_preferences(data: PreferencesRequest, current_user: User, db: AsyncSession) -> dict:
 
@@ -458,7 +431,6 @@ async def update_preferences(data: PreferencesRequest, current_user: User, db: A
 
     return await get_preferences(current_user, db)
 
-
 # ══════════════════ SESSIONS ══════════════════
 
 async def list_sessions(current_user: User, db: AsyncSession):
@@ -472,7 +444,6 @@ async def list_sessions(current_user: User, db: AsyncSession):
 
     return result.scalars().all()
 
-
 async def revoke_session(session_id: str, current_user: User, db: AsyncSession) -> dict:
 
     result = await db.execute(
@@ -485,7 +456,7 @@ async def revoke_session(session_id: str, current_user: User, db: AsyncSession) 
     session = result.scalar_one_or_none()
 
     if not session:
-        raise HTTPException(status_code=404, detail="Session not found")
+        raise NotFoundException("Session not found")
 
     # Blacklist the JTI in Redis so the token can't be used anymore
     if session.jti:
@@ -496,11 +467,10 @@ async def revoke_session(session_id: str, current_user: User, db: AsyncSession) 
 
     return {"message": "Session revoked successfully"}
 
-
 async def send_email_verification(current_user: User, db: AsyncSession) -> dict:
  
         if current_user.is_email_verified:
-            raise HTTPException(status_code=400, detail="Email is already verified")
+            raise BadRequestException("Email is already verified")
  
         from src.integrations.sendgrid import send_email
         token = generate_otp()  # reuse OTP helper as a simple token
@@ -515,6 +485,6 @@ async def send_email_verification(current_user: User, db: AsyncSession) -> dict:
         except Exception as e:
             await delete_otp(current_user.email, purpose="verify_email")
             logger.error("Email send failed user=%s error=%s", current_user.id, str(e))
-            raise HTTPException(status_code=503, detail="Failed to send verification email. Please try again.")
+            raise ServiceUnavailableException("Failed to send verification email. Please try again.")
  
         return {"message": "Verification email sent", "expires_in": settings.OTP_EXPIRE_SECONDS}

@@ -20,7 +20,7 @@ from datetime import datetime
 from typing import List, Optional
 from uuid import UUID
 
-from fastapi import HTTPException, status
+from fastapi import status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, update, and_
 
@@ -33,9 +33,11 @@ from src.schemas.notification import (
 )
 from src.integrations.firebase import send_push, send_multicast
 from src.integrations.twilio import send_sms
+from src.core.exceptions import (
+    NotFoundException,
+)
 
 logger = logging.getLogger(__name__)
-
 
 # ═══════════════════════════════════════════════════════════════
 # INTERNAL HELPER
@@ -70,7 +72,6 @@ async def _get_or_create_preferences(
         await db.refresh(prefs)
 
     return prefs
-
 
 # ═══════════════════════════════════════════════════════════════
 # 1. LIST NOTIFICATIONS
@@ -136,7 +137,6 @@ async def get_notifications(
         "per_page":      per_page,
     }
 
-
 # ═══════════════════════════════════════════════════════════════
 # 2. UNREAD COUNT
 # GET /notifications/unread-count
@@ -153,7 +153,6 @@ async def get_unread_count(current_user: User, db: AsyncSession) -> int:
         )
     )
     return result.scalar()
-
 
 # ═══════════════════════════════════════════════════════════════
 # 3. GET SINGLE NOTIFICATION
@@ -177,10 +176,7 @@ async def get_notification_by_id(
     notification = result.scalar_one_or_none()
 
     if not notification:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Notification not found",
-        )
+        raise NotFoundException("Notification not found",)
 
     # Auto-mark as read on open
     if not notification.is_read:
@@ -190,7 +186,6 @@ async def get_notification_by_id(
         await db.refresh(notification)
 
     return notification
-
 
 # ═══════════════════════════════════════════════════════════════
 # 4. MARK SPECIFIC NOTIFICATIONS AS READ
@@ -223,7 +218,6 @@ async def mark_notifications_read(
 
     return {"message": f"{len(data.notification_ids)} notification(s) marked as read"}
 
-
 # ═══════════════════════════════════════════════════════════════
 # 5. MARK ALL AS READ
 # POST /notifications/mark-all-read
@@ -248,7 +242,6 @@ async def mark_all_read(current_user: User, db: AsyncSession) -> dict:
     updated = result.rowcount
     return {"message": f"All {updated} notification(s) marked as read"}
 
-
 # ═══════════════════════════════════════════════════════════════
 # 6. DELETE A NOTIFICATION
 # DELETE /notifications/{notification_id}
@@ -271,16 +264,12 @@ async def delete_notification(
     notification = result.scalar_one_or_none()
 
     if not notification:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Notification not found",
-        )
+        raise NotFoundException("Notification not found",)
 
     await db.delete(notification)
     await db.commit()
 
     return {"message": "Notification deleted"}
-
 
 # ═══════════════════════════════════════════════════════════════
 # 7. SEND NOTIFICATION  (admin)
@@ -370,7 +359,6 @@ async def send_notification(
         "failed":  failed,
     }
 
-
 # ═══════════════════════════════════════════════════════════════
 # 8. GET PREFERENCES
 # GET /notifications/preferences
@@ -381,7 +369,6 @@ async def get_preferences(
 ) -> NotificationPreference:
     """Fetch (or auto-create) notification preferences for the current user."""
     return await _get_or_create_preferences(current_user.id, db)
-
 
 # ═══════════════════════════════════════════════════════════════
 # 9. UPDATE PREFERENCES

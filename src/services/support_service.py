@@ -20,12 +20,17 @@ from datetime import datetime
 from typing import Optional
 from uuid import UUID, uuid4
 
-from fastapi import HTTPException, status
+from fastapi import status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_, or_
 
 from src.models.support import SupportTicket, TicketMessage
 from src.models.user import User
+
+from src.core.exceptions import (
+    BadRequestException,
+    NotFoundException,
+)
 from src.schemas.support import (
     CreateTicketRequest,
     AddMessageRequest,
@@ -34,7 +39,6 @@ from src.schemas.support import (
 )
 
 logger = logging.getLogger(__name__)
-
 
 # ═══════════════════════════════════════════════════════════════
 # INTERNAL HELPERS
@@ -49,7 +53,6 @@ def _generate_ticket_number() -> str:
     date_part = datetime.utcnow().strftime("%Y%m%d")
     rand_part = uuid4().hex[:4].upper()
     return f"TKT-{date_part}-{rand_part}"
-
 
 async def _get_ticket_for_user(
     ticket_id: UUID,
@@ -67,12 +70,8 @@ async def _get_ticket_for_user(
     )
     ticket = result.scalar_one_or_none()
     if not ticket:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Ticket not found",
-        )
+        raise NotFoundException("Ticket not found",)
     return ticket
-
 
 async def _get_ticket_for_admin(
     ticket_id: UUID,
@@ -84,12 +83,8 @@ async def _get_ticket_for_admin(
     )
     ticket = result.scalar_one_or_none()
     if not ticket:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Ticket not found",
-        )
+        raise NotFoundException("Ticket not found",)
     return ticket
-
 
 # ═══════════════════════════════════════════════════════════════
 # 1. CREATE TICKET
@@ -136,7 +131,6 @@ async def create_ticket(
 
     return ticket
 
-
 # ═══════════════════════════════════════════════════════════════
 # 2. LIST MY TICKETS
 # GET /support/tickets  (user)
@@ -177,7 +171,6 @@ async def list_my_tickets(
 
     return {"tickets": tickets, "total": total, "page": page, "per_page": per_page}
 
-
 # ═══════════════════════════════════════════════════════════════
 # 3. GET TICKET BY ID  (user)
 # GET /support/tickets/{ticket_id}
@@ -208,7 +201,6 @@ async def get_ticket_by_id(
 
     return ticket
 
-
 # ═══════════════════════════════════════════════════════════════
 # 4. ADD MESSAGE
 # POST /support/tickets/{ticket_id}/messages
@@ -233,10 +225,7 @@ async def add_message(
         ticket = await _get_ticket_for_user(ticket_id, current_user.id, db)
 
     if ticket.status == "closed" and not is_admin:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Cannot reply to a closed ticket. Please reopen it first.",
-        )
+        raise BadRequestException("Cannot reply to a closed ticket. Please reopen it first.",)
 
     sender_type = "admin" if is_admin else "user"
 
@@ -265,7 +254,6 @@ async def add_message(
 
     return message
 
-
 # ═══════════════════════════════════════════════════════════════
 # 5. CLOSE TICKET  (user)
 # PUT /support/tickets/{ticket_id}/close
@@ -281,10 +269,7 @@ async def close_ticket(
 
     closeable = {"open", "in_progress", "resolved", "reopened"}
     if ticket.status not in closeable:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Ticket is already {ticket.status}",
-        )
+        raise BadRequestException(f"Ticket is already {ticket.status}",)
 
     ticket.status    = "closed"
     ticket.closed_at = datetime.utcnow()
@@ -296,7 +281,6 @@ async def close_ticket(
     logger.info("Ticket closed ticket_id=%s by user_id=%s", ticket_id, current_user.id)
 
     return ticket
-
 
 # ═══════════════════════════════════════════════════════════════
 # 6. REOPEN TICKET  (user)
@@ -316,10 +300,7 @@ async def reopen_ticket(
 
     reopenable = {"resolved", "closed"}
     if ticket.status not in reopenable:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Only resolved or closed tickets can be reopened. Current status: {ticket.status}",
-        )
+        raise BadRequestException(f"Only resolved or closed tickets can be reopened. Current status: {ticket.status}",)
 
     ticket.status      = "reopened"
     ticket.resolved_at = None
@@ -332,7 +313,6 @@ async def reopen_ticket(
     logger.info("Ticket reopened ticket_id=%s by user_id=%s", ticket_id, current_user.id)
 
     return ticket
-
 
 # ═══════════════════════════════════════════════════════════════
 # 7. ADMIN — LIST ALL TICKETS
@@ -378,7 +358,6 @@ async def admin_list_all_tickets(
 
     return {"tickets": tickets, "total": total, "page": page, "per_page": per_page}
 
-
 # ═══════════════════════════════════════════════════════════════
 # 8. ADMIN — ASSIGN TICKET
 # PUT /support/tickets/{ticket_id}/assign
@@ -406,7 +385,6 @@ async def admin_assign_ticket(
 
     return ticket
 
-
 # ═══════════════════════════════════════════════════════════════
 # 9. ADMIN — RESOLVE TICKET
 # PUT /support/tickets/{ticket_id}/resolve
@@ -425,10 +403,7 @@ async def admin_resolve_ticket(
     ticket = await _get_ticket_for_admin(ticket_id, db)
 
     if ticket.status in {"closed", "resolved"}:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Ticket is already {ticket.status}",
-        )
+        raise BadRequestException(f"Ticket is already {ticket.status}",)
 
     # Post resolution note as a system message if provided
     if data.resolution_note:

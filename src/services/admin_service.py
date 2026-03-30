@@ -12,7 +12,7 @@ from decimal import Decimal
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, update, and_
-from fastapi import HTTPException, status
+from fastapi import status
 
 from src.models.user import User
 from src.models.partner import Partner
@@ -21,9 +21,11 @@ from src.models.transaction import Transaction
 from src.models.support import SupportTicket
 from src.models.notification import Notification
 from src.common.enums import UserStatus, BookingStatus
+from src.core.exceptions import (
+    NotFoundException,
+)
 
 logger = logging.getLogger(__name__)
-
 
 # ═══════════════════════════════════════════════════════
 # PLATFORM SETTINGS  (key-value store in memory/DB)
@@ -39,23 +41,17 @@ _PLATFORM_SETTINGS: dict = {
     "max_booking_per_slot":  "50",
 }
 
-
 async def get_platform_settings() -> dict:
     """Return all platform settings."""
     return {"settings": _PLATFORM_SETTINGS}
 
-
 async def update_platform_setting(key: str, value: str) -> dict:
     """Update a single platform setting by key."""
     if key not in _PLATFORM_SETTINGS:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Setting '{key}' not found"
-        )
+        raise NotFoundException(f"Setting '{key}' not found")
     _PLATFORM_SETTINGS[key] = value
     logger.info("Platform setting updated key=%s value=%s", key, value)
     return {"key": key, "value": value, "updated": True}
-
 
 # ═══════════════════════════════════════════════════════
 # PARTNER MANAGEMENT
@@ -72,7 +68,7 @@ async def set_partner_commission(
     )
     partner = result.scalar_one_or_none()
     if not partner:
-        raise HTTPException(status_code=404, detail="Partner not found")
+        raise NotFoundException("Partner not found")
 
     partner.commission_rate = commission_rate
     partner.updated_at = datetime.utcnow()
@@ -85,7 +81,6 @@ async def set_partner_commission(
         "commission_rate": float(partner.commission_rate),
         "message": "Commission rate updated"
     }
-
 
 # ═══════════════════════════════════════════════════════
 # REPORTS
@@ -122,7 +117,6 @@ async def get_booking_report(
         "period": {"from": str(start_date), "to": str(end_date)},
     }
 
-
 async def get_revenue_report(
     db: AsyncSession,
     start_date: Optional[date] = None,
@@ -149,7 +143,6 @@ async def get_revenue_report(
         "period": {"from": str(start_date), "to": str(end_date)},
     }
 
-
 async def get_user_growth_report(db: AsyncSession) -> dict:
     """User growth report — total, active, new this month."""
     today = date.today()
@@ -170,7 +163,6 @@ async def get_user_growth_report(db: AsyncSession) -> dict:
         "suspended_users": total - active,
     }
 
-
 async def get_partner_performance_report(db: AsyncSession) -> dict:
     """Partner performance — counts by verification status."""
     total = await db.scalar(select(func.count(Partner.id))) or 0
@@ -187,7 +179,6 @@ async def get_partner_performance_report(db: AsyncSession) -> dict:
         "pending_verification": pending,
         "rejected": total - verified - pending,
     }
-
 
 # ═══════════════════════════════════════════════════════
 # ANALYTICS OVERVIEW
@@ -219,7 +210,6 @@ async def get_analytics_overview(db: AsyncSession) -> dict:
         "week_start": str(week_ago),
         "week_end": str(today),
     }
-
 
 # ═══════════════════════════════════════════════════════
 # BROADCAST NOTIFICATION

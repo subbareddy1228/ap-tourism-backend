@@ -1,6 +1,6 @@
 import datetime
 
-from fastapi import HTTPException, status
+from fastapi import status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
@@ -9,6 +9,10 @@ from src.models.destination import Destination, DestinationType
 from src.schemas.destination import DestinationCreate, DestinationUpdate, DestinationListResponse
 from src.repositories import destination_repo as repo
 
+from src.core.exceptions import (
+    BadRequestException,
+    NotFoundException,
+)
 
 # ─────────────────────────────────────────
 # TEMPORARY HELPERS
@@ -19,10 +23,8 @@ from src.repositories import destination_repo as repo
 async def success_response(data, message: str = "Success"):
     return {"success": True, "data": data, "message": message}
 
-
 async def error_response(error: str, code: int = 400):
     return {"success": False, "error": error, "code": code}
-
 
 async def paginate(items, total: int, page: int, limit: int):
     pages = (total + limit - 1) // limit
@@ -32,7 +34,6 @@ async def paginate(items, total: int, page: int, limit: int):
         "page": page,
         "pages": pages,
     }
-
 
 # ─────────────────────────────────────────
 # In-memory cache (temporary until redis.py is ready)
@@ -49,17 +50,13 @@ async def set_cache(key: str, value, ttl: int = 300):
 async def clear_cache(key: str):
     _cache.pop(key, None)
 
-
 # ---------------------------------------
 # CREATE DESTINATION (Admin)
 # ---------------------------------------
 async def create_destination(db: AsyncSession, data: DestinationCreate):
 
     if await repo.slug_exists(db, slug=data.slug):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Slug '{data.slug}' is already taken"
-        )
+        raise BadRequestException(f"Slug '{data.slug}' is already taken")
 
     db_destination = Destination(
         name=data.name,
@@ -88,7 +85,6 @@ async def create_destination(db: AsyncSession, data: DestinationCreate):
         "Destination created successfully"
     )
 
-
 # ---------------------------------------
 # GET ALL DESTINATIONS
 # ---------------------------------------
@@ -112,7 +108,6 @@ async def get_destinations(
 
     return await success_response(data)
 
-
 # ---------------------------------------
 # GET FEATURED DESTINATIONS
 # ---------------------------------------
@@ -130,7 +125,6 @@ async def get_featured_destinations(db: AsyncSession):
     await set_cache(cache_key, data)
 
     return await success_response(data, "Featured destinations")
-
 
 # ---------------------------------------
 # GET POPULAR DESTINATIONS
@@ -150,14 +144,12 @@ async def get_popular_destinations(db: AsyncSession):
 
     return await success_response(data, "Popular destinations")
 
-
 # ---------------------------------------
 # GET DESTINATION TYPES
 # ---------------------------------------
 async def get_destination_types():
     data = await repo.get_types()
     return await success_response(data, "Destination types")
-
 
 # ---------------------------------------
 # GET DESTINATION BY ID OR SLUG
@@ -167,13 +159,9 @@ async def get_destination(db: AsyncSession, value: str):
     destination = await repo.get_by_id_or_slug(db, value)
 
     if not destination:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Destination '{value}' not found"
-        )
+        raise NotFoundException(f"Destination '{value}' not found")
 
     return await success_response(destination, "Destination detail")
-
 
 # ---------------------------------------
 # UPDATE DESTINATION (Admin)
@@ -185,17 +173,11 @@ async def update_destination(
 ):
     destination = await repo.get_by_id(db, destination_id)
     if not destination:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Destination '{destination_id}' not found"
-        )
+        raise NotFoundException(f"Destination '{destination_id}' not found")
 
     if data.slug and data.slug != destination.slug:
         if await repo.slug_exists(db, slug=data.slug, exclude_id=destination_id):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Slug '{data.slug}' is already taken"
-            )
+            raise BadRequestException(f"Slug '{data.slug}' is already taken")
 
     update_data = data.model_dump(exclude_unset=True)
 
@@ -263,7 +245,7 @@ async def delete_destination(destination_id: str, db: AsyncSession):
     )
     destination = result.scalar_one_or_none()
     if not destination:
-        raise HTTPException(status_code=404, detail="Destination not found")
+        raise NotFoundException("Destination not found")
     destination.is_active = False
     destination.updated_at = datetime.datetime.utcnow()
     await db.commit()
