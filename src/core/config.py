@@ -77,6 +77,9 @@ class Settings(BaseSettings):
 
     #_________________SENDGRID_API_KEY_____________________________________
     
+    DATABASE_URL: str
+    SECRET_KEY: str
+
     SENDGRID_API_KEY: str | None = None
     FROM_EMAIL: str | None = None
 
