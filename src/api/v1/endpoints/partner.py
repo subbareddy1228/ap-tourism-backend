@@ -545,3 +545,13 @@ async def reply_to_review(
 
     return APIResponse.success(message=result["message"])
  
+ 
+@router.put("/me/profile", response_model=APIResponse, summary="Update partner profile")
+async def update_partner_profile(
+    data: PartnerProfileUpdateRequest,
+    current_user: User = Depends(get_partner_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Update partner's public profile — business name, description, contact info."""
+    result = await partner_service.update_profile(data, current_user, db)
+    return APIResponse.success(message="Profile updated", data=result)
