@@ -242,7 +242,42 @@ async def update_temple(
         return APIResponse.success(message="Temple updated successfully", data=temple.model_dump())
     except Exception as e:
         raise HTTPException(status_code=404, detail=str(e))
-    
+
+# ══════════════════ ADD POOJA SERVICE ══════════════════
+@router.post(
+    "/{temple_id}/pooja-services",
+    response_model=APIResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="[Admin] Add pooja service to temple"
+)
+async def add_pooja_service(
+    temple_id: str,
+    data: PoojaServiceCreate,
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Add a new pooja/seva service to a temple."""
+    svc = TempleService(db)
+    result = await svc.create_pooja_service(temple_id, data)
+    return APIResponse.success(message="Pooja service added", data=result)
+
+# ══════════════════ UPDATE POOJA SERVICE ══════════════════
+@router.put(
+    "/{temple_id}/pooja-services/{service_id}",
+    response_model=APIResponse,
+    summary="[Admin] Update pooja service"
+)
+async def update_pooja_service(
+    temple_id: str,
+    service_id: str,
+    data: PoojaServiceUpdate,
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Update a pooja service details — price, duration, description."""
+    svc = TempleService(db)
+    result = await svc.update_pooja_service(temple_id, service_id, data)
+    return APIResponse.success(message="Pooja service updated", data=result)
  
 # ══════════════════ ADMIN ENDPOINTS ══════════════════
  
