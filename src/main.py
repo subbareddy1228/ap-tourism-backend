@@ -69,6 +69,8 @@ app.add_middleware(
 
 
 # ── API Routes ────────────────────────────────────────────────
+from src.core.exceptions import register_exception_handlers
+register_exception_handlers(app) 
 app.include_router(v1_router, prefix="/api/v1")
 
 
