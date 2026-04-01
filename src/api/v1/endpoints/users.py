@@ -1,12 +1,14 @@
 
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Request
+from typing import Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status, UploadFile, File, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.database import get_db
 from src.api.deps.auth import get_current_user, get_verified_user
 from src.models.user import User
 from src.schemas.user import (
-    UpdateProfileRequest, ProfileResponse,
+    FCMTokenRequest, FCMTokenRequest, UpdateProfileRequest, ProfileResponse,
     AddressRequest, AddressResponse,
     FamilyMemberRequest, FamilyMemberResponse,
     VerifyPhoneRequest,
@@ -415,9 +417,9 @@ async def get_wallet_summary(
     summary="Get current user's bookings"
 )
 async def get_my_bookings(
-    page: int = Query(default=1, ge=1),
+    page: int =  Query(default=1, ge=1),
     per_page: int = Query(default=10, ge=1, le=50),
-    status: Optional[str] = Query(default=None),
+    status:  Optional[str] = Query(default=None),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
@@ -472,7 +474,7 @@ async def get_my_notifications(
     summary="Register FCM device token for push notifications"
 )
 async def update_fcm_token(
-    data: FCMTokenRequest,
+    data:  FCMTokenRequest,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):

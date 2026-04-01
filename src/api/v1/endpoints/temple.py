@@ -21,15 +21,15 @@ Routes:
 from typing import Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, status, HTTPException
+from fastapi import APIRouter, Depends, File, Query, UploadFile, status, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.database import get_db
-from src.api.deps.auth import get_admin_user, get_current_user
+from src.api.deps.auth import get_admin_user, get_current_user, get_verified_user
 from src.models.user import User
 from src.services import temple_service
 from src.services.temple_service import TempleService
-from src.schemas.temple import TempleCreate, TempleUpdate
+from src.schemas.temple import TempleCreate, TempleReviewCreate, TempleUpdate, PoojaServiceCreate,PoojaServiceUpdate
 from src.common.responses import APIResponse
 
 router = APIRouter(prefix="/temples", tags=["Temples"])
@@ -208,8 +208,8 @@ async def get_detail(
 )
 async def create_temple_review(
     temple_id: str,
-    data: TempleReviewCreate,
-    current_user: User = Depends(get_verified_user),
+    data:  TempleReviewCreate,
+    current_user: User = Depends( get_verified_user),
     db: AsyncSession = Depends(get_db)
 ):
     """Submit a review for a temple. Requires a completed booking at this temple."""
@@ -252,7 +252,7 @@ async def update_temple(
 )
 async def add_pooja_service(
     temple_id: str,
-    data: PoojaServiceCreate,
+    data:  PoojaServiceCreate,
     current_user: User = Depends(get_admin_user),
     db: AsyncSession = Depends(get_db)
 ):
@@ -270,7 +270,7 @@ async def add_pooja_service(
 async def update_pooja_service(
     temple_id: str,
     service_id: str,
-    data: PoojaServiceUpdate,
+    data:  PoojaServiceUpdate,
     current_user: User = Depends(get_admin_user),
     db: AsyncSession = Depends(get_db)
 ):
@@ -561,7 +561,7 @@ async def sync_ttd(
     return APIResponse.success(message="TTD sync complete", data=result)
  
  # ══════════════════ UPLOAD TEMPLE IMAGE ══════════════════
- @router.post(
+@router.post(
     "/{temple_id}/images",
     response_model=APIResponse,
     status_code=status.HTTP_201_CREATED,
@@ -569,7 +569,7 @@ async def sync_ttd(
 )
 async def upload_temple_image(
     temple_id: str,
-    file: UploadFile = File(...),
+    file:  UploadFile =  File(...),
     current_user: User = Depends(get_admin_user),
     db: AsyncSession = Depends(get_db)
 ):

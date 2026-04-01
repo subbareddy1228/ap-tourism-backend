@@ -17,6 +17,11 @@ class ItineraryDay(BaseModel):
     accommodation: Optional[str] = None   # e.g. "Hotel Araku"
 
 
+# This schema fixes your import error
+class ItineraryDayCreate(ItineraryDay):
+    pass
+
+
 class PricingRule(BaseModel):
     label: str                            # e.g. "Group of 5-10"
     min_people: int
@@ -47,12 +52,14 @@ class PackageBase(BaseModel):
 
     group_size: Optional[int] = None
 
-    itinerary: List[ItineraryDay] = []
-    inclusions: List[str] = []
-    exclusions: List[str] = []
+    # safer defaults
+    itinerary: List[ItineraryDay] = Field(default_factory=list)
+    inclusions: List[str] = Field(default_factory=list)
+    exclusions: List[str] = Field(default_factory=list)
+
     pricing_rules: Optional[List[PricingRule]] = None
-    departure_dates: List[str] = []
-    images: List[PackageImage] = []
+    departure_dates: List[str] = Field(default_factory=list)
+    images: List[PackageImage] = Field(default_factory=list)
 
 
 # ─────────────────────────────────────────

@@ -10,17 +10,20 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.api.deps.auth import get_current_user
+from src.api.deps.auth import get_admin_user, get_current_user
+from src.common.responses import APIResponse
 from src.models.user import User
 from src.core.database import get_db
 from src.models.review import EntityType
 from src.schemas.review import (
     ReviewCreateRequest,
     ReviewListResponse,
+    ReviewModerateRequest,
     ReviewOut,
     ReviewReportRequest,
     ReviewUpdateRequest,
 )
+from src.services import review_service
 from src.services.review_service import ReviewService
 
 router = APIRouter(prefix="/reviews", tags=["Reviews"])
@@ -218,18 +221,18 @@ async def get_my_reviews(
 
 @router.put(
     "/{review_id}/moderate",
-    response_model=APIResponse,
+    response_model= APIResponse,
     summary="[Admin] Approve or reject a review"
 )
 async def moderate_review(
     review_id: str,
-    data: ReviewModerateRequest,
-    current_user: User = Depends(get_admin_user),
+    data:ReviewModerateRequest,
+    current_user: User = Depends( get_admin_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
     Admin action to approve or reject a flagged/reported review.
     status: 'approved' | 'rejected'
     """
-    result = await review_service.moderate_review(review_id, data, db)
+    result = await  review_service.moderate_review(review_id, data, db)
     return APIResponse.success(message="Review moderated", data=result)

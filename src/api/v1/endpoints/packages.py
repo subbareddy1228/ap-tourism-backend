@@ -1,6 +1,6 @@
 from typing import Optional
 from fastapi import Depends
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, HTTPException, status
 from src.api.deps.auth import get_admin_user,get_current_user
 from src.api.v1.endpoints.bookings import APIResponse
 from src.models.user import User
@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.database import get_db
 from src.models.package import PackageType
-from src.schemas.package import PackageCreate, PackageUpdate
+from src.schemas.package import PackageCreate, PackageUpdate, ItineraryDayCreate
 from src.services import package_service
 from src.services.package_service import (
     get_all_packages,

@@ -156,3 +156,16 @@ class TempleTimingsResponse(BaseModel):
     timings:   Optional[Dict[str, Any]] = None
 
     model_config = {"from_attributes": True}
+
+class PoojaServiceCreate(BaseModel):
+    name: str
+    price: float
+    duration_minutes: int | None = None
+    description: str | None = None
+
+
+class PoojaServiceUpdate(BaseModel):
+    name: str | None = None
+    price: float | None = None
+    duration_minutes: int | None = None
+    description: str | None = None

@@ -15,39 +15,64 @@ from src.core.logging import setup_logging
 from src.core.elasticsearch import init_elasticsearch, close_elasticsearch
 
 from src.api.v1.router import router as v1_router
+from src.core.exceptions import register_exception_handlers
 
 
-# ── Logging Setup ─────────────────────────────────────────────
+# ─────────────────────────────────────────────
+# Logging Setup
+# ─────────────────────────────────────────────
 setup_logging()
 
-# Hide Elasticsearch INFO logs
+logger = logging.getLogger(__name__)
+
+# Reduce Elasticsearch logs
 logging.getLogger("elastic_transport").setLevel(logging.ERROR)
 logging.getLogger("elasticsearch").setLevel(logging.ERROR)
 logging.getLogger("src.core.elasticsearch").setLevel(logging.ERROR)
 
 
-# ── Lifespan Events ───────────────────────────────────────────
+# ─────────────────────────────────────────────
+# Lifespan (Startup / Shutdown)
+# ─────────────────────────────────────────────
 @asynccontextmanager
 async def lifespan(app: FastAPI):
 
-    print("Starting services...")
+    logger.info("Starting services...")
 
-    await init_redis()
+    # Redis startup
+    try:
+        await init_redis()
+        logger.info("Redis initialized")
+    except Exception as e:
+        logger.warning(f"Redis unavailable: {e}")
 
+    # Elasticsearch startup
     try:
         await init_elasticsearch()
+        logger.info("Elasticsearch initialized")
     except Exception as e:
-        print(f"Elasticsearch unavailable: {e}. Search endpoints disabled.")
+        logger.warning(f"Elasticsearch unavailable: {e}. Search disabled.")
 
     yield
 
-    print("Shutting down services...")
+    logger.info("Shutting down services...")
 
-    await close_redis()
-    await close_elasticsearch()
+    # Close Redis
+    try:
+        await close_redis()
+    except Exception as e:
+        logger.warning(f"Error closing Redis: {e}")
+
+    # Close Elasticsearch
+    try:
+        await close_elasticsearch()
+    except Exception as e:
+        logger.warning(f"Error closing Elasticsearch: {e}")
 
 
-# ── FastAPI App ───────────────────────────────────────────────
+# ─────────────────────────────────────────────
+# FastAPI App
+# ─────────────────────────────────────────────
 app = FastAPI(
     title=settings.APP_NAME,
     version=settings.APP_VERSION,
@@ -58,7 +83,9 @@ app = FastAPI(
 )
 
 
-# ── CORS ──────────────────────────────────────────────────────
+# ─────────────────────────────────────────────
+# CORS Middleware
+# ─────────────────────────────────────────────
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.ALLOWED_ORIGINS,
@@ -68,19 +95,32 @@ app.add_middleware(
 )
 
 
-# ── API Routes ────────────────────────────────────────────────
-from src.core.exceptions import register_exception_handlers
-register_exception_handlers(app) 
+# ─────────────────────────────────────────────
+# Register Global Exception Handlers
+# ─────────────────────────────────────────────
+register_exception_handlers(app)
+
+
+# ─────────────────────────────────────────────
+# API Routes
+# ─────────────────────────────────────────────
 app.include_router(v1_router, prefix="/api/v1")
 
 
-# ── Health Check ──────────────────────────────────────────────
+# ─────────────────────────────────────────────
+# Health Check
+# ─────────────────────────────────────────────
 @app.get("/api/v1/health", tags=["Health"])
 async def health():
-    return {"status": "ok", "version": settings.APP_VERSION}
+    return {
+        "status": "ok",
+        "version": settings.APP_VERSION
+    }
 
 
-# ── Custom OpenAPI with Bearer Auth ───────────────────────────
+# ─────────────────────────────────────────────
+# Custom OpenAPI (JWT Bearer Auth)
+# ─────────────────────────────────────────────
 def custom_openapi():
 
     if app.openapi_schema:
@@ -97,7 +137,7 @@ def custom_openapi():
             "type": "http",
             "scheme": "bearer",
             "bearerFormat": "JWT",
-            "description": "Paste your access_token here (without 'Bearer' prefix)",
+            "description": "Paste your access_token here (without 'Bearer' prefix)"
         }
     }
 
@@ -106,8 +146,11 @@ def custom_openapi():
 
             if isinstance(method, dict):
 
+                # Public routes
                 if any(tag in method.get("tags", []) for tag in ["Authentication", "Health"]):
                     method["security"] = []
+
+                # Protected routes
                 else:
                     method["security"] = [{"BearerAuth": []}]
 

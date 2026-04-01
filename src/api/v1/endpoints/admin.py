@@ -19,6 +19,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, update
 
+from src.api.v1.endpoints import notifications
 from src.common.enums import UserStatus
 from src.core.database import get_db
 from src.api.deps.auth import get_admin_user, get_current_user
@@ -43,7 +44,7 @@ from src.schemas.admin import (
     PackageCreateSchema, PackageUpdateSchema,
     AssignAgentSchema,
     CouponCreateSchema, CouponUpdateSchema,
-    SettingUpdateSchema,
+    SettingUpdateSchema,WithdrawalProcessRequest,StatusUpdateRequest
 )
 from src.common.responses import APIResponse
 
@@ -675,15 +676,18 @@ async def broadcast_notification(
 ):
     result = await db.execute(select(User).where(User.status == UserStatus.ACTIVE))
     users = result.scalars().all()
-    for user in users:
-        notif = Notification(
-    user_id=user.id,
-    title=title,
-    body=message,       # ← correct field name
-    type="SYSTEM",
-    channel="in_app",   # ← required field
-)
-        db.add(notif)
+    notifications = [
+    Notification(
+        user_id=user.id,
+        title=title,
+        body=message,
+        type="SYSTEM",
+        channel="IN_APP",
+    )
+    for user in users
+]
+
+    db.add_all(notifications)
     await db.commit()
     return APIResponse.success(message=f"Notification sent to {len(users)} users")
 
