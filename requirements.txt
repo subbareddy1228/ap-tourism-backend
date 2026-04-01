@@ -1,47 +1,68 @@
-# ── Core Framework ────────────────────────────────────────────
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║          AP Tourism Backend — Production Requirements           ║
+# ╚══════════════════════════════════════════════════════════════════╝
+
+
+# ── Core Framework ────────────────────────────────────────────────
 fastapi==0.115.0
 uvicorn[standard]==0.30.6
 pydantic==2.9.2
 pydantic-settings==2.5.2
+python-multipart==0.0.12        # multipart/form-data (file uploads)
 
-# ── Database ──────────────────────────────────────────────────
+
+# ── Database ──────────────────────────────────────────────────────
 sqlalchemy==2.0.35
-asyncpg==0.29.0          # async PostgreSQL driver
-alembic==1.13.3          # database migrations
+asyncpg==0.29.0                 # async PostgreSQL driver
+alembic==1.13.3                 # database migrations
 
-# ── Auth & Security ───────────────────────────────────────────
-python-jose[cryptography]==3.3.0   # JWT tokens
-passlib[bcrypt]==1.7.4             # password hashing
 
-# ── Redis ─────────────────────────────────────────────────────
+# ── Auth & Security ───────────────────────────────────────────────
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+bcrypt==4.0.1
+
+
+# ── Cache ─────────────────────────────────────────────────────────
 redis[asyncio]==5.1.1
 
-# ── SMS ───────────────────────────────────────────────────────
-# twilio==9.3.3            # Twilio SMS
-httpx==0.27.2            # for MSG91 HTTP calls
-aiosmtplib==3.0.1        # async Gmail SMTP for email.py
 
-# ── Payments ──────────────────────────────────────────────────
-razorpay==1.4.2          # Razorpay payment gateway
-
-# ── File Upload ───────────────────────────────────────────────
-# boto3==1.35.36           # AWS S3
-aioboto3==13.1.0
-python-multipart==0.0.12 # file uploads in FastAPI
-
-# ── Async Tasks ───────────────────────────────────────────────
+# ── Async Tasks ───────────────────────────────────────────────────
 celery[redis]==5.4.0
-flower==2.0.1            # Celery monitoring dashboard
+asgiref==3.8.1                  # async_to_sync bridge for Celery tasks
+flower==2.0.1                   # Celery monitoring dashboard
 
-# ── Dev & Testing ─────────────────────────────────────────────
+
+# ── HTTP Client ───────────────────────────────────────────────────
+httpx==0.27.2                   # Firebase FCM, MSG91, Twilio, TTD API calls
+
+
+# ── Email ─────────────────────────────────────────────────────────
+aiosmtplib==3.0.1               # async Gmail SMTP
+
+
+# ── Push Notifications ────────────────────────────────────────────
+google-auth==2.29.0             # Firebase FCM OAuth2 token generation
+
+
+# ── SMS ───────────────────────────────────────────────────────────
+# Provider selected via SMS_PROVIDER env var: "twilio" or "msg91"
+# Both use httpx (already listed above) — no extra SDK needed
+
+
+# ── Payments ──────────────────────────────────────────────────────
+razorpay==1.4.2
+
+
+# ── File Storage ──────────────────────────────────────────────────
+aioboto3==13.1.0                # async AWS S3 (avatar uploads)
+
+
+# ── Search ────────────────────────────────────────────────────────
+elasticsearch[async]==8.13.0
+
+
+# ── Testing ───────────────────────────────────────────────────────
 pytest==8.3.3
 pytest-asyncio==0.24.0
-httpx==0.27.2            # test client
-pytest-cov==5.0.0        # coverage reports
-
-bcrypt==4.0.1
- 
-google-auth==2.29.0
-
-
-elasticsearch[async]>=8.13.0
+pytest-cov==5.0.0

@@ -4,6 +4,7 @@ Background tasks for push notifications via Firebase.
 """
 
 import logging
+from asgiref.sync import async_to_sync
 from src.tasks.celery_app import celery_app
 
 logger = logging.getLogger(__name__)
@@ -13,14 +14,13 @@ logger = logging.getLogger(__name__)
 def send_push_task(fcm_token: str, title: str, body: str, data: dict = None):
     """Send push notification to a single device."""
     try:
-        import asyncio
         from src.integrations.firebase import send_push
-        asyncio.run(send_push(
+        async_to_sync(send_push)(
             fcm_token=fcm_token,
             title=title,
             body=body,
             data=data or {},
-        ))
+        )
         logger.info("Push notification sent title='%s'", title)
     except Exception as e:
         logger.error("Push notification failed error=%s", str(e))
@@ -30,14 +30,13 @@ def send_push_task(fcm_token: str, title: str, body: str, data: dict = None):
 def send_multicast_task(fcm_tokens: list, title: str, body: str, data: dict = None):
     """Send push notification to multiple devices."""
     try:
-        import asyncio
         from src.integrations.firebase import send_multicast
-        result = asyncio.run(send_multicast(
+        result = async_to_sync(send_multicast)(
             fcm_tokens=fcm_tokens,
             title=title,
             body=body,
             data=data or {},
-        ))
+        )
         logger.info("Multicast push sent title='%s' sent=%d failed=%d",
                     title, result["sent"], result["failed"])
     except Exception as e:
@@ -54,3 +53,4 @@ def send_booking_push(fcm_token: str, booking_number: str, status: str):
         "status": status,
         "type": "booking_update",
     })
+    
