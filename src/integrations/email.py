@@ -1,40 +1,45 @@
 """
 integrations/email.py
-Async email sending via Gmail SMTP (aiosmtplib).
+Async email sending via SendGrid API.
 
 Required .env variables:
-    GMAIL_SENDER       — your Gmail address (e.g. noreply@aptourism.in)
-    GMAIL_APP_PASSWORD — Gmail App Password (not your account password)
-                         Generate at: myaccount.google.com/apppasswords
+    SENDGRID_API_KEY       — Your SendGrid API key (starts with SG.)
+    SENDGRID_FROM_EMAIL    — Verified sender email in SendGrid
+    SENDGRID_FROM_NAME     — Sender display name (default: AP Tourism)
 
 Usage:
     from src.integrations.email import send_email_otp
-    await send_email_otp("user@example.com", "123456")
+    await send_email_otp("user@example.com", "123456", purpose="verify_email")
 """
 
 import logging
-import aiosmtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
+from typing import Optional
+
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail, Email, To, Content
 
 from src.core.config import settings
 
 logger = logging.getLogger(__name__)
 
-SMTP_HOST = "smtp.gmail.com"
-SMTP_PORT = 587
+# ── Mock mode if SendGrid not configured ─────────────────────
+_MOCK_MODE = not settings.SENDGRID_API_KEY or not settings.SENDGRID_FROM_EMAIL
 
 
-def _build_otp_email(otp: str, purpose: str) -> tuple[str, str]:
+# ── OTP Email HTML Template ──────────────────────────────────
+
+def _build_otp_html(otp: str, purpose: str) -> tuple[str, str]:
+    """Build subject and HTML body for OTP email."""
     purpose_labels = {
-        "verify_email":    ("Verify your email address", "verify your email address"),
-        "forgot_password": ("Reset your password",       "reset your password"),
-        "register":        ("Complete your registration","complete your registration"),
+        "verify_email":    ("Verify your email address",    "verify your email address"),
+        "forgot_password": ("Reset your AP Tourism password", "reset your password"),
+        "register":        ("Complete your registration",   "complete your registration"),
     }
     subject, action = purpose_labels.get(
         purpose,
         ("Your AP Tourism OTP", "complete your action")
     )
+
     html = f"""<!DOCTYPE html>
 <html>
 <head><meta charset="UTF-8"></head>
@@ -51,7 +56,7 @@ def _build_otp_email(otp: str, purpose: str) -> tuple[str, str]:
         <tr>
           <td style="padding:36px 40px;">
             <p style="margin:0 0 16px;color:#374151;font-size:15px;line-height:1.6;">
-              Use the OTP below to {action}. It expires in <strong>10 minutes</strong> and can only be used once.
+              Use the OTP below to {action}. It expires in <strong>5 minutes</strong> and can only be used once.
             </p>
             <div style="margin:28px 0;text-align:center;">
               <span style="display:inline-block;background:#f0f4ff;border:2px dashed #1a56db;
@@ -75,38 +80,113 @@ def _build_otp_email(otp: str, purpose: str) -> tuple[str, str]:
   </table>
 </body>
 </html>"""
+
     return subject, html
 
 
-async def send_email(to: str, subject: str, html_body: str) -> bool:
-    """Send HTML email via Gmail SMTP (async). Returns True on success, False on failure."""
-    if not settings.GMAIL_SENDER or not settings.GMAIL_APP_PASSWORD:
-        logger.warning("Email not configured — GMAIL_SENDER or GMAIL_APP_PASSWORD missing")
-        return False
+# ── Core Send Function ────────────────────────────────────────
 
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = subject
-    msg["From"]    = f"AP Tourism <{settings.GMAIL_SENDER}>"
-    msg["To"]      = to
-    msg.attach(MIMEText(html_body, "html"))
+async def send_email(
+    to:      str,
+    subject: str,
+    html_body: str,
+    plain_body: Optional[str] = None,
+) -> bool:
+    """
+    Send HTML email via SendGrid API.
+
+    Returns True on success, False on failure (never raises).
+    In mock mode (no API key), logs the email and returns True.
+    """
+    if _MOCK_MODE:
+        logger.warning(
+            "SENDGRID MOCK MODE — email not sent. to=%s subject=%r",
+            to, subject
+        )
+        logger.info("OTP would be sent to: %s", to)
+        return True
 
     try:
-        await aiosmtplib.send(
-            msg,
-            hostname=SMTP_HOST,
-            port=SMTP_PORT,
-            username=settings.GMAIL_SENDER,
-            password=settings.GMAIL_APP_PASSWORD,
-            start_tls=True,
+        from_email = Email(
+            email=settings.SENDGRID_FROM_EMAIL,
+            name=settings.SENDGRID_FROM_NAME or "AP Tourism",
         )
-        logger.info("Email sent to=%s subject=%r", to, subject)
-        return True
-    except Exception as exc:
-        logger.error("Email send failed to=%s error=%s", to, exc)
+        to_email = To(to)
+
+        message = Mail(
+            from_email=from_email,
+            to_emails=to_email,
+            subject=subject,
+        )
+        message.add_content(Content("text/html", html_body))
+        if plain_body:
+            message.add_content(Content("text/plain", plain_body))
+
+        sg = SendGridAPIClient(settings.SENDGRID_API_KEY)
+        response = sg.send(message)
+
+        if response.status_code in (200, 201, 202):
+            logger.info(
+                "SendGrid email sent to=%s subject=%r status=%d",
+                to, subject, response.status_code
+            )
+            return True
+        else:
+            logger.error(
+                "SendGrid email failed to=%s status=%d body=%s",
+                to, response.status_code, response.body
+            )
+            return False
+
+    except Exception as e:
+        logger.error("SendGrid email failed to=%s error=%s", to, str(e))
         return False
 
 
-async def send_email_otp(to: str, otp: str, purpose: str = "verify_email") -> bool:
-    """Send an OTP email for the given purpose."""
-    subject, html = _build_otp_email(otp, purpose)
-    return await send_email(to, subject, html)
+# ── OTP Email ─────────────────────────────────────────────────
+
+async def send_email_otp(
+    to:      str,
+    otp:     str,
+    purpose: str = "verify_email",
+) -> bool:
+    """
+    Send OTP verification email via SendGrid.
+
+    Args:
+        to:      Recipient email address
+        otp:     6-digit OTP code
+        purpose: verify_email | forgot_password | register
+
+    Returns:
+        True on success, False on failure
+    """
+    subject, html = _build_otp_html(otp, purpose)
+    plain = (
+        f"Your AP Tourism OTP is: {otp}\n\n"
+        f"This code expires in 5 minutes.\n"
+        f"Do not share this code with anyone.\n\n"
+        f"— AP Tourism Team"
+    )
+    return await send_email(to=to, subject=subject, html_body=html, plain_body=plain)
+
+
+# ── Booking Confirmation Email ────────────────────────────────
+
+async def send_booking_confirmation(
+    to:             str,
+    booking_number: str,
+    amount:         float,
+) -> bool:
+    """Send booking confirmation email."""
+    subject = f"Booking Confirmed — {booking_number}"
+    html = f"""
+    <div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto;padding:20px;">
+      <h2 style="color:#1a56db;">Booking Confirmed ✓</h2>
+      <p>Your booking <strong>{booking_number}</strong> has been confirmed.</p>
+      <p>Total Amount: <strong>₹{amount:.2f}</strong></p>
+      <p>Thank you for choosing AP Tourism!</p>
+    </div>
+    """
+    plain = f"Booking {booking_number} confirmed. Amount: ₹{amount:.2f}. Thank you!"
+    return await send_email(to=to, subject=subject, html_body=html, plain_body=plain)

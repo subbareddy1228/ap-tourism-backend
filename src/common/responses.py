@@ -3,7 +3,6 @@ common/responses.py
 Standard API response format used across all endpoints.
 """
 
-import code
 from typing import Any, Optional
 from pydantic import BaseModel
 from fastapi.responses import JSONResponse
@@ -42,4 +41,5 @@ class APIResponse(BaseModel):
             "code": code
         }
     )
+
 

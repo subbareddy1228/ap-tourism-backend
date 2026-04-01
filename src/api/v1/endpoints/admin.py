@@ -208,7 +208,7 @@ async def update_user_status(
     db: AsyncSession = Depends(get_db),
 ):
     user = await _get_or_404(db, User, user_id)
-    user.status = UserStatus.ACTIVE if data.status.upper() == "ACTIVE" else UserStatus.INACTIVE
+    user.status = UserStatus.ACTIVE if data.status.upper() == "ACTIVE" else UserStatus.SUSPENDED
     await db.commit()
     return APIResponse.success(message=f"User {data.status}", data=_user_dict(user))
 

@@ -29,8 +29,8 @@ from src.schemas.auth import (
     ResendOTPRequest, LoginRequest, OTPLoginRequest,
     RefreshTokenRequest, ForgotPasswordRequest,
     ResetPasswordRequest, ChangePasswordRequest,
-    SendEmailOTPRequest, VerifyEmailOTPRequest,
-    TokenResponse, OTPSentResponse, UserResponse, LogoutRequest
+    TokenResponse, OTPSentResponse, UserResponse, LogoutRequest,
+    VerifyEmailRequest, ResendEmailOTPRequest,
 )
 from src.common.responses import APIResponse
 from src.services import auth_service
@@ -338,41 +338,76 @@ async def change_password(
 @router.post(
     "/send-email-otp",
     response_model=APIResponse,
-    summary="Send OTP to registered email for verification"
+    summary="Send email verification OTP"
 )
-async def send_email_otp(
+async def send_email_otp_endpoint(
     current_user: User = Depends(get_current_user),
 ):
     """
-    Send a 6-digit OTP to the authenticated user's registered email address.
+    Send a 6-digit OTP to the logged-in user's registered email.
 
-    - Requires a valid Bearer token.
-    - Rate-limited: max 3 sends per 10-minute window.
-    - OTP expires in **10 minutes**.
+    - User must already be logged in (phone verified)
+    - Email must be set on the account
+    - Rate limited: max 3 sends per 10-minute window
 
-    **Next step:** Call `/auth/verify-email` with the OTP received.
+    **Next step:** Submit OTP to POST /auth/verify-email
     """
-    result = await auth_service.send_email_verification_otp(current_user)
-    return APIResponse.success(message=result["message"], data=result)
+    try:
+        result = await auth_service.send_email_verification_otp(current_user)
+        return APIResponse.success(message=result["message"], data=result)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 # ── 14. Verify Email OTP ──────────────────────────────────────
 @router.post(
     "/verify-email",
     response_model=APIResponse,
-    summary="Verify email address using OTP"
+    summary="Verify email address with OTP"
 )
-async def verify_email(
-    data: VerifyEmailOTPRequest,
+async def verify_email_endpoint(
+    data: VerifyEmailRequest,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Confirm the 6-digit OTP sent to the user's email and mark it as verified.
+    Verify the OTP sent to the user's email address.
 
-    - Requires a valid Bearer token.
-    - Max **5 incorrect attempts** before the OTP is invalidated.
-    - After verification, `is_email_verified` becomes `true` on the user object.
+    **Request body:**
+    ```json
+    { "email": "user@example.com", "otp": "123456" }
+    ```
+
+    On success: sets `is_email_verified = true` on the account.
     """
-    result = await auth_service.verify_email_otp(data.otp, current_user, db)
-    return APIResponse.success(message=result["message"])
+    try:
+        result = await auth_service.verify_email_otp(data, current_user, db)
+        return APIResponse.success(message=result["message"], data=result)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+# ── 15. Resend Email OTP ──────────────────────────────────────
+@router.post(
+    "/resend-email-otp",
+    response_model=APIResponse,
+    summary="Resend email verification OTP"
+)
+async def resend_email_otp_endpoint(
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Resend the email verification OTP.
+    Same rate limits apply as /auth/send-email-otp.
+    """
+    try:
+        result = await auth_service.resend_email_otp(current_user)
+        return APIResponse.success(message=result["message"], data=result)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))

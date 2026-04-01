@@ -5,6 +5,7 @@ Background tasks for email sending.
 
 import logging
 from src.tasks.celery_app import celery_app
+from src.integrations.sendgrid import send_email
 
 logger = logging.getLogger(__name__)
 

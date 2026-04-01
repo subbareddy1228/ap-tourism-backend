@@ -5,6 +5,7 @@ Business logic for all 25 booking endpoints.
 Depends on: Auth (M1), Hotels (M5), Vehicles (M6), Temples/Darshan (M7),
             Packages (M9), Guides (M10), Payments (M12)
 """
+from http.client import HTTPException
 import json
 import math
 import logging
@@ -591,7 +592,7 @@ async def book_pooja(
             message="Pooja slot reserved. Complete payment to confirm.",
         )
 
-    except HTTPException:
+    except  HTTPException:
         await booking_repo.release_booking_slot(redis, "pooja_service", str(req.pooja_service_id))
         raise
     except Exception as e:

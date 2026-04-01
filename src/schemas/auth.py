@@ -11,7 +11,6 @@ from pydantic import BaseModel, EmailStr, field_validator
 # ── Validators ────────────────────────────────────────────────
 
 def validate_phone(phone: str) -> str:
-    """Ensure phone is a valid 10-digit Indian mobile number."""
     phone = phone.strip().replace(" ", "").replace("-", "")
     if phone.startswith("+91"):
         phone = phone[3:]
@@ -21,7 +20,6 @@ def validate_phone(phone: str) -> str:
 
 
 def validate_password(password: str) -> str:
-    """Ensure password meets minimum strength requirements."""
     if len(password) < 8:
         raise ValueError("Password must be at least 8 characters")
     if not re.search(r"[A-Z]", password):
@@ -54,7 +52,7 @@ class RegisterRequest(BaseModel):
 class SendOTPRequest(BaseModel):
     """POST /auth/send-otp"""
     phone: str
-    purpose: str = "register"   # register | login | forgot_password
+    purpose: str = "register"
 
     @field_validator("phone")
     @classmethod
@@ -90,14 +88,15 @@ class ResendOTPRequest(BaseModel):
 
 
 class LoginRequest(BaseModel):
-    """POST /auth/login — password-based login"""
+    """POST /auth/login"""
     phone: str
     password: str
-    device_id: Optional[str] = "default"   # for multi-device session tracking
+    device_id: Optional[str] = "default"
 
     @field_validator("phone")
     @classmethod
     def phone_valid(cls, v): return validate_phone(v)
+
 
 class LogoutRequest(BaseModel):
     """POST /auth/logout and /auth/logout-all"""
@@ -105,7 +104,7 @@ class LogoutRequest(BaseModel):
 
 
 class OTPLoginRequest(BaseModel):
-    """POST /auth/login/otp — passwordless OTP login"""
+    """POST /auth/login/otp"""
     phone: str
     otp: str
     device_id: Optional[str] = "default"
@@ -141,12 +140,11 @@ class ResetPasswordRequest(BaseModel):
 
     @field_validator("new_password")
     @classmethod
-
     def password_valid(cls, v): return validate_password(v)
 
 
 class ChangePasswordRequest(BaseModel):
-    """POST /auth/change-password — requires auth"""
+    """POST /auth/change-password"""
     current_password: str
     new_password: str
 
@@ -155,15 +153,11 @@ class ChangePasswordRequest(BaseModel):
     def password_valid(cls, v): return validate_password(v)
 
 
-class SendEmailOTPRequest(BaseModel):
-    """POST /auth/send-email-otp — send OTP to the user's registered email"""
-    # No body needed — email is taken from the authenticated user's record.
-    # Kept as an explicit schema for future extensibility (e.g. change-email flow).
-    pass
+# ── NEW: Email Verification Schemas ───────────────────────────
 
-
-class VerifyEmailOTPRequest(BaseModel):
-    """POST /auth/verify-email — verify OTP sent to email"""
+class VerifyEmailRequest(BaseModel):
+    """POST /auth/verify-email — submit email OTP"""
+    email: EmailStr
     otp: str
 
     @field_validator("otp")
@@ -172,6 +166,11 @@ class VerifyEmailOTPRequest(BaseModel):
         if not v.isdigit() or len(v) != 6:
             raise ValueError("OTP must be a 6-digit number")
         return v
+
+
+class ResendEmailOTPRequest(BaseModel):
+    """POST /auth/resend-email-otp"""
+    email: EmailStr
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -204,4 +203,4 @@ class OTPSentResponse(BaseModel):
     """Returned after sending OTP."""
     message: str
     phone: str
-    expires_in: int = 300   # seconds
+    expires_in: int = 300

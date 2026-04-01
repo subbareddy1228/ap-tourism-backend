@@ -1,27 +1,37 @@
 """
 services/auth_service.py
-Authentication business logic — aligned to Module 1 spec.
+Authentication business logic — with full email verification flow.
+
+Registration Flow:
+  1. POST /auth/register         → creates user, sends phone OTP + email OTP
+  2. POST /auth/verify-otp       → verify phone OTP → get JWT tokens
+  3. POST /auth/verify-email     → verify email OTP → is_email_verified = True
+
+Email OTP endpoints (for already logged-in users):
+  POST /auth/send-email-otp      → send fresh email OTP
+  POST /auth/resend-email-otp    → resend with rate limiting
 """
 
 import logging
 from datetime import datetime
 
-from fastapi import status
+from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_
 
+from src.common.email_templates import otp_email_template
+from src.common.email_templates import otp_email_template
 from src.models.user import User
-from src.models.user_profile import UserProfile                    # ← ADDED
+from src.models.user_profile import UserProfile
 from src.schemas.auth import (
     RegisterRequest, VerifyOTPRequest, LoginRequest,
-    OTPLoginRequest, ResetPasswordRequest, ChangePasswordRequest
+    OTPLoginRequest, ResetPasswordRequest, ChangePasswordRequest,
+    VerifyEmailRequest,
 )
-
 from src.core.security import (
     hash_password, verify_password,
     create_access_token, create_refresh_token, decode_token
 )
-
 from src.core.redis import (
     store_otp, get_otp, delete_otp,
     increment_resend_count, get_resend_count, get_resend_ttl,
@@ -32,522 +42,263 @@ from src.core.redis import (
     increment_email_otp_attempts, clear_email_otp_attempts,
     increment_email_resend_count, get_email_resend_count,
 )
-
 from src.common.utils import generate_otp
 from src.common.enums import UserStatus
 from src.core.config import settings
 from src.integrations.twilio import send_sms
 from src.integrations.email import send_email_otp
-from src.core.exceptions import (
-    BadRequestException,
-    ForbiddenException,
-    NotFoundException,
-    RateLimitException,
-    ServiceUnavailableException,
-    UnauthorizedException,
-)
 
 logger = logging.getLogger(__name__)
 
-# ───────────────── Helpers ─────────────────
 
-async def send_sms_otp(phone: str, otp: str) -> None:
-    """Send OTP using configured SMS provider."""
+# ═══════════════════════════════════════════════════════════════
+# INTERNAL HELPERS
+# ═══════════════════════════════════════════════════════════════
+
+async def _send_phone_otp(phone: str, otp: str) -> None:
+    """Send OTP via SMS (Twilio / MSG91)."""
     await send_sms(phone, otp)
+    
 
-# ═════════════════ REGISTER ═════════════════
+# ═══════════════════════════════════════════════
+# SEND PHONE OTP
+# ═══════════════════════════════════════════════
+
+async def send_otp(phone: str, purpose: str = "login") -> dict:
+    """
+    Send OTP to phone for login / verification.
+    """
+
+    # Generate OTP
+    otp = generate_otp()
+
+    # Store in Redis
+    await store_otp(phone, otp, purpose=purpose)
+
+    # Send via SMS
+    await _send_phone_otp(phone, otp)
+
+    logger.info("OTP sent phone=%s purpose=%s", phone, purpose)
+
+    return {
+        "message": "OTP sent successfully",
+        "phone": phone,
+        "expires_in": settings.OTP_EXPIRE_SECONDS,
+    }
+
+async def _send_email_otp_helper(email: str, otp: str, purpose: str = "verify_email") -> None:
+    """Send OTP via email. Logs warning if email not configured, never crashes."""
+    try:
+        sent = await send_email_otp(email, otp, purpose)
+        if not sent:
+            logger.warning("Email OTP not sent (not configured) to=%s", email)
+    except Exception as e:
+        logger.error("Email OTP send failed email=%s error=%s", email, str(e))
+
+
+def _user_dict(user: User) -> dict:
+    return {
+        "id":                str(user.id),
+        "phone":             user.phone,
+        "email":             user.email,
+        "full_name":         user.full_name,
+        "role":              user.role.value if hasattr(user.role, "value") else str(user.role),
+        "status":            user.status.value if hasattr(user.status, "value") else str(user.status),
+        "is_phone_verified": user.is_phone_verified,
+        "is_email_verified": user.is_email_verified,
+        "created_at":        user.created_at,
+        "last_login":        user.last_login,
+    }
+
+
+def _mask_email(email: str) -> str:
+    try:
+        local, domain = email.split("@", 1)
+        return local[0] + "***@" + domain
+    except Exception:
+        return email
+
+
+# ═══════════════════════════════════════════════════════════════
+# 1. REGISTER
+# ═══════════════════════════════════════════════════════════════
 
 async def register_user(data: RegisterRequest, db: AsyncSession) -> dict:
+    """
+    Register a new user.
+    - Sends phone OTP via SMS
+    - If email provided: also sends email verification OTP
+    """
+    logger.info("Registration attempt phone=%s email=%s", data.phone, data.email)
 
-    logger.info("Registration attempt phone=%s", data.phone)
+    # Check uniqueness
+    if data.email:
+        query = select(User).where(or_(User.phone == data.phone, User.email == data.email))
+    else:
+        query = select(User).where(User.phone == data.phone)
 
-    # ───────── Check if user exists (phone or email) ─────────
-    result = await db.execute(
-        select(User).where(
-            or_(
-                User.phone == data.phone,
-                User.email == data.email
-            )
-        )
-    )
+    result = await db.execute(query)
+    existing = result.scalar_one_or_none()
 
-    existing_user = result.scalar_one_or_none()
-
-    if existing_user:
-
-        # ───── Restore deleted user ─────
-        if existing_user.deleted_at is not None:
-
-            logger.info("Reactivating deleted user phone=%s", data.phone)
-
-            existing_user.deleted_at = None
-            existing_user.status = UserStatus.ACTIVE
-            existing_user.full_name = data.full_name
-            existing_user.password_hash = hash_password(data.password)
-            existing_user.updated_at = datetime.utcnow()
-
+    if existing:
+        if existing.deleted_at is not None:
+            # Restore soft-deleted account
+            existing.deleted_at    = None
+            existing.status        = UserStatus.ACTIVE
+            existing.full_name     = data.full_name
+            existing.password_hash = hash_password(data.password)
+            existing.updated_at    = datetime.utcnow()
             await db.commit()
-            await db.refresh(existing_user)
+            await db.refresh(existing)
 
-            otp = generate_otp()
-            await store_otp(data.phone, otp, purpose="register")
+            phone_otp = generate_otp()
+            await store_otp(data.phone, phone_otp, purpose="register")
+            await _send_phone_otp(data.phone, phone_otp)
 
-            await send_sms_otp(data.phone, otp)
+            email_otp_sent = False
+            if data.email:
+                email_otp = generate_otp()
+                await store_email_otp(data.email, email_otp, purpose="verify_email")
+                await send_email_otp(data.email, email_otp, purpose="verify_email")
+                email_otp_sent = True
 
             return {
-                "user_id": str(existing_user.id),
-                "message": "Account reactivated. OTP sent."
+                "user_id": str(existing.id),
+                "message": "Account reactivated. OTP sent to your phone.",
+                "email_otp_sent": email_otp_sent,
             }
 
-        # ───── Active user exists ─────
-        raise BadRequestException("User already exists")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="An account already exists with this phone or email."
+        )
 
-    # ───────── Generate OTP ─────────
-    otp = generate_otp()
-    await store_otp(data.phone, otp, purpose="register")
-
-    await send_sms_otp(data.phone, otp)
-
-    # ───────── Create new user ─────────
+    # Create user
     user = User(
-        phone=data.phone,
-        email=data.email,
-        full_name=data.full_name,
-        password_hash=hash_password(data.password),
-        is_phone_verified=False,
-        role="TRAVELER",
-        status=UserStatus.ACTIVE
+        phone             = data.phone,
+        email             = data.email,
+        full_name         = data.full_name,
+        password_hash     = hash_password(data.password),
+        is_phone_verified = False,
+        is_email_verified = False,
+        role              = "TRAVELER",
+        status            = UserStatus.ACTIVE,
     )
-
     db.add(user)
     await db.commit()
     await db.refresh(user)
 
-    profile = UserProfile(
-        user_id=user.id,
-        preferences={},
-        language="en",
-        kyc_status="pending"
-    )
-
-    db.add(profile)
+    # Create profile
+    db.add(UserProfile(user_id=user.id, preferences={}, language="en", kyc_status="pending"))
     await db.commit()
+
+    # Send phone OTP
+    phone_otp = generate_otp()
+    await store_otp(data.phone, phone_otp, purpose="register")
+    await _send_phone_otp(data.phone, phone_otp)
+
+    # Send email OTP if email provided
+    email_otp_sent = False
+    if data.email:
+        email_otp = generate_otp()
+        await store_email_otp(data.email, email_otp, purpose="verify_email")
+        await send_email_otp(data.email, email_otp, purpose="verify_email")
+
+        email_otp_sent = True
+        logger.info("Email OTP sent user_id=%s email=%s", user.id, data.email)
+
+    logger.info("Registration success user_id=%s", user.id)
 
     return {
         "user_id": str(user.id),
-        "message": "OTP sent to your phone"
-    }
-
-# ═════════════════ SEND OTP ═════════════════
-async def send_otp(phone: str, purpose: str) -> dict:
-    otp = generate_otp()
-    await store_otp(phone, otp, purpose=purpose)
-    await send_sms_otp(phone, otp)
-
-    return {
-        "phone": phone,
-        "expires_in": settings.OTP_EXPIRE_SECONDS,
-    }
-# ═════════════════ RESEND OTP ═════════════════
-
-async def resend_otp(phone: str, purpose: str) -> dict:
-
-    resend_count = await get_resend_count(phone)
-
-    if resend_count >= settings.OTP_RESEND_MAX:
-        ttl = await get_resend_ttl(phone)
-
-        raise RateLimitException(f"Too many resend attempts. Try again in {ttl} seconds.")
-
-    await increment_resend_count(phone)
-
-    otp = generate_otp()
-
-    await store_otp(phone, otp, purpose=purpose)
-    await send_sms_otp(phone, otp)
-
-    return {
-        "message": "OTP resent successfully",
-        "phone": phone,
-        "expires_in": settings.OTP_EXPIRE_SECONDS,
-    }
-
-# ═════════════════ VERIFY OTP ═════════════════
-
-async def verify_otp_and_login(
-    data: VerifyOTPRequest,
-    db: AsyncSession,
-    device_id: str = "default"
-) -> dict:
-
-    attempts = await increment_otp_attempts(data.phone)
-
-    if attempts > settings.OTP_MAX_ATTEMPTS:
-        raise RateLimitException("Too many incorrect attempts. Request a new OTP.")
-
-    stored_otp = await get_otp(data.phone, purpose=data.purpose)
-
-    if not stored_otp:
-        raise BadRequestException("OTP expired. Please request a new one.")
-
-    if stored_otp != data.otp:
-        remaining = settings.OTP_MAX_ATTEMPTS - attempts
-
-        raise UnauthorizedException(f"Incorrect OTP. {remaining} attempts remaining.")
-
-    await delete_otp(data.phone, purpose=data.purpose)
-    await clear_otp_attempts(data.phone)
-
-    result = await db.execute(select(User).where(User.phone == data.phone))
-    user = result.scalar_one_or_none()
-
-    if not user:
-        raise NotFoundException("User not found")
-
-    if user.status != UserStatus.ACTIVE:
-        raise ForbiddenException("Account suspended")
-
-    user.is_phone_verified = True
-    user.last_login = datetime.utcnow()
-
-    await db.commit()
-    await db.refresh(user)
-
-    access_token = create_access_token(str(user.id), user.role.value)
-    refresh_token = create_refresh_token(str(user.id), user.role.value)
-
-    refresh_payload = decode_token(refresh_token)
-
-    await store_refresh_jti(
-        str(user.id),
-        device_id,
-        refresh_payload["jti"]
-    )
-
-    user_data = {
-        "id": str(user.id),
-        "phone": user.phone,
-        "email": user.email,
-        "full_name": user.full_name,
-        "role": user.role.value,
-        "status": user.status.value,
-        "is_phone_verified": user.is_phone_verified,
-        "is_email_verified": user.is_email_verified,
-        "created_at": user.created_at,
-        "last_login": user.last_login,
-    }
-
-    return {
-        "access_token": access_token,
-        "refresh_token": refresh_token,
-        "token_type": "bearer",
-        "user": user_data,
-    }
-
-# ═════════════════ LOGIN PASSWORD ═════════════════
-
-async def login_with_password(data: LoginRequest, db: AsyncSession) -> dict:
-
-    result = await db.execute(
-        select(User).where(User.phone == data.phone)
-    )
-
-    user = result.scalar_one_or_none()
-
-    if not user or not verify_password(data.password, user.password_hash):
-        raise UnauthorizedException("Invalid credentials")
-
-    if not user.is_phone_verified:
-        raise ForbiddenException("Phone not verified")
-
-    if user.status != UserStatus.ACTIVE:
-        raise ForbiddenException("Account suspended")
-
-    user.last_login = datetime.utcnow()
-
-    await db.commit()
-
-    access_token = create_access_token(str(user.id), user.role.value)
-    refresh_token = create_refresh_token(str(user.id), user.role.value)
-
-    refresh_payload = decode_token(refresh_token)
-
-    await store_refresh_jti(
-        str(user.id),
-        data.device_id or "default",
-        refresh_payload["jti"]
-    )
-
-    logger.info("Login success user_id=%s", user.id)
-
-    return {
-        "access_token": access_token,
-        "refresh_token": refresh_token,
-        "token_type": "bearer",
-        "user": {
-            "id": str(user.id),
-            "phone": user.phone,
-            "email": user.email,
-            "full_name": user.full_name,
-            "role": user.role.value,
-            "status": user.status.value,
-            "is_phone_verified": user.is_phone_verified,
-            "is_email_verified": user.is_email_verified,
-            "created_at": user.created_at,
-            "last_login": user.last_login,
+        "message": (
+            "Registration successful. OTP sent to your phone."
+            + (" Email verification OTP also sent." if email_otp_sent else "")
+        ),
+        "email_otp_sent": email_otp_sent,
+        "next_steps": {
+            "step_1": "POST /api/v1/auth/verify-otp  — verify your phone number",
+            "step_2": (
+                "POST /api/v1/auth/verify-email — verify your email address"
+                if email_otp_sent else "No email provided"
+            ),
         },
     }
 
-# ═════════════════ LOGIN OTP (Passwordless) ═════════════════
 
-async def login_with_otp(data: OTPLoginRequest, db: AsyncSession) -> dict:
-
-    logger.info("OTP login attempt phone=%s", data.phone)
-
-    attempts = await increment_otp_attempts(data.phone)
-    if attempts > settings.OTP_MAX_ATTEMPTS:
-        raise RateLimitException("Too many attempts. Request a new OTP.")
-
-    stored_otp = await get_otp(data.phone, purpose="login")
-    if not stored_otp:
-        raise BadRequestException("OTP expired. Please request a new one.")
-
-    if stored_otp != data.otp:
-        remaining = settings.OTP_MAX_ATTEMPTS - attempts
-        raise UnauthorizedException(f"Incorrect OTP. {remaining} attempts remaining.")
-
-    await delete_otp(data.phone, purpose="login")
-    await clear_otp_attempts(data.phone)
-
-    result = await db.execute(select(User).where(User.phone == data.phone))
-    user = result.scalar_one_or_none()
-
-    if not user:
-        raise NotFoundException("User not found")
-
-    if user.status != UserStatus.ACTIVE:
-        raise ForbiddenException("Account suspended")
-
-    user.last_login = datetime.utcnow()
-    await db.commit()
-    await db.refresh(user)
-
-    access_token = create_access_token(str(user.id), user.role.value)
-    refresh_token = create_refresh_token(str(user.id), user.role.value)
-    refresh_payload = decode_token(refresh_token)
-    await store_refresh_jti(str(user.id), data.device_id or "default", refresh_payload["jti"])
-
-    logger.info("OTP login success user_id=%s", user.id)
-
-    return {
-        "access_token": access_token,
-        "refresh_token": refresh_token,
-        "token_type": "bearer",
-        "user": {
-            "id": str(user.id),
-            "phone": user.phone,
-            "email": user.email,
-            "full_name": user.full_name,
-            "role": user.role.value,
-            "status": user.status.value,
-            "is_phone_verified": user.is_phone_verified,
-            "is_email_verified": user.is_email_verified,
-            "created_at": user.created_at,
-            "last_login": user.last_login,
-        },
-    }
-
-# ═════════════════ FORGOT PASSWORD ═════════════════
-
-async def forgot_password(phone: str, db: AsyncSession) -> dict:
-
-    logger.info("Forgot password request phone=%s", phone)
-
-    result = await db.execute(select(User).where(User.phone == phone))
-    user = result.scalar_one_or_none()
-
-    if not user:
-        # Don't reveal if user exists — return generic message
-        return {"message": "If the number is registered, an OTP has been sent."}
-
-    otp = generate_otp()
-    await store_otp(phone, otp, purpose="forgot_password")
-    await send_sms_otp(phone, otp)
-
-    logger.info("Forgot password OTP sent phone=%s", phone)
-    return {"message": "OTP sent to your registered phone number."}
-
-# ═════════════════ RESET PASSWORD ═════════════════
-
-async def reset_password(data: ResetPasswordRequest, db: AsyncSession) -> dict:
- 
-    logger.info("Password reset attempt phone=%s", data.phone)
- 
-    # ── Brute-force protection ────────────────────────────────
-    attempts = await increment_otp_attempts(data.phone)
-    if attempts > settings.OTP_MAX_ATTEMPTS:
-        logger.warning("Too many reset attempts phone=%s", data.phone)
-        raise RateLimitException("Too many attempts. Please request a new OTP.")
- 
-    stored_otp = await get_otp(data.phone, purpose="forgot_password")
- 
-    if not stored_otp or stored_otp != data.otp:
-        logger.warning("Invalid reset OTP phone=%s", data.phone)
-        raise UnauthorizedException("Invalid or expired OTP")
- 
-    # ── OTP verified — clear attempts and proceed ─────────────
-    await clear_otp_attempts(data.phone)
- 
-    result = await db.execute(select(User).where(User.phone == data.phone))
-    user = result.scalar_one_or_none()
- 
-    if not user:
-        raise NotFoundException("User not found")
- 
-    user.password_hash = hash_password(data.new_password)
-    db.add(user)
- 
-    await db.commit()
- 
-    await delete_otp(data.phone, purpose="forgot_password")
-    await delete_all_refresh_jtis(str(user.id))
- 
-    logger.info("Password reset success user_id=%s", user.id)
-    return {"message": "Password reset successfully. Please login again."}
-
-# ═════════════════ REFRESH TOKEN ═════════════════
-
-async def refresh_access_token(refresh_token: str, db: AsyncSession) -> dict:
-
-    payload = decode_token(refresh_token)
-    if not payload or payload.get("type") != "refresh":
-        raise UnauthorizedException("Invalid refresh token")
-
-    user_id = payload.get("sub")
-    device_id = payload.get("device_id", "default")
-    jti = payload.get("jti")
-
-    stored_jti = await get_refresh_jti(user_id, device_id)
-    if not stored_jti or stored_jti != jti:
-        raise UnauthorizedException("Refresh token expired or revoked")
-
-    result = await db.execute(select(User).where(User.id == user_id))
-    user = result.scalar_one_or_none()
-    if not user:
-        raise NotFoundException("User not found")
-
-    new_access = create_access_token(str(user.id), user.role.value)
-    new_refresh = create_refresh_token(str(user.id), user.role.value)
-    new_payload = decode_token(new_refresh)
-    await store_refresh_jti(str(user.id), device_id, new_payload["jti"])
-
-    return {
-        "access_token": new_access,
-        "refresh_token": new_refresh,
-        "token_type": "bearer"
-    }
-
-# ═════════════════ LOGOUT ═════════════════
-
-async def logout(user_id: str, access_token: str, device_id: str = "default") -> dict:
-
-    logger.info("Logout attempt user_id=%s device_id=%s", user_id, device_id)
-
-    payload = decode_token(access_token)
-
-    if payload:
-        jti = payload.get("jti")
-        expire_in = max(0, int(payload["exp"] - int(datetime.utcnow().timestamp())))
-        await blacklist_jti(jti, expire_in)
-
-    await delete_refresh_jti(user_id, device_id)
-
-    logger.info("Logout success user_id=%s", user_id)
-    return {"message": "Logged out successfully"}
-
-# ═════════════════ LOGOUT ALL ═════════════════
-
-async def logout_all(user_id: str, access_token: str) -> dict:
-
-    logger.info("Logout all devices user_id=%s", user_id)
-
-    payload = decode_token(access_token)
-
-    if payload:
-        jti = payload.get("jti")
-        expire_in = max(0, int(payload["exp"] - int(datetime.utcnow().timestamp())))
-        await blacklist_jti(jti, expire_in)
-
-    await delete_all_refresh_jtis(user_id)
-
-    return {"message": "Logged out from all devices"}
-
-# ═════════════════ SEND EMAIL VERIFICATION OTP ═════════════════
+# ═══════════════════════════════════════════════════════════════
+# 2. SEND EMAIL VERIFICATION OTP
+# ═══════════════════════════════════════════════════════════════
 
 async def send_email_verification_otp(user: User) -> dict:
-    """
-    Generate a 6-digit OTP, store it in Redis (10 min TTL),
-    and email it to the user's registered address.
-
-    Rate-limited to OTP_RESEND_MAX sends per OTP_RESEND_WINDOW_SECONDS.
-    """
     if not user.email:
-        raise BadRequestException("No email address on your account. Add one in profile settings first.")
-
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No email address on your account. Add one in profile settings first."
+        )
     if user.is_email_verified:
-        raise BadRequestException("Email is already verified.")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Your email is already verified."
+        )
 
-    # ── Rate limit ────────────────────────────────────────────
     resend_count = await get_email_resend_count(user.email)
     if resend_count >= settings.OTP_RESEND_MAX:
-        raise RateLimitException("Too many requests. Please wait before requesting another OTP.")
-    await increment_email_resend_count(user.email)
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many email OTP requests. Please wait before trying again."
+        )
 
-    # ── Generate + store + send ───────────────────────────────
+    await increment_email_resend_count(user.email)
     otp = generate_otp()
     await store_email_otp(user.email, otp, purpose="verify_email")
 
+    # ✅ Direct async call — no Celery needed
     sent = await send_email_otp(user.email, otp, purpose="verify_email")
     if not sent:
-        logger.error("Failed to send email OTP to=%s user_id=%s", user.email, user.id)
-        raise ServiceUnavailableException("Could not send email. Please check your address or try again later.")
+        logger.warning("Email OTP not delivered to=%s", user.email)
 
     logger.info("Email verification OTP sent user_id=%s email=%s", user.id, user.email)
     return {
-        "message": "OTP sent to your email address.",
-        "email":   _mask_email(user.email),
-        "expires_in": 600,
+        "message":    "Verification OTP sent to your email address.",
+        "email":      _mask_email(user.email),
+        "expires_in": settings.OTP_EXPIRE_SECONDS,
     }
 
-# ═════════════════ VERIFY EMAIL OTP ═════════════════
+# ═══════════════════════════════════════════════════════════════
+# 3. VERIFY EMAIL OTP
+# ═══════════════════════════════════════════════════════════════
 
-async def verify_email_otp(otp: str, user: User, db: AsyncSession) -> dict:
+async def verify_email_otp(data: VerifyEmailRequest, user: User, db: AsyncSession) -> dict:
     """
-    Validate the OTP the user received by email and mark is_email_verified = True.
-    Brute-force: max OTP_MAX_ATTEMPTS attempts before the OTP is invalidated.
+    Verify email OTP and mark is_email_verified = True.
+    Called by POST /auth/verify-email.
     """
     if user.is_email_verified:
-        raise BadRequestException("Email is already verified.")
+        raise HTTPException(status_code=400, detail="Your email is already verified.")
 
     if not user.email:
-        raise BadRequestException("No email address on your account.")
+        raise HTTPException(status_code=400, detail="No email address on your account.")
 
-    # ── Brute-force guard ─────────────────────────────────────
+    if user.email.lower() != str(data.email).lower():
+        raise HTTPException(status_code=400, detail="Email does not match your registered email.")
+
     attempts = await increment_email_otp_attempts(user.email)
     if attempts > settings.OTP_MAX_ATTEMPTS:
-        await delete_email_otp(user.email, purpose="verify_email")
-        raise RateLimitException("Too many incorrect attempts. Please request a new OTP.")
+        raise HTTPException(status_code=429, detail="Too many incorrect attempts. Request a new OTP.")
 
-    # ── Fetch stored OTP ──────────────────────────────────────
     stored_otp = await get_email_otp(user.email, purpose="verify_email")
     if not stored_otp:
-        raise BadRequestException("OTP expired or not found. Please request a new one.")
+        raise HTTPException(
+            status_code=400,
+            detail="OTP expired. Request a new one via POST /auth/send-email-otp."
+        )
 
-    if stored_otp != otp:
+    if stored_otp != data.otp:
         remaining = settings.OTP_MAX_ATTEMPTS - attempts
-        raise UnauthorizedException(f"Incorrect OTP. {remaining} attempt(s) remaining.")
+        raise HTTPException(status_code=401, detail=f"Incorrect OTP. {remaining} attempts remaining.")
 
-    # ── Mark verified ─────────────────────────────────────────
+    # Mark verified
     await delete_email_otp(user.email, purpose="verify_email")
     await clear_email_otp_attempts(user.email)
 
@@ -557,32 +308,226 @@ async def verify_email_otp(otp: str, user: User, db: AsyncSession) -> dict:
     await db.refresh(user)
 
     logger.info("Email verified user_id=%s email=%s", user.id, user.email)
-    return {"message": "Email verified successfully."}
+    return {
+        "message":          "Email verified successfully.",
+        "email":            user.email,
+        "is_email_verified": True,
+    }
 
-# ── Internal helper ───────────────────────────────────────────
 
-def _mask_email(email: str) -> str:
-    """Return a masked email like  j***@gmail.com for display."""
-    try:
-        local, domain = email.split("@", 1)
-        visible = local[:1] if len(local) <= 3 else local[:2]
-        return f"{visible}***@{domain}"
-    except Exception:
-        return "***"
+# ═══════════════════════════════════════════════════════════════
+# 4. RESEND EMAIL OTP
+# ═══════════════════════════════════════════════════════════════
 
-# ═════════════════ CHANGE PASSWORD ═════════════════
+async def resend_email_otp(user: User) -> dict:
+    """Resend email OTP. Delegates to send_email_verification_otp."""
+    return await send_email_verification_otp(user)
 
-async def change_password(data: ChangePasswordRequest, current_user: User, db: AsyncSession) -> dict:
 
-    logger.info("Change password user_id=%s", current_user.id)
+# ═══════════════════════════════════════════════════════════════
+# 5. RESEND PHONE OTP
+# ═══════════════════════════════════════════════════════════════
 
-    if not current_user.password_hash or not verify_password(data.current_password, current_user.password_hash):
-        raise BadRequestException("Current password is incorrect")
+async def resend_otp(phone: str, purpose: str) -> dict:
+    resend_count = await get_resend_count(phone)
+    if resend_count >= settings.OTP_RESEND_MAX:
+        ttl = await get_resend_ttl(phone)
+        raise HTTPException(status_code=429, detail=f"Too many resend attempts. Try again in {ttl} seconds.")
 
-    current_user.password_hash = hash_password(data.new_password)
+    await increment_resend_count(phone)
+    otp = generate_otp()
+    await store_otp(phone, otp, purpose=purpose)
+    await _send_phone_otp(phone, otp)
+
+    return {"message": "OTP resent successfully", "phone": phone, "expires_in": settings.OTP_EXPIRE_SECONDS}
+
+
+# ═══════════════════════════════════════════════════════════════
+# 6. VERIFY PHONE OTP → LOGIN
+# ═══════════════════════════════════════════════════════════════
+
+async def verify_otp_and_login(data: VerifyOTPRequest, db: AsyncSession, device_id: str = "default") -> dict:
+    attempts = await increment_otp_attempts(data.phone)
+    if attempts > settings.OTP_MAX_ATTEMPTS:
+        raise HTTPException(status_code=429, detail="Too many incorrect attempts. Request a new OTP.")
+
+    stored_otp = await get_otp(data.phone, purpose=data.purpose)
+    if not stored_otp:
+        raise HTTPException(status_code=400, detail="OTP expired. Please request a new one.")
+
+    if stored_otp != data.otp:
+        remaining = settings.OTP_MAX_ATTEMPTS - attempts
+        raise HTTPException(status_code=401, detail=f"Incorrect OTP. {remaining} attempts remaining.")
+
+    await delete_otp(data.phone, purpose=data.purpose)
+    await clear_otp_attempts(data.phone)
+
+    result = await db.execute(select(User).where(User.phone == data.phone))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if user.status != UserStatus.ACTIVE:
+        raise HTTPException(status_code=403, detail="Account suspended")
+
+    user.is_phone_verified = True
+    user.last_login = datetime.utcnow()
+    await db.commit()
+    await db.refresh(user)
+
+    access_token  = create_access_token(str(user.id), user.role.value)
+    refresh_token = create_refresh_token(str(user.id), user.role.value)
+    await store_refresh_jti(str(user.id), device_id, decode_token(refresh_token)["jti"])
+
+    return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer", "user": _user_dict(user)}
+
+
+# ═══════════════════════════════════════════════════════════════
+# 7. LOGIN WITH PASSWORD
+# ═══════════════════════════════════════════════════════════════
+
+async def login_with_password(data: LoginRequest, db: AsyncSession) -> dict:
+    result = await db.execute(select(User).where(User.phone == data.phone))
+    user = result.scalar_one_or_none()
+
+    if not user or not verify_password(data.password, user.password_hash):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    if not user.is_phone_verified:
+        raise HTTPException(status_code=403, detail="Phone not verified")
+    if user.status != UserStatus.ACTIVE:
+        raise HTTPException(status_code=403, detail="Account suspended")
+
+    user.last_login = datetime.utcnow()
     await db.commit()
 
-    await delete_all_refresh_jtis(str(current_user.id))
+    access_token  = create_access_token(str(user.id), user.role.value)
+    refresh_token = create_refresh_token(str(user.id), user.role.value)
+    await store_refresh_jti(str(user.id), data.device_id or "default", decode_token(refresh_token)["jti"])
 
-    logger.info("Password changed user_id=%s", current_user.id)
+    logger.info("Login success user_id=%s", user.id)
+    return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer", "user": _user_dict(user)}
+
+
+# ═══════════════════════════════════════════════════════════════
+# 8. LOGIN WITH OTP (Passwordless)
+# ═══════════════════════════════════════════════════════════════
+
+async def login_with_otp(data: OTPLoginRequest, db: AsyncSession) -> dict:
+    attempts = await increment_otp_attempts(data.phone)
+    if attempts > settings.OTP_MAX_ATTEMPTS:
+        raise HTTPException(status_code=429, detail="Too many attempts.")
+
+    stored_otp = await get_otp(data.phone, purpose="login")
+    if not stored_otp:
+        raise HTTPException(status_code=400, detail="OTP expired.")
+    if stored_otp != data.otp:
+        raise HTTPException(status_code=401, detail=f"Incorrect OTP. {settings.OTP_MAX_ATTEMPTS - attempts} attempts remaining.")
+
+    await delete_otp(data.phone, purpose="login")
+    await clear_otp_attempts(data.phone)
+
+    result = await db.execute(select(User).where(User.phone == data.phone))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if user.status != UserStatus.ACTIVE:
+        raise HTTPException(status_code=403, detail="Account suspended")
+
+    user.last_login = datetime.utcnow()
+    await db.commit()
+    await db.refresh(user)
+
+    access_token  = create_access_token(str(user.id), user.role.value)
+    refresh_token = create_refresh_token(str(user.id), user.role.value)
+    await store_refresh_jti(str(user.id), data.device_id or "default", decode_token(refresh_token)["jti"])
+
+    return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer", "user": _user_dict(user)}
+
+
+# ═══════════════════════════════════════════════════════════════
+# 9. FORGOT / RESET PASSWORD
+# ═══════════════════════════════════════════════════════════════
+
+async def forgot_password(phone: str, db: AsyncSession) -> dict:
+    result = await db.execute(select(User).where(User.phone == phone))
+    user = result.scalar_one_or_none()
+    if not user:
+        return {"message": "If the number is registered, an OTP has been sent."}
+    otp = generate_otp()
+    await store_otp(phone, otp, purpose="forgot_password")
+    await _send_phone_otp(phone, otp)
+    return {"message": "OTP sent to your registered phone number."}
+
+
+async def reset_password(data: ResetPasswordRequest, db: AsyncSession) -> dict:
+    attempts = await increment_otp_attempts(data.phone)
+    if attempts > settings.OTP_MAX_ATTEMPTS:
+        raise HTTPException(status_code=429, detail="Too many attempts.")
+
+    stored_otp = await get_otp(data.phone, purpose="forgot_password")
+    if not stored_otp or stored_otp != data.otp:
+        raise HTTPException(status_code=401, detail="Invalid or expired OTP")
+
+    await clear_otp_attempts(data.phone)
+
+    result = await db.execute(select(User).where(User.phone == data.phone))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    user.password_hash = hash_password(data.new_password)
+    db.add(user)
+    await db.commit()
+    await delete_otp(data.phone, purpose="forgot_password")
+    await delete_all_refresh_jtis(str(user.id))
+    return {"message": "Password reset successfully. Please login again."}
+
+
+# ═══════════════════════════════════════════════════════════════
+# 10. REFRESH / LOGOUT / CHANGE PASSWORD
+# ═══════════════════════════════════════════════════════════════
+
+async def refresh_access_token(refresh_token: str, db: AsyncSession) -> dict:
+    payload = decode_token(refresh_token)
+    if not payload or payload.get("type") != "refresh":
+        raise HTTPException(status_code=401, detail="Invalid refresh token")
+
+    stored_jti = await get_refresh_jti(payload["sub"], payload.get("device_id", "default"))
+    if not stored_jti or stored_jti != payload["jti"]:
+        raise HTTPException(status_code=401, detail="Refresh token expired or revoked")
+
+    result = await db.execute(select(User).where(User.id == payload["sub"]))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    new_access  = create_access_token(str(user.id), user.role.value)
+    new_refresh = create_refresh_token(str(user.id), user.role.value)
+    await store_refresh_jti(str(user.id), payload.get("device_id", "default"), decode_token(new_refresh)["jti"])
+    return {"access_token": new_access, "refresh_token": new_refresh, "token_type": "bearer"}
+
+
+async def logout(user_id: str, access_token: str, device_id: str = "default") -> dict:
+    payload = decode_token(access_token)
+    if payload:
+        expire_in = max(0, int(payload["exp"] - int(datetime.utcnow().timestamp())))
+        await blacklist_jti(payload["jti"], expire_in)
+    await delete_refresh_jti(user_id, device_id)
+    return {"message": "Logged out successfully"}
+
+
+async def logout_all(user_id: str, access_token: str) -> dict:
+    payload = decode_token(access_token)
+    if payload:
+        expire_in = max(0, int(payload["exp"] - int(datetime.utcnow().timestamp())))
+        await blacklist_jti(payload["jti"], expire_in)
+    await delete_all_refresh_jtis(user_id)
+    return {"message": "Logged out from all devices"}
+
+
+async def change_password(data: ChangePasswordRequest, current_user: User, db: AsyncSession) -> dict:
+    if not current_user.password_hash or not verify_password(data.current_password, current_user.password_hash):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+    current_user.password_hash = hash_password(data.new_password)
+    await db.commit()
+    await delete_all_refresh_jtis(str(current_user.id))
     return {"message": "Password changed successfully. Please login again."}
