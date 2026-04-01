@@ -3,11 +3,12 @@ core/config.py
 All environment variables and app settings loaded from .env
 """
 
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import List
 
 
 class Settings(BaseSettings):
+
     # ── App ───────────────────────────────────────────────────
     APP_NAME: str = "AP Tourism Backend"
     APP_VERSION: str = "1.0.0"
@@ -15,7 +16,7 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
 
     # ── Security ──────────────────────────────────────────────
-    SECRET_KEY: str = "ap-tourism-9x8y7z6w5v4u3t2s1r0q-secret-2024"
+    SECRET_KEY: str = "ap-tourism-secret-key"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
@@ -31,20 +32,23 @@ class Settings(BaseSettings):
     OTP_RESEND_MAX: int = 3
     OTP_RESEND_WINDOW_SECONDS: int = 600
 
-    # ── Redis — Search Module ─────────────────────────────────  ← ADDED
-    REDIS_SUGGESTIONS_TTL: int = 300         # 5 minutes cache for suggestions
-    REDIS_RECENT_SEARCHES_TTL: int = 604800  # 7 days for recent searches
-    REDIS_RECENT_SEARCHES_MAX: int = 10      # keep last 10 searches per user
+    # ── Redis — Search Module ─────────────────────────────────
+    REDIS_SUGGESTIONS_TTL: int = 300
+    REDIS_RECENT_SEARCHES_TTL: int = 604800
+    REDIS_RECENT_SEARCHES_MAX: int = 10
 
-    # ── Elasticsearch ─────────────────────────────────────────  ← ADDED
+    # ── Elasticsearch ─────────────────────────────────────────
     ELASTICSEARCH_URL: str = "http://localhost:9200"
     ELASTICSEARCH_MAX_RETRIES: int = 5
     ELASTICSEARCH_RETRY_DELAY: int = 3
-    ELASTICSEARCH_USERNAME:    str = ""
-    ELASTICSEARCH_PASSWORD:    str = ""
+    ELASTICSEARCH_USERNAME: str = ""
+    ELASTICSEARCH_PASSWORD: str = ""
 
     # ── CORS ──────────────────────────────────────────────────
-    ALLOWED_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:8000"]
+    ALLOWED_ORIGINS: List[str] = [
+        "http://localhost:3000",
+        "http://localhost:8000",
+    ]
 
     # ── SMS (MSG91 / Twilio) ──────────────────────────────────
     SMS_PROVIDER: str = "msg91"
@@ -61,29 +65,27 @@ class Settings(BaseSettings):
     AWS_REGION: str = "ap-south-1"
 
     # ── Razorpay ──────────────────────────────────────────────
-    RAZORPAY_KEY_ID:     str = ""
+    RAZORPAY_KEY_ID: str = ""
     RAZORPAY_KEY_SECRET: str = ""
 
     # ── Gmail SMTP ────────────────────────────────────────────
-    GMAIL_SENDER:       str = ""
+    GMAIL_SENDER: str = ""
     GMAIL_APP_PASSWORD: str = ""
 
-
-    #_________________fIREBASE____________________________________________
-
-    FIREBASE_PROJECT_ID:      str = ""
+    # ── Firebase ──────────────────────────────────────────────
+    FIREBASE_PROJECT_ID: str = ""
     FIREBASE_SERVICE_ACCOUNT: str = ""
 
-
-    #_________________SENDGRID_API_KEY_____________________________________
-    
-   
+    # ── SendGrid (Email OTP) ──────────────────────────────────
     SENDGRID_API_KEY: str | None = None
     SENDGRID_FROM_EMAIL: str | None = None
     SENDGRID_FROM_NAME: str = "AP Tourism"
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
+
+    # ── Load Environment Variables from .env ──────────────────
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        case_sensitive=True
+    )
 
 
 settings = Settings()
