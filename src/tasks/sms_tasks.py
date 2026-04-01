@@ -4,6 +4,7 @@ Background tasks for SMS sending.
 """
 
 import logging
+from asgiref.sync import async_to_sync
 from src.tasks.celery_app import celery_app
 
 logger = logging.getLogger(__name__)
@@ -13,9 +14,8 @@ logger = logging.getLogger(__name__)
 def send_sms_task(phone: str, message: str):
     """Send SMS in the background."""
     try:
-        import asyncio
         from src.integrations.twilio import send_sms
-        asyncio.run(send_sms(phone=phone, message=message))
+        async_to_sync(send_sms)(phone=phone, message=message)
         logger.info("SMS sent phone=%s", phone)
     except Exception as e:
         logger.error("SMS failed phone=%s error=%s", phone, str(e))
@@ -25,10 +25,9 @@ def send_sms_task(phone: str, message: str):
 def send_otp_sms_task(phone: str, otp: str):
     """Send OTP via SMS in the background."""
     try:
-        import asyncio
         from src.integrations.twilio import send_sms
         message = f"Your AP Tourism OTP is: {otp}. Valid for 5 minutes. Do not share."
-        asyncio.run(send_sms(phone=phone, message=message))
+        async_to_sync(send_sms)(phone=phone, message=message)
         logger.info("OTP SMS sent phone=%s", phone)
     except Exception as e:
         logger.error("OTP SMS failed phone=%s error=%s", phone, str(e))
@@ -42,3 +41,4 @@ def cleanup_expired_otps():
     """
     logger.info("Running OTP cleanup task")
     # Redis handles TTL automatically — this is for DB audit table cleanup
+    
