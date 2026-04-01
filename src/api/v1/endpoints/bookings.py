@@ -23,8 +23,10 @@ from datetime import date as date_type
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.api.deps.auth import get_admin_user
 from src.core.database import get_db
-from src.core.dependencies import get_current_user, get_redis
+from src.core.dependencies import get_current_user
+from src.core.redis import get_redis
 from src.models.user import User
 from src.schemas.booking import (
     # Cart
@@ -627,3 +629,24 @@ async def modify_booking(
     result = await booking_service.modify_booking(db, booking_id, current_user.id, body)
     _log(request, current_user.id, f"POST /bookings/{booking_id}/modify", 200, start)
     return success(result.model_dump(), result.message)
+
+@router.put("/{booking_id}/assign-guide", response_model=APIResponse, summary="[Admin] Assign guide to booking")
+async def assign_guide(
+    booking_id: str,
+    data: dict,
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db)
+):
+    result = await booking_service.assign_guide(booking_id, data, db)
+    return APIResponse.success(message="Guide assigned", data=result)
+ 
+ 
+@router.put("/{booking_id}/assign-vehicle", response_model=APIResponse, summary="[Admin] Assign vehicle to booking")
+async def assign_vehicle(
+    booking_id: str,
+    data: dict,
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db)
+):
+    result = await booking_service.assign_vehicle(booking_id, data, db)
+    return APIResponse.success(message="Vehicle assigned", data=result)

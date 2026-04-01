@@ -10,10 +10,18 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from src.models.booking import (
-    Booking, HotelBooking, VehicleBooking, DarshanBooking,
-    PackageBooking, GuideBooking, PoojaBooking, PrasadamOrder,
+    Booking, HotelBooking, VehicleBooking,
+    PackageBooking, GuideBooking,
     BookingTraveler, BookingAddon,
 )
+
+from src.models.darshan import (
+    DarshanBooking,
+    PoojaBooking,
+    PrasadamOrder
+)
+
+    
 from src.common.enums import (          # [FIX-1] enums from common — not from model
     BookingStatus, PaymentStatus, BookingType, DeliveryStatus,
 )
