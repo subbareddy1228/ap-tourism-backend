@@ -408,3 +408,32 @@ async def update_preferences(
     await db.refresh(prefs)
 
     return prefs
+
+# ── Module-level alias (called by GET /users/me/notifications) ───────────────
+# Endpoint passes user_id: str; get_notifications expects a User object.
+# This wrapper adapts the signature without touching the endpoint or existing function.
+
+async def get_user_notifications(
+    user_id: str,
+    db: AsyncSession,
+    page: int = 1,
+    per_page: int = 20,
+    unread_only: bool = False,
+) -> dict:
+    from src.models.user import User as UserModel
+    from sqlalchemy import select
+
+    result = await db.execute(
+        select(UserModel).where(UserModel.id == user_id)
+    )
+    user = result.scalar_one_or_none()
+    if not user:
+        return {"items": [], "total": 0, "page": page, "per_page": per_page}
+
+    return await get_notifications(
+        current_user=user,
+        db=db,
+        page=page,
+        per_page=per_page,
+        unread_only=unread_only,
+    )

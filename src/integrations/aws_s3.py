@@ -56,8 +56,7 @@ async def upload_avatar(
                 Bucket=settings.AWS_BUCKET_NAME,
                 Key=key,
                 Body=file_bytes,
-                ContentType=content_type,
-                ACL="public-read",  # makes image accessible publicly
+                ContentType=content_type
             )
 
         url = (

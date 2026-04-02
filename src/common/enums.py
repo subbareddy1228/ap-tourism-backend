@@ -70,3 +70,8 @@ class DeliveryStatus(str, Enum):
     SHIPPED = "shipped"
     DELIVERED = "delivered"
     CANCELLED = "cancelled"
+
+class LanguageEnum(str, Enum):
+    en = "en"
+    hi = "hi"
+    te = "te"

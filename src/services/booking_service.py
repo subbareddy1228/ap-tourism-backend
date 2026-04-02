@@ -5,7 +5,6 @@ Business logic for all 25 booking endpoints.
 Depends on: Auth (M1), Hotels (M5), Vehicles (M6), Temples/Darshan (M7),
             Packages (M9), Guides (M10), Payments (M12)
 """
-from http.client import HTTPException
 import json
 import math
 import logging
@@ -14,6 +13,7 @@ from datetime import date, datetime, timezone, timedelta
 from decimal import Decimal
 from typing import Optional
 from uuid import UUID
+from fastapi import HTTPException
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -137,7 +137,7 @@ async def get_cart(redis, user_id: UUID) -> CartResponse:
                 item_id=item["item_id"],
                 entity_type=item["entity_type"],
                 entity_id=UUID(item["entity_id"]),
-                date=date.fromisoformat(item["date"]),
+                travel_date=date.fromisoformat(item["date"]),
                 guests=item["guests"],
                 options=item.get("options"),
                 added_at=datetime.fromisoformat(item["added_at"]),
@@ -165,7 +165,7 @@ async def add_to_cart(redis, user_id: UUID, req: CartItemAddRequest) -> CartResp
         "item_id":     str(uuid.uuid4()),
         "entity_type": req.entity_type.value,
         "entity_id":   str(req.entity_id),
-        "date":        req.date.isoformat(),
+        "date":        req.travel_date.isoformat(),
         "guests":      req.guests,
         "options":     req.options,
         "added_at":    datetime.now(timezone.utc).isoformat(),
@@ -592,7 +592,7 @@ async def book_pooja(
             message="Pooja slot reserved. Complete payment to confirm.",
         )
 
-    except  HTTPException:
+    except HTTPException:
         await booking_repo.release_booking_slot(redis, "pooja_service", str(req.pooja_service_id))
         raise
     except Exception as e:
@@ -1497,3 +1497,30 @@ async def assign_vehicle(booking_id: str, data: dict, db: AsyncSession) -> dict:
         logger.warning("Notification failed after vehicle assignment: %s", e)
  
     return {"booking_id": booking_id, "vehicle_id": vehicle_id}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# list_bookings — called by GET /users/me/bookings
+# Thin wrapper around get_my_bookings using flat params instead of filter object
+# ─────────────────────────────────────────────────────────────────────────────
+
+async def list_bookings(
+    db: AsyncSession,
+    user,
+    page: int = 1,
+    per_page: int = 10,
+    status_filter: Optional[str] = None,
+) -> dict:
+    """GET /users/me/bookings — flat-param wrapper used by the users endpoint."""
+    filters = BookingListFilter(
+        page=page,
+        per_page=per_page,
+        status=BookingStatus(status_filter) if status_filter else None,
+    )
+    response = await get_my_bookings(db, user_id=user.id, filters=filters)
+    return {
+        "items":       [item.model_dump() for item in response.items],
+        "total":       response.total,
+        "page":        response.page,
+        "per_page":    response.per_page,
+        "total_pages": response.total_pages,
+    }

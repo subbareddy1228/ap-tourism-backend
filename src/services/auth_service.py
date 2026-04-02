@@ -20,7 +20,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_
 
 from src.common.email_templates import otp_email_template
-from src.common.email_templates import otp_email_template
 from src.models.user import User
 from src.models.user_profile import UserProfile
 from src.schemas.auth import (
@@ -43,7 +42,7 @@ from src.core.redis import (
     increment_email_resend_count, get_email_resend_count,
 )
 from src.common.utils import generate_otp
-from src.common.enums import UserStatus
+from src.common.enums import LanguageEnum, UserStatus
 from src.core.config import settings
 from src.integrations.twilio import send_sms
 from src.integrations.email import send_email_otp
@@ -189,7 +188,7 @@ async def register_user(data: RegisterRequest, db: AsyncSession) -> dict:
     await db.refresh(user)
 
     # Create profile
-    db.add(UserProfile(user_id=user.id, preferences={}, language="en", kyc_status="pending"))
+    db.add(UserProfile(user_id=user.id, preferences={}, language=LanguageEnum.en, kyc_status="pending"))
     await db.commit()
 
     # Send phone OTP

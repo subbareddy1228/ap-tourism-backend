@@ -329,3 +329,40 @@ async def get_guide_bookings(db: AsyncSession, guide_id: UUID, user_id: UUID, st
     if str(guide.user_id) != str(user_id):
         raise ForbiddenException("Not authorized")
     return {"data": [], "total": 0, "page": page, "pages": 0}
+
+# ─── Admin ────────────────────────────────────────────────────
+
+async def admin_list_guides(
+    db: AsyncSession,
+    page: int = 1,
+    per_page: int = 20,
+    status: str = None,
+) -> dict:
+    from sqlalchemy import func
+
+    query = select(Guide).where(Guide.deleted_at.is_(None))
+
+    if status:
+        try:
+            query = query.where(Guide.status == GuideStatus(status))
+        except ValueError:
+            raise NotFoundException(f"Invalid status: {status}")
+
+    count_result = await db.execute(
+        select(func.count()).select_from(query.subquery())
+    )
+    total = count_result.scalar()
+
+    result = await db.execute(
+        query.order_by(Guide.created_at.desc())
+             .offset((page - 1) * per_page)
+             .limit(per_page)
+    )
+    guides = result.scalars().all()
+
+    return {
+        "data":  [_guide_to_dict(g) for g in guides],
+        "total": total,
+        "page":  page,
+        "pages": -(-total // per_page) if total else 0,
+    }  

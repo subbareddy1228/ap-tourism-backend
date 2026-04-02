@@ -287,3 +287,16 @@ class ReviewService:
             updated_at=review.updated_at,
             is_helpful_by_me=review.id in helpful_ids,
         )
+
+# ── Module-level wrapper (called by GET /users/me/reviews) ──────────────────
+
+async def get_user_reviews(user_id: str, db: AsyncSession) -> dict:
+    svc = ReviewService(db)
+    response = await svc.get_my_reviews(user_id=UUID(user_id))
+    return {
+        "items":       [item.model_dump() for item in response.items],
+        "total":       response.total,
+        "page":        response.page,
+        "page_size":   response.page_size,
+        "total_pages": response.total_pages,
+    }

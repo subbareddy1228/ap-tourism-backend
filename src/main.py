@@ -119,6 +119,40 @@ async def health():
 
 
 # ─────────────────────────────────────────────
+# Public routes — no token needed
+# Everything else gets the 🔒 lock icon
+# ─────────────────────────────────────────────
+PUBLIC_ROUTES = {
+    # Auth — no login required
+    "/api/v1/auth/register",
+    "/api/v1/auth/send-otp",
+    "/api/v1/auth/verify-otp",
+    "/api/v1/auth/resend-otp",
+    "/api/v1/auth/login",
+    "/api/v1/auth/login/otp",
+    "/api/v1/auth/refresh-token",
+    "/api/v1/auth/logout",
+    "/api/v1/auth/logout-all",
+    "/api/v1/auth/forgot-password",
+    "/api/v1/auth/reset-password",
+
+    # Health
+    "/api/v1/health",
+
+    # Public misc — no login needed
+    "/api/v1/version",
+    "/api/v1/config",
+    "/api/v1/banners",
+    "/api/v1/home",
+    "/api/v1/districts",
+    "/api/v1/cities",
+    "/api/v1/languages",
+    "/api/v1/currencies",
+    "/api/v1/contact-us",
+}
+
+
+# ─────────────────────────────────────────────
 # Custom OpenAPI (JWT Bearer Auth)
 # ─────────────────────────────────────────────
 def custom_openapi():
@@ -137,22 +171,17 @@ def custom_openapi():
             "type": "http",
             "scheme": "bearer",
             "bearerFormat": "JWT",
-            "description": "Paste your access_token here (without 'Bearer' prefix)"
+            "description": "Paste your access_token here (without 'Bearer' prefix)",
         }
     }
 
     for path, path_item in openapi_schema["paths"].items():
         for method in path_item.values():
-
             if isinstance(method, dict):
-
-                # Public routes
-                if any(tag in method.get("tags", []) for tag in ["Authentication", "Health"]):
-                    method["security"] = []
-
-                # Protected routes
+                if path in PUBLIC_ROUTES:
+                    method["security"] = []                    # no lock icon
                 else:
-                    method["security"] = [{"BearerAuth": []}]
+                    method["security"] = [{"BearerAuth": []}] # 🔒 lock icon
 
     app.openapi_schema = openapi_schema
     return app.openapi_schema

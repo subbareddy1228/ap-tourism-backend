@@ -286,3 +286,68 @@ async def get_autocomplete(q: str):
                     })
 
     return items[:10]
+
+async def search_destinations(q: str, limit: int = 20) -> list[SearchHit]:
+    """Search only the destinations index."""
+    if not ES_AVAILABLE:
+        raise RuntimeError("Elasticsearch not available")
+
+    es = get_es_client()
+
+    es_query = {
+        "multi_match": {
+            "query": q,
+            "fields": ["name^3", "description", "search_all"],
+            "fuzziness": "AUTO",
+        }
+    }
+
+    res = await es.search(index=INDEX_DESTINATIONS, query=es_query, size=limit)
+    return [_hit_to_search_hit(h, "destination") for h in res["hits"]["hits"]]
+
+async def search_temples(q: str, limit: int = 20) -> list[SearchHit]:
+    """Search only the temples index."""
+    if not ES_AVAILABLE:
+        raise RuntimeError("Elasticsearch not available")
+    es = get_es_client()
+    es_query = {
+        "multi_match": {
+            "query": q,
+            "fields": ["name^3", "description", "search_all"],
+            "fuzziness": "AUTO",
+        }
+    }
+    res = await es.search(index=INDEX_TEMPLES, query=es_query, size=limit)
+    return [_hit_to_search_hit(h, "temple") for h in res["hits"]["hits"]]
+
+
+async def search_hotels(q: str, limit: int = 20) -> list[SearchHit]:
+    """Search only the hotels index."""
+    if not ES_AVAILABLE:
+        raise RuntimeError("Elasticsearch not available")
+    es = get_es_client()
+    es_query = {
+        "multi_match": {
+            "query": q,
+            "fields": ["name^3", "description", "search_all"],
+            "fuzziness": "AUTO",
+        }
+    }
+    res = await es.search(index=INDEX_HOTELS, query=es_query, size=limit)
+    return [_hit_to_search_hit(h, "hotel") for h in res["hits"]["hits"]]
+
+
+async def search_packages(q: str, limit: int = 20) -> list[SearchHit]:
+    """Search only the packages index."""
+    if not ES_AVAILABLE:
+        raise RuntimeError("Elasticsearch not available")
+    es = get_es_client()
+    es_query = {
+        "multi_match": {
+            "query": q,
+            "fields": ["name^3", "description", "search_all"],
+            "fuzziness": "AUTO",
+        }
+    }
+    res = await es.search(index=INDEX_PACKAGES, query=es_query, size=limit)
+    return [_hit_to_search_hit(h, "package") for h in res["hits"]["hits"]]

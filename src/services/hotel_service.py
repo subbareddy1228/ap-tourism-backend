@@ -628,3 +628,37 @@ async def list_amenities(hotel_id: str, current_user: User, db: AsyncSession) ->
     await hotel_repo.get_hotel_by_id_and_partner(db, hotel_id, str(partner.id))
     amenities = await hotel_repo.get_amenities_by_hotel(db, hotel_id)
     return [_amenity_to_dict(a) for a in amenities]
+
+# ══════════════════ ADMIN ══════════════════
+
+async def admin_list_hotels(
+    db: AsyncSession,
+    page: int = 1,
+    per_page: int = 20,
+    status: Optional[str] = None,
+) -> dict:
+    from sqlalchemy import func
+
+    query = select(Hotel)
+
+    if status:
+        query = query.where(Hotel.status == status.upper())
+
+    count_result = await db.execute(
+        select(func.count()).select_from(query.subquery())
+    )
+    total = count_result.scalar()
+
+    result = await db.execute(
+        query.order_by(Hotel.created_at.desc())
+             .offset((page - 1) * per_page)
+             .limit(per_page)
+    )
+    hotels = result.scalars().all()
+
+    return {
+        "data":  [_hotel_to_dict(h, include_nested=False) for h in hotels],
+        "total": total,
+        "page":  page,
+        "pages": -(-total // per_page) if total else 0,
+    }

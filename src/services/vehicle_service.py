@@ -308,3 +308,22 @@ class VehicleService:
         if str(driver.partner_id) != str(partner_id):
             raise ForbiddenException("You do not have permission to manage this driver")
         return driver
+
+async def admin_list_vehicles(db: AsyncSession, page: int = 1, per_page: int = 20, status: Optional[str] = None):
+    svc = VehicleService(db)
+    vehicles, total = await svc.vehicle_repo.list_vehicles(
+        vehicle_type=None,
+        city=None,
+        pickup_date=None,
+        capacity=None,
+        has_ac=None,
+        page=page,
+        limit=per_page,
+    )
+    pages = (total + per_page - 1) // per_page
+    return {
+        "items": [VehicleService.vehicle_to_dict(v) for v in vehicles],
+        "total": total,
+        "page": page,
+        "pages": pages,
+    }
