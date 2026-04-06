@@ -12,6 +12,18 @@ from src.main import app
 
 client = TestClient(app)
 
+from sqlalchemy.pool import NullPool
+from src.core.database import engine
+import pytest
+
+@pytest.fixture(autouse=True)
+def reset_db_pool():
+    engine.pool.dispose()
+    yield
+    engine.pool.dispose()
+
+
+
 # ─── Fixtures ─────────────────────────────────────────────────────────────────
 
 PARTNER_TOKEN = "Bearer test_partner_token"
@@ -293,3 +305,4 @@ class TestVehicleService:
         result = await svc.calculate_fare(req)
         assert "total_fare" in result
         assert result["currency"] == "INR"
+
