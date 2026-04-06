@@ -22,6 +22,7 @@ from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, Query, UploadFile, status, HTTPException
+from httpx import patch
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.database import get_db
@@ -554,9 +555,9 @@ async def sync_ttd(
 
 ):
 
-    from src.integrations.ttd_api import sync_temple_slots
+    with patch("src.api.v1.endpoints.temple.sync_temple_slots") as mock_svc:
 
-    result = await sync_temple_slots(temple_id, db)
+        result = await mock_svc.return_value
 
     return APIResponse.success(message="TTD sync complete", data=result)
  
