@@ -250,3 +250,38 @@ class TempleRepository:
         if temple:
             temple.booking_count += 1
             await self.db.commit()
+
+
+    # ─────────────────────────────────────────────
+    # GET /{id}/images
+    # ─────────────────────────────────────────────
+    async def get_images(self, temple_id: UUID) -> list:
+        temple = await self.get_by_id(temple_id)
+        return temple.images or [] if temple else []
+ 
+    # ─────────────────────────────────────────────
+    # POST /{id}/images — upload to S3 and persist URL
+    # ─────────────────────────────────────────────
+    async def upload_and_save_image(
+        self,
+        temple_id:    UUID,
+        temple:       Temple,
+        file_bytes:   bytes,
+        filename:     str,
+        content_type: str,
+    ) -> str:
+        from src.integrations.aws_s3 import upload_temple_image
+ 
+        image_url = await upload_temple_image(
+            file_bytes=file_bytes,
+            content_type=content_type,
+            temple_id=str(temple_id),
+            filename=filename,
+        )
+ 
+        images = list(temple.images or [])
+        images.append(image_url)
+        temple.images = images
+        await self.db.commit()
+ 
+        return image_url

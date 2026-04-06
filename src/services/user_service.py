@@ -488,3 +488,21 @@ async def send_email_verification(current_user: User, db: AsyncSession) -> dict:
             raise ServiceUnavailableException("Failed to send verification email. Please try again.")
  
         return {"message": "Verification email sent", "expires_in": settings.OTP_EXPIRE_SECONDS}
+
+
+async def update_fcm_token(db, user_id: str, fcm_token: str):
+    """
+    Update user's FCM device token.
+    """
+
+    # Example logic
+    profile = await db.get_user_profile(user_id)
+
+    if not profile:
+        raise ValueError("User profile not found")
+
+    profile.fcm_token = fcm_token
+
+    await db.save(profile)
+
+    return {"message": "FCM token updated"}
