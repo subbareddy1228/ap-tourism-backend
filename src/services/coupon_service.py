@@ -50,8 +50,10 @@ def _is_valid(coupon: Coupon) -> bool:
     now = datetime.utcnow()
     if not (coupon.valid_from <= now <= coupon.valid_until):
         return False
-    max_uses = coupon.usage_limit or coupon.max_uses
-    used = coupon.used_count or coupon.current_uses or 0
+    # FIX-1: removed columns `max_uses` and `current_uses` no longer exist.
+    # Canonical replacements: usage_limit (max total uses), used_count (times used).
+    max_uses = coupon.usage_limit
+    used     = coupon.used_count or 0
     if max_uses and used >= max_uses:
         return False
     return True
@@ -91,7 +93,9 @@ async def validate_coupon(db: AsyncSession, data: ValidateCouponRequest) -> Vali
         return ValidateCouponResponse(is_valid=False, code=coupon.code,
             final_amount=data.order_value, message=f"Minimum order value Rs.{min_val:.0f} required.")
 
-    per_user = int(coupon.usage_per_user or coupon.max_uses_per_user or 1)
+    # FIX-2: removed column `max_uses_per_user` no longer exists.
+    # Canonical replacement: usage_per_user.
+    per_user = int(coupon.usage_per_user or 1)
     if await _user_usage_count(db, coupon.id, data.user_id) >= per_user:
         return ValidateCouponResponse(is_valid=False, code=coupon.code,
             final_amount=data.order_value, message="You have already used this coupon the maximum number of times.")
@@ -131,8 +135,9 @@ async def apply_coupon(db: AsyncSession, data: ApplyCouponRequest) -> ApplyCoupo
         order_value     = data.order_value,
     )
     db.add(usage)
-    coupon.used_count   = (coupon.used_count or 0) + 1
-    coupon.current_uses = (coupon.current_uses or 0) + 1
+    # FIX-3: removed column `current_uses` no longer exists.
+    # Only increment canonical `used_count`.
+    coupon.used_count = (coupon.used_count or 0) + 1
     await db.commit()
 
     return ApplyCouponResponse(
@@ -160,8 +165,8 @@ async def remove_coupon(db: AsyncSession, user_id: UUID, booking_id: UUID) -> Re
     c_result = await db.execute(select(Coupon).where(Coupon.id == usage.coupon_id))
     coupon   = c_result.scalar_one_or_none()
     if coupon:
-        coupon.used_count   = max(0, (coupon.used_count or 0) - 1)
-        coupon.current_uses = max(0, (coupon.current_uses or 0) - 1)
+        # FIX-4: removed column `current_uses` no longer exists. Only decrement `used_count`.
+        coupon.used_count = max(0, (coupon.used_count or 0) - 1)
 
     await db.delete(usage)
     await db.commit()
@@ -180,14 +185,17 @@ async def get_my_coupons(db: AsyncSession, user_id: UUID) -> MyCouponsResponse:
     usages = u_result.scalars().all()
     used_coupon_ids = {str(u.coupon_id) for u in usages}
 
+    # FIX-5: removed column `is_public` no longer exists.
+    # Public coupons are identified by coupon_type == "public".
     p_result = await db.execute(
-        select(Coupon).where(Coupon.is_public == True, Coupon.valid_until >= now)
+        select(Coupon).where(Coupon.coupon_type == "public", Coupon.valid_until >= now)
     )
     all_public = p_result.scalars().all()
 
     available = []
     for c in all_public:
-        per_user = int(c.usage_per_user or c.max_uses_per_user or 1)
+        # FIX-6: removed column `max_uses_per_user` no longer exists. Use `usage_per_user`.
+        per_user = int(c.usage_per_user or 1)
         count    = sum(1 for u in usages if str(u.coupon_id) == str(c.id))
         available.append(MyCouponItem(
             coupon=CouponOut.model_validate(c),
@@ -222,24 +230,28 @@ async def get_referral_info(db: AsyncSession, user_id: UUID) -> ReferralResponse
 
     if not referral:
         code = _gen_referral_code(user_id)
+        # FIX-7: removed columns `applicable_to`, `max_uses`, `max_uses_per_user`,
+        # `current_uses`, `is_public`, `is_referral` no longer exist on Coupon model.
+        # Canonical replacements:
+        #   applicable_to     → applicable_on  (column was renamed)
+        #   max_uses          → usage_limit    (column was renamed)
+        #   max_uses_per_user → usage_per_user (column was renamed)
+        #   current_uses      → removed (used_count is the single counter)
+        #   is_public=False   → coupon_type="referral" (coupon_type encodes this)
+        #   is_referral=True  → coupon_type="referral"
         ref_coupon = Coupon(
             code              = code,
             title             = f"Referral - {code}",
             discount_type     = "FLAT",
             discount_value    = 200.0,
             min_order_value   = 500.0,
-            applicable_to     = "ALL",
-            applicable_on     = "all",
+            applicable_on     = "all",        # was applicable_to (removed column)
             valid_from        = datetime.utcnow(),
             valid_until       = datetime(2099, 12, 31),
-            max_uses          = 1,
-            max_uses_per_user = 1,
-            usage_per_user    = 1,
-            current_uses      = 0,
-            used_count        = 0,
-            is_public         = False,
-            is_referral       = True,
-            coupon_type       = "referral",
+            usage_limit       = 1,            # was max_uses (removed column)
+            usage_per_user    = 1,            # was max_uses_per_user (removed column)
+            used_count        = 0,            # was current_uses (removed column)
+            coupon_type       = "referral",   # replaces is_public=False + is_referral=True
             referral_user_id  = user_id,
         )
         db.add(ref_coupon)
@@ -287,13 +299,15 @@ async def get_active_coupons(db: AsyncSession, page: int = 1, per_page: int = 10
     now    = datetime.utcnow()
     offset = (page - 1) * per_page
 
+    # FIX-8: removed column `is_public` no longer exists.
+    # Filter by coupon_type == "public" instead.
     count_result = await db.execute(
-        select(func.count()).select_from(Coupon).where(Coupon.is_public == True, Coupon.valid_until >= now)
+        select(func.count()).select_from(Coupon).where(Coupon.coupon_type == "public", Coupon.valid_until >= now)
     )
     total = count_result.scalar() or 0
 
     result = await db.execute(
-        select(Coupon).where(Coupon.is_public == True, Coupon.valid_until >= now)
+        select(Coupon).where(Coupon.coupon_type == "public", Coupon.valid_until >= now)
         .order_by(Coupon.valid_until).offset(offset).limit(per_page)
     )
     coupons = result.scalars().all()
@@ -306,6 +320,8 @@ async def get_active_coupons(db: AsyncSession, page: int = 1, per_page: int = 10
 
 async def get_by_code_public(db: AsyncSession, code: str) -> CouponOut:
     c = await _get_by_code(db, code)
-    if not c or not c.is_public:
+    # FIX-9: removed column `is_public` no longer exists.
+    # Check coupon_type == "public" instead.
+    if not c or c.coupon_type != "public":
         raise ValueError("Coupon not found")
     return CouponOut.model_validate(c)

@@ -25,7 +25,9 @@ from src.schemas.darshan import (
  
 class DarshanService:
  
-    async def __init__(self, db: AsyncSession, redis_client=None):
+    # FIX-1: removed `async` — __init__ cannot be a coroutine; Python raises
+    # TypeError: object NoneType can't be used in 'await' expression otherwise.
+    def __init__(self, db: AsyncSession, redis_client=None):
         self.db    = db
         self.redis = redis_client
         self.repo  = DarshanRepository(db)
@@ -130,17 +132,36 @@ class DarshanService:
             raise BadRequestException(f"Only {slot.available_count} slots available")
  
         # STEP 3 — calculate amount and create PENDING booking
+        # FIX-2: DarshanBooking model columns corrected:
+        #   slot_id       → darshan_slot_id   (model column name)
+        #   user_id       → removed (no user_id column on DarshanBooking; user is on master Booking)
+        #   total_amount  → total_price        (model column name)
+        #   status        → removed (no status column; master bookings.status is the source of truth)
+        #   pilgrim_details → devotee_details  (model column name)
+        #
+        # NOTE: DarshanBooking requires booking_id (FK to bookings.id).
+        # This service path creates a standalone darshan_booking without a master booking,
+        # which is an architectural limitation of the darshan temple-side flow (separate
+        # from the booking_service.book_darshan path). A proper booking_id must come from
+        # a pre-created master Booking. Here we set it to None (nullable=True in model)
+        # so the insert doesn't crash; the master booking should be linked separately.
         darshan_type = await self.repo.get_darshan_type_by_id(temple_id, slot.darshan_type_id)
-        total_amount = (darshan_type.price if darshan_type else 0.0) * req.num_persons
+        price_per_person = darshan_type.price if darshan_type else 0.0
+        total_price = price_per_person * req.num_persons
  
         booking = DarshanBooking(
             temple_id=temple_id,
-            slot_id=req.slot_id,
-            user_id=user_id,
+            darshan_slot_id=req.slot_id,           # was slot_id (wrong column name)
+            darshan_type_id=slot.darshan_type_id,
+            # booking_id is required (FK) — caller should pass it; omitted here
+            # because this service path has no master booking context
+            darshan_date=slot.slot_date,
+            darshan_time=slot.start_time,
             num_persons=req.num_persons,
-            total_amount=total_amount,
-            status="PENDING",
-            pilgrim_details=[p.model_dump() for p in req.pilgrim_details] if req.pilgrim_details else [],
+            price_per_person=price_per_person,
+            total_price=total_price,               # was total_amount (wrong column name)
+            devotee_details=[p.model_dump() for p in req.pilgrim_details] if req.pilgrim_details else [],
+            # removed: user_id (no such column), status (no such column)
         )
         created = await self.repo.create_darshan_booking(booking)
  
@@ -217,17 +238,21 @@ class DarshanService:
             raise BadRequestException(f"Only {slot.available_count} slots available")
  
         # STEP 3 — create PENDING booking
+        # FIX-3: PoojaBooking column names updated to match models/darshan.py:
+        #   total_amount     → price                (column was renamed)
+        #   devotee_name     → devotee_names (JSONB) (column renamed + type changed to list)
+        #   gotram           → gothram              (column renamed — spelling fix)
+        #   special_requests → special_instructions (column renamed)
+        #   user_id, status  → removed (no such columns on PoojaBooking model)
         booking = PoojaBooking(
             temple_id=temple_id,
             pooja_service_id=service_id,
             slot_id=req.slot_id,
-            user_id=user_id,
             num_persons=req.num_persons,
-            total_amount=service.price * req.num_persons,
-            status="PENDING",
-            devotee_name=req.devotee_name,
-            gotram=req.gotram,
-            special_requests=req.special_requests,
+            price=service.price * req.num_persons,                              # was total_amount
+            devotee_names=[req.devotee_name] if req.devotee_name else [],       # was devotee_name (singular str)
+            gothram=req.gothram,                                                  # was gotram
+            special_instructions=req.special_requests,                           # was special_requests
         )
         created = await self.repo.create_pooja_booking(booking)
         return PoojaBookingResponse.model_validate(created)
