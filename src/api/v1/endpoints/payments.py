@@ -49,10 +49,20 @@ router = APIRouter(prefix="/payments", tags=["Payments"])
 
 
 # ─── GET /methods (no auth needed) ───────────
-@router.get("/methods", response_model=PaymentMethodsResponse, summary="Get payment methods")
+@router.get(
+    "/methods",
+    response_model=PaymentMethodsResponse,
+    summary="Get payment methods"
+)
 async def payment_methods():
-    """List all available payment methods: UPI, CARD, NET_BANKING, WALLET, EMI, PAY_LATER."""
-    return get_payment_methods()
+    """
+    List all available payment methods:
+    UPI, CARD, NET_BANKING, WALLET, EMI, PAY_LATER.
+    """
+
+    methods = await get_payment_methods()
+
+    return methods
 
 
 # ─── POST /initiate ───────────────────────────
