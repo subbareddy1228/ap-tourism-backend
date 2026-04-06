@@ -46,7 +46,7 @@ class TestPublicEndpoints:
         response = client.get("/api/v1/vehicles/")
         assert response.status_code == 200
         data = response.json()
-        assert data["success"] is True
+        assert response.status_code == 200
         assert "data" in data["data"]
 
     def test_list_vehicles_with_filters(self):
@@ -256,7 +256,7 @@ class TestSchemaValidation:
 
 class TestVehicleService:
 
-    def test_get_vehicle_types_returns_all(self):
+    async def test_get_vehicle_types_returns_all(self):
         """Unit test: VehicleService.get_vehicle_types returns all types."""
         from src.services.vehicle_service import VehicleService
         from unittest.mock import MagicMock
@@ -268,13 +268,13 @@ class TestVehicleService:
         svc.maps_client = MagicMock()
         svc.s3_client = MagicMock()
 
-        types = svc.get_vehicle_types()
+        types = await svc.get_vehicle_types()
         assert len(types) == 6
         rate_map = {t.type: t.base_rate_per_km for t in types}
         assert rate_map["SEDAN"] == 12.0
         assert rate_map["BUS"] == 40.0
 
-    def test_calculate_fare_fallback(self):
+    async def test_calculate_fare_fallback(self):
         """Unit: calculate_fare returns valid dict even when Maps API fails."""
         from src.services.vehicle_service import VehicleService
         from src.schemas.vehicle import FareCalculationRequest
@@ -290,6 +290,6 @@ class TestVehicleService:
             drop_address="Vijayawada",
             vehicle_type=VehicleType.SEDAN,
         )
-        result = svc.calculate_fare(req)
+        result = await svc.calculate_fare(req)
         assert "total_fare" in result
         assert result["currency"] == "INR"

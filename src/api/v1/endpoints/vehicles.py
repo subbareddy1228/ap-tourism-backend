@@ -67,7 +67,7 @@ def get_vehicle_service(db: AsyncSession = Depends(get_db)) -> VehicleService:
 @router.get("/types", response_model=APIResponse, summary="Vehicle types with base rates")
 async def get_vehicle_types(service: VehicleService = Depends(get_vehicle_service)):
     """All vehicle types with base rate per km and description."""
-    data = service.get_vehicle_types()
+    data = await service.get_vehicle_types()
     return APIResponse.success(message="Vehicle types fetched", data=[t.model_dump() for t in data])
 
 
