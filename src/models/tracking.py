@@ -1,14 +1,13 @@
 """
-models/tracking.py
-M18 — Tracking Module
+models/tracking.py  —  M18 Tracking Module
+Author: LEV156 Ram Kishore Pawar
 
-Tables:
-    tracking_sessions  — one per active booking (share token, status, timing)
-    trip_locations     — latest GPS ping per session  (upserted, O(1) read)
-    location_history   — full breadcrumb trail        (append-only)
-
-Branch : feature/LEV156-tracking
-Author : LEV156 Ram Kishore Pawar
+Changes vs original:
+  TrackingSession.tracker_role — was Column(SAEnum(TrackingSessionStatus))
+    which is wrong; TrackingSessionStatus has values ACTIVE/PAUSED/COMPLETED/
+    CANCELLED — those are session states, not roles.
+    Fixed: Column(SAEnum(TrackerRole)) — TrackerRole has DRIVER and GUIDE.
+    The original code even had a comment acknowledging the bug.
 """
 
 import uuid
@@ -26,7 +25,7 @@ from sqlalchemy.sql import func
 from src.core.database import Base
 
 
-# ── Enums ─────────────────────────────────────────────────────
+# ── Enums ─────────────────────────────────────────────────────────────────────
 
 class TrackingSessionStatus(str, enum.Enum):
     ACTIVE    = "ACTIVE"
@@ -40,27 +39,31 @@ class TrackerRole(str, enum.Enum):
     GUIDE  = "GUIDE"
 
 
-# ── Models ────────────────────────────────────────────────────
+# ── Models ────────────────────────────────────────────────────────────────────
 
 class TrackingSession(Base):
     """
     One session per booking.  Created by driver/guide when trip begins.
-    Holds share_token so traveler can send a read-only link to family.
+    Holds share_token so traveler can share a read-only link with family.
     """
     __tablename__ = "tracking_sessions"
 
     id         = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     booking_id = Column(UUID(as_uuid=True), nullable=False, unique=True, index=True)
-    user_id    = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id    = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False, index=True,
+    )
 
-    tracker_id   = Column(UUID(as_uuid=True), nullable=False, index=True)   # driver.id or guide.id
-    tracker_role = Column(SAEnum(TrackingSessionStatus), nullable=False)    # overridden below — kept for migration compat
-    # NOTE: tracker_role stores TrackerRole values; SAEnum here maps to VARCHAR in DB
-    # Use TrackerRole enum in service layer
+    tracker_id   = Column(UUID(as_uuid=True), nullable=False, index=True)
+
+    # Fixed: was SAEnum(TrackingSessionStatus) — wrong enum entirely.
+    tracker_role = Column(SAEnum(TrackerRole), nullable=False)
 
     status        = Column(SAEnum(TrackingSessionStatus), default=TrackingSessionStatus.ACTIVE, nullable=False)
-    share_token   = Column(String(64),  unique=True, nullable=False, index=True)
-    share_enabled = Column(Boolean,     default=True)
+    share_token   = Column(String(64), unique=True, nullable=False, index=True)
+    share_enabled = Column(Boolean,    default=True)
 
     trip_started_at   = Column(DateTime(timezone=True), nullable=True)
     trip_completed_at = Column(DateTime(timezone=True), nullable=True)
@@ -68,7 +71,6 @@ class TrackingSession(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
-    # Relationships
     current_location = relationship(
         "TripLocation", back_populates="session",
         uselist=False, cascade="all, delete-orphan",
@@ -78,23 +80,26 @@ class TrackingSession(Base):
         cascade="all, delete-orphan",
     )
 
-    def __repr__(self):
-        return f"<TrackingSession booking={self.booking_id} status={self.status}>"
-    
+    def __repr__(self) -> str:
+        return f"<TrackingSession booking={self.booking_id} role={self.tracker_role} status={self.status}>"
+
+
 class TrackingEvent(Base):
     __tablename__ = "tracking_events"
 
-    id = Column(Integer, primary_key=True, index=True)
-    event_type = Column(String, nullable=False)
-    description = Column(String)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    id          = Column(Integer,  primary_key=True, index=True)
+    event_type  = Column(String,   nullable=False)
+    description = Column(String,   nullable=True)
+    created_at  = Column(DateTime, default=datetime.utcnow)
+
+    def __repr__(self) -> str:
+        return f"<TrackingEvent {self.event_type}>"
 
 
 class TripLocation(Base):
     """
     Latest known GPS position — exactly ONE row per session.
-    The service upserts this row on every ping.
-    Keeps live-map reads at O(1) without scanning history.
+    The service upserts this row on every ping so live-map reads are O(1).
     """
     __tablename__ = "trip_locations"
 
@@ -111,10 +116,8 @@ class TripLocation(Base):
     speed     = Column(Float, nullable=True)   # km/h
     bearing   = Column(Float, nullable=True)   # 0–360°
     altitude  = Column(Float, nullable=True)   # metres above sea level
+    address   = Column(String(500), nullable=True)
 
-    address = Column(String(500), nullable=True)   # optional reverse-geocoded label
-
-    # ETA fields — recomputed on every ping
     destination_lat       = Column(Float, nullable=True)
     destination_lng       = Column(Float, nullable=True)
     eta_minutes           = Column(Float, nullable=True)
@@ -124,12 +127,14 @@ class TripLocation(Base):
 
     session = relationship("TrackingSession", back_populates="current_location")
 
+    def __repr__(self) -> str:
+        return f"<TripLocation lat={self.latitude} lng={self.longitude}>"
+
 
 class LocationHistory(Base):
     """
-    Append-only breadcrumb trail.
-    Every ping is archived here for route-replay and distance analytics.
-    Rows are NEVER updated.
+    Append-only breadcrumb trail — every ping archived here.
+    Used for route-replay and distance analytics.  Rows are NEVER updated.
     """
     __tablename__ = "location_history"
 
@@ -154,3 +159,6 @@ class LocationHistory(Base):
     __table_args__ = (
         Index("ix_location_history_session_pinged", "session_id", "pinged_at"),
     )
+
+    def __repr__(self) -> str:
+        return f"<LocationHistory session={self.session_id} pinged={self.pinged_at}>"

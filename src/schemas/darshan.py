@@ -1,35 +1,42 @@
+"""
+schemas/darshan.py  —  Temple / Darshan / Pooja / Prasadam Module Schemas
+Pydantic v2
+
+Changes vs original:
+  PoojaBookRequest  — renamed gotram → gothram to match PoojaBooking model column.
+  PoojaBookingResponse — renamed gotram → gothram for the same reason.
+  Both schema classes were referencing req.gotram / orm.gotram which would
+  cause AttributeError after the model rename is applied.
+"""
+
 from __future__ import annotations
-from datetime import datetime, date, time
-from typing import Optional, List, Any
+
+from datetime import date, datetime, time
+from typing import Any, List, Optional
 from uuid import UUID
+
 from pydantic import BaseModel, Field
 
 
-# ─────────────────────────────────────────────
-# Darshan Type Schemas
-# GET /{id}/darshan-types
-# GET /{id}/darshan-types/{type_id}
-# ─────────────────────────────────────────────
+# ── Darshan Type ──────────────────────────────────────────────────────────────
+
 class DarshanTypeResponse(BaseModel):
     id:                      UUID
     temple_id:               UUID
     name:                    str
     darshan_type:            str
-    description:             Optional[str]  = None
+    description:             Optional[str] = None
     price:                   float
     duration_minutes:        int
-    what_is_included:        Optional[str]  = None
+    what_is_included:        Optional[str] = None
     max_persons_per_booking: int
     is_active:               bool
 
     model_config = {"from_attributes": True}
 
 
-# ─────────────────────────────────────────────
-# Darshan Slot Schemas
-# GET /{id}/darshan-slots
-# GET /{id}/darshan-slots/{date}
-# ─────────────────────────────────────────────
+# ── Darshan Slot ──────────────────────────────────────────────────────────────
+
 class DarshanSlotResponse(BaseModel):
     id:              UUID
     temple_id:       UUID
@@ -46,10 +53,8 @@ class DarshanSlotResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
-# ─────────────────────────────────────────────
-# Check Availability
-# POST /{id}/darshan/check-availability
-# ─────────────────────────────────────────────
+# ── Check Availability ────────────────────────────────────────────────────────
+
 class DarshanCheckAvailabilityRequest(BaseModel):
     slot_id:     UUID
     num_persons: int = Field(..., ge=1, le=10)
@@ -63,25 +68,20 @@ class DarshanCheckAvailabilityResponse(BaseModel):
     message:           str
 
 
-# ─────────────────────────────────────────────
-# Pilgrim Detail
-# Used in darshan booking
-# ─────────────────────────────────────────────
+# ── Pilgrim Detail ────────────────────────────────────────────────────────────
+
 class PilgrimDetail(BaseModel):
-    name:             str
-    age:              int            = Field(..., ge=1, le=120)
-    id_proof_type:    Optional[str]  = None   # AADHAR, PAN, PASSPORT, VOTER_ID, DRIVING_LICENSE
-    id_proof_number:  Optional[str]  = None
+    name:            str
+    age:             int           = Field(..., ge=1, le=120)
+    id_proof_type:   Optional[str] = None
+    id_proof_number: Optional[str] = None
 
 
-# ─────────────────────────────────────────────
-# Darshan Booking Schemas
-# POST /{id}/darshan/book
-# GET /{id}/darshan/booking/{booking_id}
-# ─────────────────────────────────────────────
+# ── Darshan Booking ───────────────────────────────────────────────────────────
+
 class DarshanBookRequest(BaseModel):
     slot_id:         UUID
-    num_persons:     int                         = Field(..., ge=1, le=10)
+    num_persons:     int                           = Field(..., ge=1, le=10)
     pilgrim_details: Optional[List[PilgrimDetail]] = []
 
 
@@ -102,11 +102,8 @@ class DarshanBookingResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
-# ─────────────────────────────────────────────
-# Pooja Service Schemas
-# GET /{id}/pooja-services
-# GET /{id}/pooja-services/{id}
-# ─────────────────────────────────────────────
+# ── Pooja Service ─────────────────────────────────────────────────────────────
+
 class PoojaServiceResponse(BaseModel):
     id:                  UUID
     temple_id:           UUID
@@ -122,10 +119,8 @@ class PoojaServiceResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
-# ─────────────────────────────────────────────
-# Pooja Slot Schemas
-# GET /{id}/pooja-services/{id}/slots
-# ─────────────────────────────────────────────
+# ── Pooja Slot ────────────────────────────────────────────────────────────────
+
 class PoojaSlotResponse(BaseModel):
     id:               UUID
     temple_id:        UUID
@@ -142,17 +137,15 @@ class PoojaSlotResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
-# ─────────────────────────────────────────────
-# Pooja Booking Schemas
-# POST /{id}/pooja/book
-# ─────────────────────────────────────────────
+# ── Pooja Booking ─────────────────────────────────────────────────────────────
+
 class PoojaBookRequest(BaseModel):
     pooja_service_id: UUID
     slot_id:          UUID
-    num_persons:      int            = Field(default=1, ge=1)
-    devotee_name:     Optional[str]  = None
-    gotram:           Optional[str]  = None
-    special_requests: Optional[str]  = None
+    num_persons:      int           = Field(default=1, ge=1)
+    devotee_name:     Optional[str] = None
+    gothram:          Optional[str] = None   # Fixed: was gotram (spelling mismatch with model)
+    special_requests: Optional[str] = None
 
 
 class PoojaBookingResponse(BaseModel):
@@ -167,20 +160,15 @@ class PoojaBookingResponse(BaseModel):
     status:            str
     payment_id:        Optional[str] = None
     devotee_name:      Optional[str] = None
-    gotram:            Optional[str] = None
+    gothram:           Optional[str] = None   # Fixed: was gotram
     special_requests:  Optional[str] = None
     created_at:        datetime
 
     model_config = {"from_attributes": True}
 
 
-# ─────────────────────────────────────────────
-# Prasadam Schemas
-# GET /{id}/prasadam
-# GET /{id}/prasadam/{item_id}
-# POST /{id}/prasadam/order
-# GET /{id}/prasadam/orders
-# ─────────────────────────────────────────────
+# ── Prasadam ──────────────────────────────────────────────────────────────────
+
 class PrasadamItemResponse(BaseModel):
     id:           UUID
     temple_id:    UUID
