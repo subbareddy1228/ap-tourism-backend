@@ -1,10 +1,14 @@
 """
 schemas/admin.py
 Admin module schemas — fixed for LEV146 (Pydantic v2).
+
+Changes:
+  - Added HotelReviewRequest  — body schema for PUT /admin/hotels/{id}/review
+  - Added HotelAdminResponse  — typed response for admin hotel detail / review result
 """
 
 from pydantic import BaseModel, field_validator
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
 from uuid import UUID
 
@@ -181,3 +185,82 @@ class WithdrawalProcessRequest(BaseModel):
         if v not in allowed:
             raise ValueError(f"Status must be one of {allowed}")
         return v
+
+
+# ══════════════════════════════════════════════════════
+# HOTEL ADMIN REVIEW  (new — hotel approval workflow)
+# ══════════════════════════════════════════════════════
+
+class HotelReviewRequest(BaseModel):
+    """
+    Request body for PUT /admin/hotels/{hotel_id}/review.
+
+    Fields:
+      approved         — True → ACTIVE, False → REJECTED
+      rejection_reason — required when approved=False; surfaced to the partner
+      admin_note       — optional internal note for the admin team (not shown to partner)
+    """
+    approved: bool
+    rejection_reason: Optional[str] = None
+    admin_note: Optional[str] = None
+
+    @field_validator("rejection_reason")
+    @classmethod
+    def reason_required_on_rejection(cls, v, info):
+        # info.data contains already-validated fields
+        if info.data.get("approved") is False and not v:
+            raise ValueError("rejection_reason is required when approved=False")
+        return v
+
+
+class HotelRoomAdminResponse(BaseModel):
+    id: str
+    room_type: str
+    name: Optional[str]
+    max_occupancy: int
+    total_rooms: int
+    price_per_night: float
+    is_active: bool
+
+
+class HotelAdminResponse(BaseModel):
+    """
+    Full hotel detail as seen by an admin — includes review-tracking fields
+    that are hidden from public / partner responses.
+    """
+    id: str
+    partner_id: str
+    name: str
+    description: Optional[str]
+    star_rating: int
+    hotel_type: str
+    address: str
+    city: str
+    state: str
+    pincode: Optional[str]
+    contact_phone: Optional[str]
+    contact_email: Optional[str]
+    website: Optional[str]
+    check_in_time: str
+    check_out_time: str
+    cancellation_policy: Optional[str]
+    pet_policy: str
+    meal_options: Optional[List[str]]
+    is_active: bool
+    is_featured: bool
+    status: str                         # PENDING | ACTIVE | INACTIVE | REJECTED
+    base_price: Optional[float]
+    rating: Optional[float]
+    total_reviews: int
+
+    # Admin-only review fields
+    rejection_reason: Optional[str]
+    admin_note: Optional[str]
+    reviewed_at: Optional[datetime]
+    reviewed_by: Optional[str]          # admin user UUID as string
+
+    rooms: List[HotelRoomAdminResponse] = []
+    created_at: datetime
+
+    class Config:
+        from_attributes = True

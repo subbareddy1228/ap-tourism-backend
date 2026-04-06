@@ -1,7 +1,7 @@
 """
 api/v1/endpoints/admin.py
 Module 19 — Admin APIs /api/v1/admin
-45 endpoints. No new DB models — reuses models from modules 1–18.
+47 endpoints (45 original + 2 new hotel review endpoints).
 
 Fixed for LEV146:
   - Async SQLAlchemy (AsyncSession + select())
@@ -9,6 +9,10 @@ Fixed for LEV146:
   - get_db from src.core.database
   - APIResponse from src.common.responses
   - Uses existing LEV146 models
+
+Hotel approval workflow (NEW — fixes missing endpoint gap):
+  GET  /admin/hotels/{hotel_id}         → admin_get_hotel_detail
+  PUT  /admin/hotels/{hotel_id}/review  → admin_review_hotel
 """
 
 from uuid import UUID
@@ -44,7 +48,9 @@ from src.schemas.admin import (
     PackageCreateSchema, PackageUpdateSchema,
     AssignAgentSchema,
     CouponCreateSchema, CouponUpdateSchema,
-    SettingUpdateSchema,WithdrawalProcessRequest,StatusUpdateRequest
+    SettingUpdateSchema, WithdrawalProcessRequest, StatusUpdateRequest,
+    # Hotel review workflow (new)
+    HotelReviewRequest,
 )
 from src.common.responses import APIResponse
 
@@ -78,11 +84,18 @@ async def admin_dashboard(
         select(func.sum(Transaction.amount)).where(Transaction.status == "SUCCESS")
     )
 
+    # Pending hotel count — surfaced on dashboard so admin knows there's a queue
+    from src.models.hotel import Hotel
+    pending_hotels = await db.scalar(
+        select(func.count(Hotel.id)).where(Hotel.status == "PENDING")
+    )
+
     return APIResponse.success(message="Dashboard stats", data={
         "today_bookings":       today_bookings or 0,
         "total_users":          total_users or 0,
         "total_partners":       total_partners or 0,
         "pending_partners":     pending_partners or 0,
+        "pending_hotels":       pending_hotels or 0,
         "total_bookings":       total_bookings or 0,
         "open_support_tickets": open_tickets or 0,
         "total_revenue":        float(total_revenue or 0),
@@ -289,9 +302,9 @@ async def update_partner_status(
     partner = await _get_or_404(db, Partner, partner_id)
     if data.status.upper() == "ACTIVE" and partner.verification_status != "VERIFIED":
         raise HTTPException(
-        status_code=status.HTTP_400_BAD_REQUEST,
-        detail="Cannot activate a partner that is not verified. Use the verify endpoint first."
-    )
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot activate a partner that is not verified. Use the verify endpoint first.",
+        )
     partner.is_active = data.status.upper() == "ACTIVE"
     await db.commit()
     return APIResponse.success(message=f"Partner {data.status}", data=_partner_dict(partner))
@@ -308,6 +321,87 @@ async def set_commission(
     partner.commission_rate = data.rate
     await db.commit()
     return APIResponse.success(message="Commission updated", data=_partner_dict(partner))
+
+
+# ════════════════════════════════════════════════════════
+# HOTELS  (admin management + approval workflow)
+# ════════════════════════════════════════════════════════
+
+@router.get(
+    "/hotels",
+    response_model=APIResponse,
+    summary="List all hotels",
+    description=(
+        "Returns all hotels regardless of status. "
+        "Use ?status=PENDING to view hotels awaiting review."
+    ),
+)
+async def admin_list_hotels(
+    page:     int           = Query(default=1, ge=1),
+    per_page: int           = Query(default=20, ge=1, le=100),
+    status:   Optional[str] = Query(
+        default=None,
+        description="Filter by status: PENDING | ACTIVE | INACTIVE | REJECTED",
+    ),
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
+):
+    from src.services import hotel_service
+    result = await hotel_service.admin_list_hotels(db, page, per_page, status)
+    return APIResponse.success(message="Hotels fetched", data=result)
+
+
+@router.get(
+    "/hotels/{hotel_id}",
+    response_model=APIResponse,
+    summary="Get hotel detail (admin)",
+    description=(
+        "Returns the full hotel record — including admin-only fields "
+        "(rejection_reason, admin_note, reviewed_at, reviewed_by) — "
+        "regardless of the hotel's current status. Use this before calling "
+        "the review endpoint."
+    ),
+)
+async def admin_get_hotel_detail(
+    hotel_id: UUID,
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
+):
+    from src.services import hotel_service
+    result = await hotel_service.admin_get_hotel_detail(str(hotel_id), db)
+    return APIResponse.success(message="Hotel fetched", data=result)
+
+
+@router.put(
+    "/hotels/{hotel_id}/review",
+    response_model=APIResponse,
+    summary="Approve or reject a hotel submission",
+    description=(
+        "Approves or rejects a hotel that was submitted by a partner.\n\n"
+        "**Approve** (`approved: true`): sets `status=ACTIVE` and `is_active=true` "
+        "so the hotel is immediately live in public listings.\n\n"
+        "**Reject** (`approved: false`): sets `status=REJECTED` and `is_active=false`. "
+        "`rejection_reason` is **required** on rejection and is surfaced to the partner "
+        "via an in-app notification.\n\n"
+        "`admin_note` is optional and is stored internally — not shown to the partner.\n\n"
+        "A 400 is returned if the hotel is already ACTIVE or REJECTED."
+    ),
+)
+async def admin_review_hotel(
+    hotel_id: UUID,
+    data: HotelReviewRequest,
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
+):
+    from src.services import hotel_service
+    result = await hotel_service.admin_review_hotel(
+        hotel_id=str(hotel_id),
+        data=data,
+        admin_user=current_user,
+        db=db,
+    )
+    action = "approved" if data.approved else "rejected"
+    return APIResponse.success(message=f"Hotel {action} successfully", data=result)
 
 
 # ════════════════════════════════════════════════════════
@@ -676,18 +770,17 @@ async def broadcast_notification(
 ):
     result = await db.execute(select(User).where(User.status == UserStatus.ACTIVE))
     users = result.scalars().all()
-    notifications = [
-    Notification(
-        user_id=user.id,
-        title=title,
-        body=message,
-        type="SYSTEM",
-        channel="IN_APP",
-    )
-    for user in users
-]
-
-    db.add_all(notifications)
+    notifs = [
+        Notification(
+            user_id=user.id,
+            title=title,
+            body=message,
+            type="SYSTEM",
+            channel="IN_APP",
+        )
+        for user in users
+    ]
+    db.add_all(notifs)
     await db.commit()
     return APIResponse.success(message=f"Notification sent to {len(users)} users")
 
@@ -718,6 +811,97 @@ async def update_setting(
 
 
 # ════════════════════════════════════════════════════════
+# VEHICLES
+# ════════════════════════════════════════════════════════
+
+@router.get("/vehicles", response_model=APIResponse, summary="List all vehicles")
+async def admin_list_vehicles(
+    page: int = Query(default=1, ge=1),
+    per_page: int = Query(default=20),
+    status: Optional[str] = Query(default=None),
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
+):
+    from src.services import vehicle_service
+    result = await vehicle_service.admin_list_vehicles(db, page, per_page, status)
+    return APIResponse.success(message="Vehicles fetched", data=result)
+
+
+@router.put("/vehicles/{vehicle_id}/status", response_model=APIResponse, summary="Activate or suspend vehicle")
+async def admin_update_vehicle_status(
+    vehicle_id: str,
+    data: StatusUpdateRequest,
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
+):
+    from src.services import vehicle_service
+    result = await vehicle_service.admin_update_status(vehicle_id, data.status, db)
+    return APIResponse.success(message="Vehicle status updated", data=result)
+
+
+# ════════════════════════════════════════════════════════
+# GUIDES
+# ════════════════════════════════════════════════════════
+
+@router.get("/guides", response_model=APIResponse, summary="List all guides")
+async def admin_list_guides(
+    page: int = Query(default=1, ge=1),
+    per_page: int = Query(default=20),
+    status: Optional[str] = Query(default=None),
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
+):
+    from src.services import guide_service
+    result = await guide_service.admin_list_guides(db, page, per_page, status)
+    return APIResponse.success(message="Guides fetched", data=result)
+
+
+@router.put("/guides/{guide_id}/status", response_model=APIResponse, summary="Activate or suspend guide")
+async def admin_update_guide_status(
+    guide_id: str,
+    data: StatusUpdateRequest,
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
+):
+    from src.services import guide_service
+    result = await guide_service.admin_update_status(guide_id, data.status, db)
+    return APIResponse.success(message="Guide status updated", data=result)
+
+
+# ════════════════════════════════════════════════════════
+# WALLET
+# ════════════════════════════════════════════════════════
+
+@router.get("/wallet/withdrawals", response_model=APIResponse, summary="List all pending withdrawal requests")
+async def admin_list_withdrawals(
+    page: int = Query(default=1, ge=1),
+    per_page: int = Query(default=20),
+    status: Optional[str] = Query(default="pending"),
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
+):
+    from src.services import wallet_service
+    result = await wallet_service.admin_list_withdrawals(db, page, per_page, status)
+    return APIResponse.success(message="Withdrawals fetched", data=result)
+
+
+@router.put("/wallet/withdrawals/{withdrawal_id}/process", response_model=APIResponse, summary="Process or reject withdrawal")
+async def admin_process_withdrawal(
+    withdrawal_id: str,
+    data: WithdrawalProcessRequest,
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Process or reject a withdrawal request.
+    status: 'completed' | 'rejected'
+    """
+    from src.services import wallet_service
+    result = await wallet_service.admin_process_withdrawal(withdrawal_id, data, db)
+    return APIResponse.success(message=f"Withdrawal {data.status}", data=result)
+
+
+# ════════════════════════════════════════════════════════
 # HELPERS
 # ════════════════════════════════════════════════════════
 
@@ -731,23 +915,22 @@ async def _get_or_404(db: AsyncSession, model, record_id: UUID):
 
 def _user_dict(u: User) -> dict:
     return {
-        "id":        str(u.id),
-        "phone":     u.phone,
-        "role":      u.role,
-        "is_active": u.status.value == "active",
+        "id":         str(u.id),
+        "phone":      u.phone,
+        "role":       u.role,
+        "is_active":  u.status.value == "active",
         "created_at": u.created_at,
     }
 
 
 def _booking_dict(b: Booking) -> dict:
     return {
-        "id":             str(b.id),
-        
-        "user_id":        str(b.user_id),
-        "booking_type":   b.booking_type if hasattr(b, "booking_type") else None,
-        "status":         str(b.status),
-        "total_amount":   float(b.total_amount) if b.total_amount else 0,
-        "created_at":     b.created_at,
+        "id":           str(b.id),
+        "user_id":      str(b.user_id),
+        "booking_type": b.booking_type if hasattr(b, "booking_type") else None,
+        "status":       str(b.status),
+        "total_amount": float(b.total_amount) if b.total_amount else 0,
+        "created_at":   b.created_at,
     }
 
 
@@ -759,88 +942,3 @@ def _partner_dict(p: Partner) -> dict:
         "is_active":           p.is_active,
         "created_at":          p.created_at,
     }
-
-@router.get("/vehicles", response_model=APIResponse, summary="List all vehicles")
-async def admin_list_vehicles(
-    page: int = Query(default=1, ge=1),
-    per_page: int = Query(default=20),
-    status: Optional[str] = Query(default=None),
-    current_user: User = Depends(get_admin_user),
-    db: AsyncSession = Depends(get_db)
-):
-    from src.services import vehicle_service
-    result = await vehicle_service.admin_list_vehicles(db, page, per_page, status)
-    return APIResponse.success(message="Vehicles fetched", data=result)
-
-@router.put("/vehicles/{vehicle_id}/status", response_model=APIResponse, summary="Activate or suspend vehicle")
-async def admin_update_vehicle_status(
-    vehicle_id: str,
-    data: StatusUpdateRequest,
-    current_user: User = Depends(get_admin_user),
-    db: AsyncSession = Depends(get_db)
-):
-    from src.services import vehicle_service
-    result = await vehicle_service.admin_update_status(vehicle_id, data.status, db)
-    return APIResponse.success(message="Vehicle status updated", data=result)
-
-
-@router.get("/guides", response_model=APIResponse, summary="List all guides")
-async def admin_list_guides(
-    page: int = Query(default=1, ge=1),
-    per_page: int = Query(default=20),
-    status: Optional[str] = Query(default=None),
-    current_user: User = Depends(get_admin_user),
-    db: AsyncSession = Depends(get_db)
-):
-    from src.services import guide_service
-    result = await guide_service.admin_list_guides(db, page, per_page, status)
-    return APIResponse.success(message="Guides fetched", data=result)
-
-@router.put("/guides/{guide_id}/status", response_model=APIResponse, summary="Activate or suspend guide")
-async def admin_update_guide_status(
-    guide_id: str,
-    data: StatusUpdateRequest,
-    current_user: User = Depends(get_admin_user),
-    db: AsyncSession = Depends(get_db)
-):
-    from src.services import guide_service
-    result = await guide_service.admin_update_status(guide_id, data.status, db)
-    return APIResponse.success(message="Guide status updated", data=result)
-
-@router.get("/hotels", response_model=APIResponse, summary="List all hotels")
-async def admin_list_hotels(
-    page: int = Query(default=1, ge=1),
-    per_page: int = Query(default=20),
-    current_user: User = Depends(get_admin_user),
-    db: AsyncSession = Depends(get_db)
-):
-    from src.services import hotel_service
-    result = await hotel_service.admin_list_hotels(db, page, per_page)
-    return APIResponse.success(message="Hotels fetched", data=result)
-
-@router.get("/wallet/withdrawals", response_model=APIResponse, summary="List all pending withdrawal requests")
-async def admin_list_withdrawals(
-    page: int = Query(default=1, ge=1),
-    per_page: int = Query(default=20),
-    status: Optional[str] = Query(default="pending"),
-    current_user: User = Depends(get_admin_user),
-    db: AsyncSession = Depends(get_db)
-):
-    from src.services import wallet_service
-    result = await wallet_service.admin_list_withdrawals(db, page, per_page, status)
-    return APIResponse.success(message="Withdrawals fetched", data=result)
-
-@router.put("/wallet/withdrawals/{withdrawal_id}/process", response_model=APIResponse, summary="Process or reject withdrawal")
-async def admin_process_withdrawal(
-    withdrawal_id: str,
-    data: WithdrawalProcessRequest,
-    current_user: User = Depends(get_admin_user),
-    db: AsyncSession = Depends(get_db)
-):
-    """
-    Process or reject a withdrawal request.
-    status: 'completed' | 'rejected'
-    """
-    from src.services import wallet_service
-    result = await wallet_service.admin_process_withdrawal(withdrawal_id, data, db)
-    return APIResponse.success(message=f"Withdrawal {data.status}", data=result)
