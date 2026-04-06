@@ -55,7 +55,7 @@ router = APIRouter(prefix="/vehicles", tags=["Vehicles"])
 
 
 # ── Dependency ────────────────────────────────────────────────
-def get_vehicle_service(db: AsyncSession = Depends(get_db)) -> VehicleService:
+async def get_vehicle_service(db: AsyncSession = Depends(get_db)) -> VehicleService:
     return VehicleService(db)
 
 
