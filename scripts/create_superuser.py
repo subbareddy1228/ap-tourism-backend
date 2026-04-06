@@ -64,10 +64,11 @@ async def create_superuser(phone: str, name: str, password: str):
 
         # Create profile
         profile = UserProfile(
-            user_id    = user.id,
-            first_name = name.split()[0] if name else "Admin",
-            last_name  = name.split()[-1] if len(name.split()) > 1 else "",
-        )
+        user_id     = user.id,
+        language    = "en",
+        kyc_status  = "pending",
+        preferences = {},
+    )
         db.add(profile)
         await db.commit()
 
