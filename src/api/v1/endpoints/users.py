@@ -39,22 +39,6 @@ async def get_profile(
     result = await user_service.get_full_profile(current_user, db)
     return APIResponse.success(message="Profile fetched successfully", data=result)
 
-@router.post(
-    "/me/verify-email",
-    response_model=APIResponse,
-    summary="Send email verification link"
-)
-async def verify_email_send(
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
-):
-    """
-    Send a verification code to the user's registered email.
-    Use POST /auth/verify-otp to complete verification.
-    """
-    result = await user_service.send_email_verification(current_user, db)
-    return APIResponse.success(message=result["message"], data=result)
-
 
 @router.put(
     "/me",
@@ -258,39 +242,6 @@ async def delete_family_member(
 ):
     """Remove a family member from the account."""
     result = await user_service.delete_family_member(member_id, current_user, db)
-    return APIResponse.success(message=result["message"])
-
-
-# ══════════════════ VERIFICATION ══════════════════
-
-@router.post(
-    "/me/verify-phone",
-    response_model=APIResponse,
-    summary="Send phone verification OTP"
-)
-async def verify_phone_send(
-    current_user: User = Depends(get_current_user),
-):
-    """
-    Send OTP to phone for verification.
-    Use POST /auth/verify-otp to complete verification.
-    """
-    result = await user_service.send_phone_verification_otp(current_user)
-    return APIResponse.success(message=result["message"], data=result)
-
-
-@router.post(
-    "/me/verify-phone/confirm",
-    response_model=APIResponse,
-    summary="Confirm phone verification OTP"
-)
-async def verify_phone_confirm(
-    data: VerifyPhoneRequest,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
-):
-    """Verify the OTP sent to phone and mark phone as verified."""
-    result = await user_service.verify_phone_otp(data, current_user, db)
     return APIResponse.success(message=result["message"])
 
 
