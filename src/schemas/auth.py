@@ -5,7 +5,7 @@ Pydantic schemas for all Authentication API request & response bodies.
 
 import re
 from typing import Optional
-from pydantic import BaseModel, EmailStr, field_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, field_validator
 
 
 # ── Validators ────────────────────────────────────────────────
@@ -187,8 +187,7 @@ class UserResponse(BaseModel):
     is_phone_verified: bool
     is_email_verified: bool
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class TokenResponse(BaseModel):
