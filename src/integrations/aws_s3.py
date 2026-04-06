@@ -1,25 +1,25 @@
 """
 integrations/aws_s3.py
-
-AWS S3 integration for avatar uploads.
+ 
+AWS S3 integration for file uploads.
 Async implementation using aioboto3 (FastAPI compatible).
 """
-
+ 
 import uuid
 import logging
 import aioboto3
 from botocore.exceptions import ClientError
 from src.core.config import settings
-
+ 
 logger = logging.getLogger(__name__)
-
+ 
 # Shared async session (reused across requests)
 _session = aioboto3.Session()
-
-# Allowed avatar file types
+ 
+# Allowed file types
 ALLOWED_TYPES = {"image/jpeg", "image/jpg", "image/png", "image/webp"}
-
-
+ 
+ 
 def _s3_client():
     """Return async S3 client."""
     return _session.client(
@@ -28,8 +28,12 @@ def _s3_client():
         aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
         region_name=settings.AWS_REGION,
     )
-
-
+ 
+ 
+# ─────────────────────────────────────────────
+# Avatar uploads
+# ─────────────────────────────────────────────
+ 
 async def upload_avatar(
     file_bytes: bytes,
     content_type: str,
@@ -37,73 +41,137 @@ async def upload_avatar(
 ) -> str:
     """
     Upload avatar to AWS S3.
-
     Returns public URL of uploaded image.
     """
-
+ 
     if not content_type or content_type not in ALLOWED_TYPES:
         raise ValueError("Invalid avatar file type")
-
+ 
     extension = content_type.split("/")[-1].replace("jpeg", "jpg")
-
     key = f"avatars/{user_id}/{uuid.uuid4()}.{extension}"
-
+ 
     try:
-
         async with _s3_client() as s3:
-
             await s3.put_object(
                 Bucket=settings.AWS_BUCKET_NAME,
                 Key=key,
                 Body=file_bytes,
-                ContentType=content_type
+                ContentType=content_type,
             )
-
+ 
         url = (
             f"https://{settings.AWS_BUCKET_NAME}.s3."
             f"{settings.AWS_REGION}.amazonaws.com/{key}"
         )
-
+ 
         logger.info("Avatar uploaded successfully user=%s key=%s", user_id, key)
-
+ 
         return url
-
+ 
     except ClientError as e:
-
         logger.error("S3 upload failed: %s", str(e))
-
         raise ValueError("Failed to upload avatar")
-
-
+ 
+ 
 async def delete_avatar(avatar_url: str) -> None:
     """
     Delete avatar from S3.
     Used when user uploads new avatar.
     """
-
+ 
     if not avatar_url:
         return
-
+ 
     try:
-
         prefix = (
             f"https://{settings.AWS_BUCKET_NAME}.s3."
             f"{settings.AWS_REGION}.amazonaws.com/"
         )
-
+ 
         if avatar_url.startswith(prefix):
-
             key = avatar_url.replace(prefix, "")
-
+ 
             async with _s3_client() as s3:
-
                 await s3.delete_object(
                     Bucket=settings.AWS_BUCKET_NAME,
                     Key=key,
                 )
-
+ 
             logger.info("Avatar deleted key=%s", key)
-
+ 
     except Exception as e:
-
         logger.warning("Failed to delete avatar: %s", str(e))
+ 
+ 
+# ─────────────────────────────────────────────
+# Temple image uploads
+# ─────────────────────────────────────────────
+ 
+async def upload_temple_image(
+    file_bytes: bytes,
+    content_type: str,
+    temple_id: str,
+    filename: str,
+) -> str:
+    """
+    Upload temple image to AWS S3.
+    Returns public URL of uploaded image.
+    """
+ 
+    if not content_type or content_type not in ALLOWED_TYPES:
+        raise ValueError("Invalid image file type")
+ 
+    extension = content_type.split("/")[-1].replace("jpeg", "jpg")
+    key = f"temples/{temple_id}/{uuid.uuid4()}.{extension}"
+ 
+    try:
+        async with _s3_client() as s3:
+            await s3.put_object(
+                Bucket=settings.AWS_BUCKET_NAME,
+                Key=key,
+                Body=file_bytes,
+                ContentType=content_type,
+            )
+ 
+        url = (
+            f"https://{settings.AWS_BUCKET_NAME}.s3."
+            f"{settings.AWS_REGION}.amazonaws.com/{key}"
+        )
+ 
+        logger.info("Temple image uploaded successfully temple_id=%s key=%s", temple_id, key)
+ 
+        return url
+ 
+    except ClientError as e:
+        logger.error("S3 upload failed: %s", str(e))
+        raise ValueError("Failed to upload temple image")
+ 
+ 
+async def delete_temple_image(image_url: str) -> None:
+    """
+    Delete a temple image from S3.
+    Used when admin removes an image.
+    """
+ 
+    if not image_url:
+        return
+ 
+    try:
+        prefix = (
+            f"https://{settings.AWS_BUCKET_NAME}.s3."
+            f"{settings.AWS_REGION}.amazonaws.com/"
+        )
+ 
+        if image_url.startswith(prefix):
+            key = image_url.replace(prefix, "")
+ 
+            async with _s3_client() as s3:
+                await s3.delete_object(
+                    Bucket=settings.AWS_BUCKET_NAME,
+                    Key=key,
+                )
+ 
+            logger.info("Temple image deleted key=%s", key)
+ 
+    except Exception as e:
+        logger.warning("Failed to delete temple image: %s", str(e))
