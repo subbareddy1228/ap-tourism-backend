@@ -1,4 +1,3 @@
-
 """
 Booking Endpoints — M11
 Base URL: /api/v1/bookings
@@ -638,7 +637,7 @@ async def assign_guide(
     db: AsyncSession = Depends(get_db)
 ):
     result = await booking_service.assign_guide(booking_id, data, db)
-    return APIResponse.success(message="Guide assigned", data=result)
+    return success(result, "Guide assigned")
  
  
 @router.put("/{booking_id}/assign-vehicle", response_model=APIResponse, summary="[Admin] Assign vehicle to booking")
@@ -649,4 +648,4 @@ async def assign_vehicle(
     db: AsyncSession = Depends(get_db)
 ):
     result = await booking_service.assign_vehicle(booking_id, data, db)
-    return APIResponse.success(message="Vehicle assigned", data=result)
+    return success(result, "Vehicle assigned")
