@@ -149,6 +149,9 @@ PUBLIC_ROUTES = {
     "/api/v1/languages",
     "/api/v1/currencies",
     "/api/v1/contact-us",
+     # Payments — no token needed
+    "/api/v1/payments/methods",
+    "/api/v1/payments/webhook/razorpay",
 }
 
 

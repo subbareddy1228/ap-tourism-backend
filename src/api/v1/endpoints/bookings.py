@@ -22,9 +22,8 @@ from datetime import date as date_type
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.api.deps.auth import get_admin_user
+from src.api.deps.auth import get_admin_user, get_current_user
 from src.core.database import get_db
-from src.core.dependencies import get_current_user
 from src.core.redis import get_redis
 from src.models.user import User
 from src.schemas.booking import (
@@ -33,7 +32,7 @@ from src.schemas.booking import (
     # Create
     BookHotelRequest, BookVehicleRequest, BookDarshanRequest,
     BookPoojaRequest, BookPrasadamRequest, BookPackageRequest,
-    BookGuideRequest, BookComboRequest, BookCustomRequest,
+    BookGuideRequest, BookComboRequest, BookCustomRequest,AssignGuideRequest, AssignVehicleRequest,
     # Responses
     BookingCreatedResponse, BookingDetailResponse, BookingListResponse,
     BookingListFilter, CancelBookingRequest, CancelBookingResponse,
@@ -632,7 +631,7 @@ async def modify_booking(
 @router.put("/{booking_id}/assign-guide", response_model=APIResponse, summary="[Admin] Assign guide to booking")
 async def assign_guide(
     booking_id: str,
-    data: dict,
+    data: AssignGuideRequest,  
     current_user: User = Depends(get_admin_user),
     db: AsyncSession = Depends(get_db)
 ):
@@ -643,7 +642,7 @@ async def assign_guide(
 @router.put("/{booking_id}/assign-vehicle", response_model=APIResponse, summary="[Admin] Assign vehicle to booking")
 async def assign_vehicle(
     booking_id: str,
-    data: dict,
+    data: AssignVehicleRequest, 
     current_user: User = Depends(get_admin_user),
     db: AsyncSession = Depends(get_db)
 ):
