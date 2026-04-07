@@ -130,14 +130,14 @@ class TestUserTicketList:
 
     def test_get_detail_success(self):
         with mock_auth():
-            with patch("src.services.support_service.get_ticket") as mock_svc:
+            with patch("src.api.v1.endpoints.support.get_ticket") as mock_svc:
                 mock_svc.return_value = SAMPLE_TICKET
                 response = client.get(f"/api/v1/support/tickets/{TICKET_ID}", headers=AUTH_HEADER)
         assert response.status_code in (200, 401, 404)
 
     def test_get_detail_not_found(self):
         with mock_auth():
-            with patch("src.services.support_service.get_ticket") as mock_svc:
+            with patch("src.api.v1.endpoints.support.get_ticket") as mock_svc:
                 mock_svc.side_effect = ValueError("Ticket not found")
                 response = client.get(f"/api/v1/support/tickets/{uuid4()}", headers=AUTH_HEADER)
         assert response.status_code in (400, 401, 404)
@@ -211,14 +211,14 @@ class TestAdminTickets:
 
     def test_admin_list_success(self):
         with mock_admin_auth():
-            with patch("src.services.support_service.admin_list_tickets") as mock_svc:
+            with patch("src.api.v1.endpoints.support.admin_list_tickets") as mock_svc:
                 mock_svc.return_value = {"items": [], "total": 0}
                 response = client.get("/api/v1/support/admin/tickets", headers=ADMIN_HEADER)
         assert response.status_code in (200, 401)
 
     def test_admin_list_with_filters(self):
         with mock_admin_auth():
-            with patch("src.services.support_service.admin_list_tickets") as mock_svc:
+            with patch("src.api.v1.endpoints.support.admin_list_tickets") as mock_svc:
                 mock_svc.return_value = {"items": [], "total": 0}
                 response = client.get(
                     "/api/v1/support/admin/tickets?status=OPEN&priority=HIGH",
@@ -232,7 +232,7 @@ class TestAdminTickets:
 
     def test_admin_assign_success(self):
         with mock_admin_auth():
-            with patch("src.services.support_service.assign_ticket") as mock_svc:
+            with patch("src.api.v1.endpoints.support.admin_assign_ticket") as mock_svc:
                 mock_svc.return_value = {"message": "Ticket assigned"}
                 response = client.put(
                     f"/api/v1/support/admin/tickets/{TICKET_ID}/assign",
@@ -247,7 +247,7 @@ class TestAdminTickets:
 
     def test_admin_resolve_success(self):
         with mock_admin_auth():
-            with patch("src.services.support_service.resolve_ticket") as mock_svc:
+            with patch("src.api.v1.endpoints.support.admin_resolve_ticket") as mock_svc:
                 mock_svc.return_value = {"message": "Ticket resolved"}
                 response = client.put(
                     f"/api/v1/support/admin/tickets/{TICKET_ID}/resolve",
@@ -262,7 +262,7 @@ class TestAdminTickets:
 
     def test_admin_add_message_success(self):
         with mock_admin_auth():
-            with patch("src.services.support_service.admin_add_message") as mock_svc:
+            with patch("src.api.v1.endpoints.support.admin_add_message") as mock_svc:
                 mock_svc.return_value = {"message_id": str(uuid4())}
                 response = client.post(
                     f"/api/v1/support/admin/tickets/{TICKET_ID}/messages",
@@ -277,7 +277,7 @@ class TestAdminTickets:
 
     def test_admin_get_ticket_detail_success(self):
         with mock_admin_auth():
-            with patch("src.services.support_service.admin_get_ticket") as mock_svc:
+            with patch("src.api.v1.endpoints.support.admin_get_ticket") as mock_svc:
                 mock_svc.return_value = SAMPLE_TICKET
                 response = client.get(
                     f"/api/v1/support/admin/tickets/{TICKET_ID}",
@@ -291,7 +291,7 @@ class TestAdminTickets:
 
     def test_admin_get_messages_success(self):
         with mock_admin_auth():
-            with patch("src.services.support_service.admin_get_messages") as mock_svc:
+            with patch("src.api.v1.endpoints.support.admin_get_ticket_messages") as mock_svc:
                 mock_svc.return_value = []
                 response = client.get(
                     f"/api/v1/support/admin/tickets/{TICKET_ID}/messages",

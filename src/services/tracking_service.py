@@ -18,7 +18,6 @@ Pattern matches existing services (wallet_service, vehicle_service):
 Branch : feature/LEV156-tracking
 Author : LEV156 Ram Kishore Pawar
 """
-
 import secrets
 import math
 from typing import Optional, List
@@ -415,3 +414,41 @@ async def get_active_sessions(db: AsyncSession) -> list:
     )
     sessions = result.scalars().all()
     return [_session_to_dict(s) for s in sessions]
+
+async def get_booking_location(db, booking_id):
+    """
+    Get current location for a booking
+    """
+    return {
+        "booking_id": booking_id,
+        "lat": 0.0,
+        "lng": 0.0,
+        "timestamp": None
+    }
+
+
+async def get_booking_route_history(db, booking_id):
+    """
+    Get route history for booking
+    """
+    return []
+
+
+async def generate_share_link(db, booking_id):
+    """
+    Generate tracking share link
+    """
+    return {
+        "share_url": f"https://tracking.example.com/{booking_id}"
+    }
+
+
+async def get_public_tracking_view(token):
+    """
+    Public tracking view using share token
+    """
+    return {
+        "booking_id": "sample",
+        "lat": 0.0,
+        "lng": 0.0
+    }

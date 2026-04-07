@@ -37,9 +37,17 @@ def mock_admin_auth():
 
 class TestPublicReviewEndpoints:
 
-    def test_list_reviews_success(self):
+    @patch(
+        "src.repositories.review_repo.ReviewRepository.list_reviews",
+        new_callable=AsyncMock
+    )
+    def test_list_reviews_success(self, mock_list_reviews):
+
+        mock_list_reviews.return_value = ([], 0)
+
         response = client.get("/api/v1/reviews/")
-        assert response.status_code in (200, 404, 422, 500)
+
+        assert response.status_code == 200
 
     def skip_list_reviews_with_entity_filter(self):
         response = client.get(
