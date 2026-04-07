@@ -63,21 +63,21 @@ class TestListNotifications:
 
     def test_list_success(self):
         with mock_auth():
-            with patch("src.services.notification_service.list_notifications") as mock_svc:
+            with patch("src.api.v1.endpoints.notifications.notification_service.get_notifications") as mock_svc:
                 mock_svc.return_value = {"items": [SAMPLE_NOTIFICATION], "total": 1}
                 response = client.get("/api/v1/notifications", headers=AUTH_HEADER)
         assert response.status_code in (200, 401)
 
     def test_list_unread_only(self):
         with mock_auth():
-            with patch("src.services.notification_service.list_notifications") as mock_svc:
+            with patch("src.api.v1.endpoints.notifications.notification_service.get_notifications") as mock_svc:
                 mock_svc.return_value = {"items": [], "total": 0}
                 response = client.get("/api/v1/notifications?unread_only=true", headers=AUTH_HEADER)
         assert response.status_code in (200, 401, 422)
 
     def test_list_pagination(self):
         with mock_auth():
-            with patch("src.services.notification_service.list_notifications") as mock_svc:
+            with patch("src.api.v1.endpoints.notifications.notification_service.get_notifications") as mock_svc:
                 mock_svc.return_value = {"items": [], "total": 0}
                 response = client.get("/api/v1/notifications?page=2&limit=10", headers=AUTH_HEADER)
         assert response.status_code in (200, 401, 422)
@@ -110,14 +110,14 @@ class TestNotificationDetail:
 
     def test_get_detail_success(self):
         with mock_auth():
-            with patch("src.services.notification_service.get_notification") as mock_svc:
+            with patch("src.api.v1.endpoints.notifications.notification_service.get_notification_by_id") as mock_svc:
                 mock_svc.return_value = SAMPLE_NOTIFICATION
                 response = client.get(f"/api/v1/notifications/{NOTIF_ID}", headers=AUTH_HEADER)
         assert response.status_code in (200, 401, 404)
 
     def test_get_detail_not_found(self):
         with mock_auth():
-            with patch("src.services.notification_service.get_notification") as mock_svc:
+            with patch("src.api.v1.endpoints.notifications.notification_service.get_notification_by_id") as mock_svc:
                 mock_svc.side_effect = ValueError("Not found")
                 response = client.get(f"/api/v1/notifications/{uuid4()}", headers=AUTH_HEADER)
         assert response.status_code in (400, 401, 404)

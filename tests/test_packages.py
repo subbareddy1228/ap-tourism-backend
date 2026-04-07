@@ -24,6 +24,8 @@ Run with:
 """
 
 from uuid import uuid4
+from aiosmtplib import response
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 from unittest.mock import MagicMock, patch
 
@@ -72,19 +74,19 @@ def mock_auth():
 class TestListPackages:
 
     def test_list_no_filters(self):
-        with patch("src.services.package_service.get_packages") as mock_svc:
+        with patch("src.api.v1.endpoints.packages.package_service.get_packages") as mock_svc:
             mock_svc.return_value = {"items": [], "total": 0}
             response = client.get("/api/v1/packages/")
         assert response.status_code in (200, 500)
 
     def test_list_with_destination_filter(self):
-        with patch("src.services.package_service.get_packages") as mock_svc:
+        with patch("src.api.v1.endpoints.packages.package_service.get_packages") as mock_svc:
             mock_svc.return_value = {"items": [], "total": 0}
             response = client.get(f"/api/v1/packages/?destination_id={DEST_ID}")
         assert response.status_code in (200, 422, 500)
 
     def test_list_pagination(self):
-        with patch("src.services.package_service.get_packages") as mock_svc:
+        with patch("src.api.v1.endpoints.packages.package_service.get_packages") as mock_svc:
             mock_svc.return_value = {"items": [], "total": 0}
             response = client.get("/api/v1/packages/?page=1&limit=10")
         assert response.status_code in (200, 422, 500)
@@ -97,13 +99,13 @@ class TestListPackages:
 class TestFeaturedPackages:
 
     def test_featured_success(self):
-        with patch("src.services.package_service.get_featured_packages") as mock_svc:
+        with patch("src.api.v1.endpoints.packages.package_service.get_featured_packages") as mock_svc:
             mock_svc.return_value = [SAMPLE_PACKAGE]
             response = client.get("/api/v1/packages/featured")
         assert response.status_code in (200, 500)
 
     def test_featured_empty(self):
-        with patch("src.services.package_service.get_featured_packages") as mock_svc:
+        with patch("src.api.v1.endpoints.packages.package_service.get_featured_packages") as mock_svc:
             mock_svc.return_value = []
             response = client.get("/api/v1/packages/featured")
         assert response.status_code in (200, 500)
@@ -112,7 +114,7 @@ class TestFeaturedPackages:
 class TestPopularPackages:
 
     def test_popular_success(self):
-        with patch("src.services.package_service.get_popular_packages") as mock_svc:
+        with patch("src.api.v1.endpoints.packages.package_service.get_popular_packages") as mock_svc:
             mock_svc.return_value = [SAMPLE_PACKAGE]
             response = client.get("/api/v1/packages/popular")
         assert response.status_code in (200, 500)
@@ -121,7 +123,7 @@ class TestPopularPackages:
 class TestPackagesByDuration:
 
     def test_by_duration_success(self):
-        with patch("src.services.package_service.get_packages_by_duration") as mock_svc:
+        with patch("src.api.v1.endpoints.packages.package_service.get_packages_by_duration") as mock_svc:
             mock_svc.return_value = [SAMPLE_PACKAGE]
             response = client.get("/api/v1/packages/by-duration/3")
         assert response.status_code in (200, 404, 500)
@@ -131,14 +133,19 @@ class TestPackagesByDuration:
         assert response.status_code == 422
 
     def test_by_duration_zero_days(self):
-        response = client.get("/api/v1/packages/by-duration/0")
-        assert response.status_code in (200, 404, 422, 500)
+        with patch(
+            "src.api.v1.endpoints.packages.package_service.get_packages_duration"
+        ) as mock_svc:
+            mock_svc.return_value = {"items": [], "total": 0}
 
+            response = client.get("/api/v1/packages/by-duration/0")
+
+        assert response.status_code == 200
 
 class TestPackagesByBudget:
 
     def test_by_budget_success(self):
-        with patch("src.services.package_service.get_packages_by_budget") as mock_svc:
+        with patch("src.api.v1.endpoints.packages.package_service.get_packages_by_budget") as mock_svc:
             mock_svc.return_value = [SAMPLE_PACKAGE]
             response = client.get("/api/v1/packages/by-budget?min=1000&max=10000")
         assert response.status_code in (200, 422, 500)
@@ -153,31 +160,31 @@ class TestPackagesByBudget:
 class TestPackageDetail:
 
     def test_get_detail_success(self):
-        with patch("src.services.package_service.get_package") as mock_svc:
+        with patch("src.api.v1.endpoints.packages.package_service.get_package") as mock_svc:
             mock_svc.return_value = SAMPLE_PACKAGE
             response = client.get(f"/api/v1/packages/{PKG_ID}")
         assert response.status_code in (200, 500)
 
     def test_get_detail_not_found(self):
-        with patch("src.services.package_service.get_package") as mock_svc:
+        with patch("src.api.v1.endpoints.packages.package_service.get_package") as mock_svc:
             mock_svc.side_effect = ValueError("Package not found")
             response = client.get(f"/api/v1/packages/{uuid4()}")
         assert response.status_code in (400, 404, 500)
 
     def test_get_images(self):
-        with patch("src.services.package_service.get_package_images") as mock_svc:
+        with patch("src.api.v1.endpoints.packages.package_service.get_package_images") as mock_svc:
             mock_svc.return_value = []
             response = client.get(f"/api/v1/packages/{PKG_ID}/images")
         assert response.status_code in (200, 404, 500)
 
     def test_get_reviews(self):
-        with patch("src.services.package_service.get_package_reviews") as mock_svc:
+        with patch("src.api.v1.endpoints.packages.package_service.get_package_reviews") as mock_svc:
             mock_svc.return_value = []
             response = client.get(f"/api/v1/packages/{PKG_ID}/reviews")
         assert response.status_code in (200, 404, 500)
 
     def test_get_itinerary(self):
-        with patch("src.services.package_service.get_package_itinerary") as mock_svc:
+        with patch("src.api.v1.endpoints.packages.package_service.get_package_itinerary") as mock_svc:
             mock_svc.return_value = []
             response = client.get(f"/api/v1/packages/{PKG_ID}/itinerary")
         assert response.status_code in (200, 404, 500)
@@ -193,7 +200,7 @@ class TestAdminPackageWrite:
 
     def test_create_success(self):
         with mock_admin_auth():
-            with patch("src.services.package_service.create_package") as mock_svc:
+            with patch("src.api.v1.endpoints.packages.package_service.create_package") as mock_svc:
                 mock_svc.return_value = {"id": PKG_ID, "message": "Package created"}
                 response = client.post("/api/v1/packages/", json=PKG_PAYLOAD, headers=ADMIN_HEADER)
         assert response.status_code in (200, 201, 401, 422)
@@ -210,7 +217,7 @@ class TestAdminPackageWrite:
 
     def test_update_success(self):
         with mock_admin_auth():
-            with patch("src.services.package_service.update_package") as mock_svc:
+            with patch("src.api.v1.endpoints.packages.package_service.update_package") as mock_svc:
                 mock_svc.return_value = {"id": PKG_ID}
                 response = client.put(
                     f"/api/v1/packages/{PKG_ID}",
@@ -236,7 +243,7 @@ class TestAdminPackageWrite:
 
     def test_add_itinerary_day_success(self):
         with mock_admin_auth():
-            with patch("src.services.package_service.add_itinerary_day") as mock_svc:
+            with patch("src.api.v1.endpoints.packages.package_service.add_itinerary_day") as mock_svc:
                 mock_svc.return_value = {"day_number": 1}
                 response = client.post(
                     f"/api/v1/packages/{PKG_ID}/itinerary",
@@ -251,7 +258,7 @@ class TestAdminPackageWrite:
 class TestPackageCalculation:
 
     def test_calculate_price_success(self):
-        with patch("src.services.package_service.calculate_price") as mock_svc:
+        with patch("src.api.v1.endpoints.packages.package_service.calculate_price") as mock_svc:
             mock_svc.return_value = {"total_price": 9998.0}
             response = client.post(
                 "/api/v1/packages/calculate-price",
@@ -272,7 +279,7 @@ class TestPackageCalculation:
 
     def test_customize_success(self):
         with mock_auth():
-            with patch("src.services.package_service.create_custom_package") as mock_svc:
+            with patch("src.api.v1.endpoints.packages.package_service.create_custom_package") as mock_svc:
                 mock_svc.return_value = {"id": str(uuid4()), "message": "Custom package created"}
                 response = client.post(
                     "/api/v1/packages/customize",
@@ -288,3 +295,20 @@ class TestPackageCalculation:
                     headers=AUTH_HEADER,
                 )
         assert response.status_code in (200, 201, 401, 422)
+
+
+    def test_calculate_price_missing_package(self):
+        with patch(
+        "src.api.v1.endpoints.packages.package_service.calculate_price"
+    ) as mock_svc:
+
+            mock_svc.side_effect = HTTPException(
+            status_code=404, detail="Package not found"
+        )
+
+        response = client.post(
+            "/api/v1/packages/calculate-price",
+            json={"num_adults": 2},
+        )
+
+    assert response.status_code == 404
