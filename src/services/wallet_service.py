@@ -181,7 +181,10 @@ async def verify_topup(
     # ── Step 3: Credit wallet ─────────────────────────────────
     # ── Step 3: Credit wallet ─────────────────────────────────
 
-    amount_inr = Decimal(str(payment["amount"] / 100))   # convert paise to INR
+    def paise_to_rupees(paise: int) -> Decimal:
+        return (Decimal(paise) / Decimal("100")).quantize(Decimal("0.00"))
+
+    amount_inr = paise_to_rupees(payment["amount"])   # convert paise to INR
  
     # Idempotency check — prevent double-credit on retries
 
