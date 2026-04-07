@@ -105,6 +105,6 @@ class PackageType(str, Enum):
 # ── Localisation ─────────────────────────────────────────────────────────────
 
 class LanguageEnum(str, Enum):
-    EN = "en"
-    HI = "hi"
-    TE = "te"
+    ENGLISH = "English"
+    TELUGU = "Telugu"
+    HINDI = "Hindi"

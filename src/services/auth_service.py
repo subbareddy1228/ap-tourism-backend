@@ -188,7 +188,14 @@ async def register_user(data: RegisterRequest, db: AsyncSession) -> dict:
     await db.refresh(user)
 
     # Create profile
-    db.add(UserProfile(user_id=user.id, preferences={}, language=LanguageEnum.en, kyc_status="pending"))
+    db.add(
+    UserProfile(
+        user_id=user.id,
+        preferences={},
+        language=LanguageEnum.ENGLISH,
+        kyc_status="pending"
+    )
+)
     await db.commit()
 
     # Send phone OTP

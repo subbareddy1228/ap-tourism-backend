@@ -68,7 +68,8 @@ async def record_transaction(
     txn_type: 'credit' or 'debit'
     """
     if txn_type == "credit":
-        wallet.balance += amount
+        amount_rupees = amount / 100
+        wallet.balance += amount_rupees
     elif txn_type == "debit":
         if wallet.balance < amount:
             raise ValueError("Insufficient wallet balance")
