@@ -720,3 +720,10 @@ class BookingTrackingResponse(BaseModel):
     eta_minutes:      Optional[int]
     status:           BookingStatus
     last_updated:     Optional[datetime]
+
+#assign guide and vehicle request schemas
+class AssignGuideRequest(BaseModel):
+    guide_id: str
+
+class AssignVehicleRequest(BaseModel):
+    vehicle_id: str
