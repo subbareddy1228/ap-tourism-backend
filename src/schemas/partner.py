@@ -2,10 +2,20 @@
 schemas/partner.py  —  Partner Module Pydantic Schemas
 Pydantic v2 — all class Config replaced with model_config.
 
-Changes vs original:
+Fixes applied:
+  DocumentResponse.id — was declared as `str` but the PartnerDocument model
+    stores id as UUID(as_uuid=True). model_validate() received a UUID object
+    and Pydantic v2 raised a ValidationError, causing a 500 on every
+    POST /partners/me/documents and GET /partners/me/documents response.
+    Fixed: @field_validator("id", mode="before") added to convert UUID → str,
+    matching the same pattern already present in BankDetailsResponse.
+
+  PayoutResponse.id — same UUID → str issue for GET /partners/me/payouts
+    and GET /partners/me/payouts/{id}. Same fix applied.
+
   PartnerProfileResponse.total_reviews — was Optional[str], fixed to
-    Optional[int] to match model Integer column and prevent type
-    validation errors when serialising partner responses.
+    Optional[int] to match model Integer column.
+
   All class Config: from_attributes = True replaced with
     model_config = {"from_attributes": True}  (Pydantic v2 standard).
 """
@@ -13,6 +23,7 @@ Changes vs original:
 from datetime import datetime
 from decimal import Decimal
 from typing import List, Optional
+from uuid import UUID
 
 from pydantic import BaseModel, EmailStr, field_validator
 
@@ -160,6 +171,16 @@ class PayoutResponse(BaseModel):
 
     model_config = {"from_attributes": True}
 
+    @field_validator("id", mode="before")
+    @classmethod
+    def convert_uuid(cls, v) -> str:
+        """
+        PartnerPayout.id is UUID(as_uuid=True). Pydantic v2 will not
+        coerce UUID → str automatically when using model_validate(orm_obj).
+        Convert here to prevent ValidationError on serialization.
+        """
+        return str(v)
+
 
 # ── Bank Details ──────────────────────────────────────────────────────────────
 
@@ -208,6 +229,17 @@ class DocumentResponse(BaseModel):
     created_at:  datetime
 
     model_config = {"from_attributes": True}
+
+    @field_validator("id", mode="before")
+    @classmethod
+    def convert_uuid(cls, v) -> str:
+        """
+        PartnerDocument.id is UUID(as_uuid=True). Without this validator,
+        model_validate(doc) raises ValidationError because Pydantic v2 will
+        not implicitly coerce a UUID object to str.
+        This is the same fix already present in BankDetailsResponse.
+        """
+        return str(v)
 
 
 # ── Availability ──────────────────────────────────────────────────────────────
