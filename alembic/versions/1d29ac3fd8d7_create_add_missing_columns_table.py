@@ -40,8 +40,8 @@ Tables changed
  
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy import text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
- 
  
 revision      = "b1c2d3e4f5a6"
 down_revision = "4a09aa407a94"
@@ -49,106 +49,130 @@ branch_labels = None
 depends_on    = None
  
  
+def column_exists(table: str, column: str) -> bool:
+    conn = op.get_bind()
+    row = conn.execute(text(
+        "SELECT 1 FROM information_schema.columns "
+        "WHERE table_name = :t AND column_name = :c"
+    ), {"t": table, "c": column}).fetchone()
+    return row is not None
+ 
+ 
+def index_exists(index_name: str) -> bool:
+    conn = op.get_bind()
+    row = conn.execute(text(
+        "SELECT 1 FROM pg_indexes WHERE indexname = :i"
+    ), {"i": index_name}).fetchone()
+    return row is not None
+ 
+ 
+def add_column_if_missing(table, col):
+    if not column_exists(table, col.key):
+        op.add_column(table, col)
+ 
+ 
+def drop_column_if_exists(table, column):
+    if column_exists(table, column):
+        op.drop_column(table, column)
+ 
+ 
 def upgrade() -> None:
  
-    # ─────────────────────────────────────────────────────────────────────────
-    # bookings — 19 missing master columns
-    # ─────────────────────────────────────────────────────────────────────────
-    op.add_column("bookings", sa.Column("booking_number",      sa.String(20),     unique=True, nullable=True))
-    op.add_column("bookings", sa.Column("booking_date",        sa.Date(),          nullable=True))
-    op.add_column("bookings", sa.Column("start_date",          sa.Date(),          nullable=True))
-    op.add_column("bookings", sa.Column("end_date",            sa.Date(),          nullable=True))
-    op.add_column("bookings", sa.Column("subtotal",            sa.Numeric(10, 2),  server_default="0", nullable=True))
-    op.add_column("bookings", sa.Column("discount_amount",     sa.Numeric(10, 2),  server_default="0", nullable=True))
-    op.add_column("bookings", sa.Column("tax_amount",          sa.Numeric(10, 2),  server_default="0", nullable=True))
-    op.add_column("bookings", sa.Column("convenience_fee",     sa.Numeric(10, 2),  server_default="0", nullable=True))
-    op.add_column("bookings", sa.Column("paid_amount",         sa.Numeric(10, 2),  server_default="0", nullable=True))
-    op.add_column("bookings", sa.Column("coupon_code",         sa.String(50),      nullable=True))
-    op.add_column("bookings", sa.Column("special_requests",    sa.Text(),          nullable=True))
-    op.add_column("bookings", sa.Column("contact_details",     JSONB(),            nullable=True))
-    op.add_column("bookings", sa.Column("cancellation_reason", sa.Text(),          nullable=True))
-    op.add_column("bookings", sa.Column("cancelled_at",        sa.DateTime(),      nullable=True))
-    op.add_column("bookings", sa.Column("confirmed_at",        sa.DateTime(),      nullable=True))
-    op.add_column("bookings", sa.Column("completed_at",        sa.DateTime(),      nullable=True))
-    op.add_column("bookings", sa.Column("refund_amount",       sa.Numeric(10, 2),  nullable=True))
-    op.add_column("bookings", sa.Column("refund_status",       sa.String(20),      nullable=True))
-    op.add_column("bookings", sa.Column("custom_trip_details", JSONB(),            nullable=True))
-    op.create_index("ix_bookings_start_date",    "bookings", ["start_date"])
-    op.create_index("ix_bookings_booking_number","bookings", ["booking_number"], unique=True)
+    # ── bookings ──────────────────────────────────────────────────────────────
+    add_column_if_missing("bookings", sa.Column("booking_number",      sa.String(20),     nullable=True))
+    add_column_if_missing("bookings", sa.Column("booking_date",        sa.Date(),          nullable=True))
+    add_column_if_missing("bookings", sa.Column("start_date",          sa.Date(),          nullable=True))
+    add_column_if_missing("bookings", sa.Column("end_date",            sa.Date(),          nullable=True))
+    add_column_if_missing("bookings", sa.Column("subtotal",            sa.Numeric(10, 2),  server_default="0", nullable=True))
+    add_column_if_missing("bookings", sa.Column("discount_amount",     sa.Numeric(10, 2),  server_default="0", nullable=True))
+    add_column_if_missing("bookings", sa.Column("tax_amount",          sa.Numeric(10, 2),  server_default="0", nullable=True))
+    add_column_if_missing("bookings", sa.Column("convenience_fee",     sa.Numeric(10, 2),  server_default="0", nullable=True))
+    add_column_if_missing("bookings", sa.Column("paid_amount",         sa.Numeric(10, 2),  server_default="0", nullable=True))
+    add_column_if_missing("bookings", sa.Column("coupon_code",         sa.String(50),      nullable=True))
+    add_column_if_missing("bookings", sa.Column("special_requests",    sa.Text(),          nullable=True))
+    add_column_if_missing("bookings", sa.Column("contact_details",     JSONB(),            nullable=True))
+    add_column_if_missing("bookings", sa.Column("cancellation_reason", sa.Text(),          nullable=True))
+    add_column_if_missing("bookings", sa.Column("cancelled_at",        sa.DateTime(),      nullable=True))
+    add_column_if_missing("bookings", sa.Column("confirmed_at",        sa.DateTime(),      nullable=True))
+    add_column_if_missing("bookings", sa.Column("completed_at",        sa.DateTime(),      nullable=True))
+    add_column_if_missing("bookings", sa.Column("refund_amount",       sa.Numeric(10, 2),  nullable=True))
+    add_column_if_missing("bookings", sa.Column("refund_status",       sa.String(20),      nullable=True))
+    add_column_if_missing("bookings", sa.Column("custom_trip_details", JSONB(),            nullable=True))
  
-    # ─────────────────────────────────────────────────────────────────────────
-    # hotel_bookings — 2 missing time columns
-    # ─────────────────────────────────────────────────────────────────────────
-    op.add_column("hotel_bookings", sa.Column("check_in_time",  sa.String(10), nullable=True))
-    op.add_column("hotel_bookings", sa.Column("check_out_time", sa.String(10), nullable=True))
+    if not index_exists("ix_bookings_start_date"):
+        op.create_index("ix_bookings_start_date", "bookings", ["start_date"])
+    if not index_exists("ix_bookings_booking_number"):
+        op.create_index("ix_bookings_booking_number", "bookings", ["booking_number"], unique=True)
  
-    # ─────────────────────────────────────────────────────────────────────────
-    # vehicle_bookings — 7 missing columns
-    # ─────────────────────────────────────────────────────────────────────────
-    op.add_column("vehicle_bookings", sa.Column("actual_km",        sa.Numeric(10, 2), nullable=True))
-    op.add_column("vehicle_bookings", sa.Column("pickup_lat",       sa.Numeric(10, 7), nullable=True))
-    op.add_column("vehicle_bookings", sa.Column("pickup_lng",       sa.Numeric(10, 7), nullable=True))
-    op.add_column("vehicle_bookings", sa.Column("drop_lat",         sa.Numeric(10, 7), nullable=True))
-    op.add_column("vehicle_bookings", sa.Column("drop_lng",         sa.Numeric(10, 7), nullable=True))
-    op.add_column("vehicle_bookings", sa.Column("driver_allowance", sa.Numeric(10, 2), server_default="0", nullable=True))
-    op.add_column("vehicle_bookings", sa.Column("toll_charges",     sa.Numeric(10, 2), server_default="0", nullable=True))
+    # ── hotel_bookings ────────────────────────────────────────────────────────
+    add_column_if_missing("hotel_bookings", sa.Column("check_in_time",  sa.String(10), nullable=True))
+    add_column_if_missing("hotel_bookings", sa.Column("check_out_time", sa.String(10), nullable=True))
  
-    # ─────────────────────────────────────────────────────────────────────────
-    # guide_bookings — 1 missing column
-    # ─────────────────────────────────────────────────────────────────────────
-    op.add_column("guide_bookings", sa.Column("destination_id", UUID(as_uuid=True), nullable=True))
+    # ── vehicle_bookings ──────────────────────────────────────────────────────
+    add_column_if_missing("vehicle_bookings", sa.Column("actual_km",        sa.Numeric(10, 2), nullable=True))
+    add_column_if_missing("vehicle_bookings", sa.Column("pickup_lat",       sa.Numeric(10, 7), nullable=True))
+    add_column_if_missing("vehicle_bookings", sa.Column("pickup_lng",       sa.Numeric(10, 7), nullable=True))
+    add_column_if_missing("vehicle_bookings", sa.Column("drop_lat",         sa.Numeric(10, 7), nullable=True))
+    add_column_if_missing("vehicle_bookings", sa.Column("drop_lng",         sa.Numeric(10, 7), nullable=True))
+    add_column_if_missing("vehicle_bookings", sa.Column("driver_allowance", sa.Numeric(10, 2), server_default="0", nullable=True))
+    add_column_if_missing("vehicle_bookings", sa.Column("toll_charges",     sa.Numeric(10, 2), server_default="0", nullable=True))
  
-    # ─────────────────────────────────────────────────────────────────────────
-    # booking_travelers — 1 missing column
-    # ─────────────────────────────────────────────────────────────────────────
-    op.add_column("booking_travelers", sa.Column("family_member_id", UUID(as_uuid=True), nullable=True))
+    # ── guide_bookings ────────────────────────────────────────────────────────
+    add_column_if_missing("guide_bookings", sa.Column("destination_id", UUID(as_uuid=True), nullable=True))
  
-    # ─────────────────────────────────────────────────────────────────────────
-    # pooja_bookings — 7 columns fixed
-    # NOTE: Run data migration SQL documented in module docstring FIRST.
-    # We add new canonical columns; old columns kept temporarily then dropped.
-    # ─────────────────────────────────────────────────────────────────────────
-    op.add_column("pooja_bookings", sa.Column("pooja_date",           sa.Date(),          nullable=True))
-    op.add_column("pooja_bookings", sa.Column("pooja_time",           sa.Time(),          nullable=True))
-    op.add_column("pooja_bookings", sa.Column("devotee_names",        JSONB(),            nullable=True))
-    op.add_column("pooja_bookings", sa.Column("gothram",              sa.String(100),     nullable=True))
-    op.add_column("pooja_bookings", sa.Column("nakshatra",            sa.String(100),     nullable=True))
-    op.add_column("pooja_bookings", sa.Column("special_instructions", sa.Text(),          nullable=True))
-    op.add_column("pooja_bookings", sa.Column("price",                sa.Numeric(10, 2),  nullable=True))
+    # ── booking_travelers ─────────────────────────────────────────────────────
+    add_column_if_missing("booking_travelers", sa.Column("family_member_id", UUID(as_uuid=True), nullable=True))
  
-    # Copy old data into new columns before dropping old ones
-    op.execute("UPDATE pooja_bookings SET gothram = gotram WHERE gotram IS NOT NULL")
-    op.execute("UPDATE pooja_bookings SET special_instructions = special_requests WHERE special_requests IS NOT NULL")
-    op.execute("UPDATE pooja_bookings SET price = total_amount WHERE total_amount IS NOT NULL")
+    # ── pooja_bookings ────────────────────────────────────────────────────────
+    add_column_if_missing("pooja_bookings", sa.Column("pooja_date",           sa.Date(),         nullable=True))
+    add_column_if_missing("pooja_bookings", sa.Column("pooja_time",           sa.Time(),         nullable=True))
+    add_column_if_missing("pooja_bookings", sa.Column("devotee_names",        JSONB(),           nullable=True))
+    add_column_if_missing("pooja_bookings", sa.Column("gothram",              sa.String(100),    nullable=True))
+    add_column_if_missing("pooja_bookings", sa.Column("nakshatra",            sa.String(100),    nullable=True))
+    add_column_if_missing("pooja_bookings", sa.Column("special_instructions", sa.Text(),         nullable=True))
+    add_column_if_missing("pooja_bookings", sa.Column("price",                sa.Numeric(10, 2), nullable=True))
  
-    # Drop the old renamed columns
-    op.drop_column("pooja_bookings", "gotram")
-    op.drop_column("pooja_bookings", "special_requests")
+    if column_exists("pooja_bookings", "gotram"):
+        op.execute("UPDATE pooja_bookings SET gothram = gotram WHERE gotram IS NOT NULL")
+        op.drop_column("pooja_bookings", "gotram")
  
-    # ─────────────────────────────────────────────────────────────────────────
-    # prasadam_orders — 7 missing columns
-    # ─────────────────────────────────────────────────────────────────────────
-    op.add_column("prasadam_orders", sa.Column("prasadam_item_id",    UUID(as_uuid=True),  nullable=True))
-    op.add_column("prasadam_orders", sa.Column("quantity",            sa.Integer(),        server_default="1",       nullable=True))
-    op.add_column("prasadam_orders", sa.Column("unit_price",          sa.Numeric(10, 2),   nullable=True))
-    op.add_column("prasadam_orders", sa.Column("total_price",         sa.Numeric(10, 2),   nullable=True))
-    op.add_column("prasadam_orders", sa.Column("delivery_address_id", UUID(as_uuid=True),  nullable=True))
-    op.add_column("prasadam_orders", sa.Column("delivery_status",     sa.String(20),       server_default="pending", nullable=True))
-    op.add_column("prasadam_orders", sa.Column("tracking_number",     sa.String(100),      nullable=True))
+    if column_exists("pooja_bookings", "special_requests"):
+        op.execute("UPDATE pooja_bookings SET special_instructions = special_requests WHERE special_requests IS NOT NULL")
+        op.drop_column("pooja_bookings", "special_requests")
  
-    # ─────────────────────────────────────────────────────────────────────────
-    # coupons — remove 6 duplicate columns (run data migration SQL FIRST)
-    # ─────────────────────────────────────────────────────────────────────────
-    op.drop_column("coupons", "applicable_to")
-    op.drop_column("coupons", "max_uses")
-    op.drop_column("coupons", "max_uses_per_user")
-    op.drop_column("coupons", "current_uses")
-    op.drop_column("coupons", "is_public")
-    op.drop_column("coupons", "is_referral")
+    if column_exists("pooja_bookings", "total_amount"):
+        op.execute("UPDATE pooja_bookings SET price = total_amount WHERE total_amount IS NOT NULL")
+        # only drop total_amount if it's a legacy column not used by the model
+        # op.drop_column("pooja_bookings", "total_amount")
  
-    # ─────────────────────────────────────────────────────────────────────────
-    # partners — fix total_reviews type String → Integer
-    # ─────────────────────────────────────────────────────────────────────────
+    # ── prasadam_orders ───────────────────────────────────────────────────────
+    add_column_if_missing("prasadam_orders", sa.Column("prasadam_item_id",    UUID(as_uuid=True), nullable=True))
+    add_column_if_missing("prasadam_orders", sa.Column("quantity",            sa.Integer(),       server_default="1",       nullable=True))
+    add_column_if_missing("prasadam_orders", sa.Column("unit_price",          sa.Numeric(10, 2),  nullable=True))
+    add_column_if_missing("prasadam_orders", sa.Column("total_price",         sa.Numeric(10, 2),  nullable=True))
+    add_column_if_missing("prasadam_orders", sa.Column("delivery_address_id", UUID(as_uuid=True), nullable=True))
+    add_column_if_missing("prasadam_orders", sa.Column("delivery_status",     sa.String(20),      server_default="pending", nullable=True))
+    add_column_if_missing("prasadam_orders", sa.Column("tracking_number",     sa.String(100),     nullable=True))
+ 
+    # ── coupons — IMPORTANT: max_uses is kept, only true duplicates dropped ──
+    #
+    # The original migration dropped max_uses, but the Coupon model uses it.
+    # Only drop columns that are genuine renamed duplicates:
+    #   applicable_to  → replaced by applicable_on  (already on model)
+    #   current_uses   → replaced by used_count      (already on model)
+    #   is_public      → replaced by coupon_type     (already on model)
+    #   is_referral    → replaced by coupon_type     (already on model)
+    #
+    # max_uses and max_uses_per_user are KEPT — they are real model columns.
+    #
+    # Run data migration SQL first (see module docstring).
+    drop_column_if_exists("coupons", "applicable_to")
+    drop_column_if_exists("coupons", "current_uses")
+    drop_column_if_exists("coupons", "is_public")
+    drop_column_if_exists("coupons", "is_referral")
+    # !! Do NOT drop max_uses or max_uses_per_user !!
+ 
+    # ── partners ──────────────────────────────────────────────────────────────
     op.execute("UPDATE partners SET total_reviews = '0' WHERE total_reviews IS NULL")
     op.alter_column(
         "partners", "total_reviews",
@@ -159,10 +183,7 @@ def upgrade() -> None:
         server_default="0",
     )
  
-    # ─────────────────────────────────────────────────────────────────────────
-    # tracking_sessions — fix tracker_role enum
-    # PostgreSQL stores SAEnum as a named type; we convert via VARCHAR first.
-    # ─────────────────────────────────────────────────────────────────────────
+    # ── tracking_sessions ─────────────────────────────────────────────────────
     op.execute("ALTER TABLE tracking_sessions ALTER COLUMN tracker_role TYPE VARCHAR(20)")
     op.execute(
         "UPDATE tracking_sessions SET tracker_role = 'DRIVER' "
@@ -171,10 +192,8 @@ def upgrade() -> None:
  
  
 def downgrade() -> None:
-    # tracking_sessions
     op.execute("ALTER TABLE tracking_sessions ALTER COLUMN tracker_role TYPE VARCHAR(20)")
  
-    # partners
     op.alter_column(
         "partners", "total_reviews",
         existing_type=sa.Integer(),
@@ -184,46 +203,37 @@ def downgrade() -> None:
         server_default=None,
     )
  
-    # coupons — restore removed columns
-    op.add_column("coupons", sa.Column("applicable_to",     sa.String(),  nullable=True))
-    op.add_column("coupons", sa.Column("max_uses",          sa.Integer(), nullable=True))
-    op.add_column("coupons", sa.Column("max_uses_per_user", sa.Integer(), server_default="1"))
-    op.add_column("coupons", sa.Column("current_uses",      sa.Integer(), server_default="0"))
-    op.add_column("coupons", sa.Column("is_public",         sa.Boolean(), server_default="true"))
-    op.add_column("coupons", sa.Column("is_referral",       sa.Boolean(), server_default="false"))
+    # coupons — restore only what was actually dropped
+    add_column_if_missing("coupons", sa.Column("applicable_to", sa.String(),  nullable=True))
+    add_column_if_missing("coupons", sa.Column("current_uses",  sa.Integer(), server_default="0"))
+    add_column_if_missing("coupons", sa.Column("is_public",     sa.Boolean(), server_default="true"))
+    add_column_if_missing("coupons", sa.Column("is_referral",   sa.Boolean(), server_default="false"))
  
-    # prasadam_orders
     for col in ["tracking_number", "delivery_status", "delivery_address_id",
                 "total_price", "unit_price", "quantity", "prasadam_item_id"]:
-        op.drop_column("prasadam_orders", col)
+        drop_column_if_exists("prasadam_orders", col)
  
-    # pooja_bookings — restore old columns
-    op.add_column("pooja_bookings", sa.Column("gotram",           sa.String(100), nullable=True))
-    op.add_column("pooja_bookings", sa.Column("special_requests", sa.Text(),      nullable=True))
+    add_column_if_missing("pooja_bookings", sa.Column("gotram",           sa.String(100), nullable=True))
+    add_column_if_missing("pooja_bookings", sa.Column("special_requests", sa.Text(),      nullable=True))
     op.execute("UPDATE pooja_bookings SET gotram = gothram WHERE gothram IS NOT NULL")
     op.execute("UPDATE pooja_bookings SET special_requests = special_instructions WHERE special_instructions IS NOT NULL")
-    for col in ["price", "special_instructions", "nakshatra", "gothram",
-                "devotee_names", "pooja_time", "pooja_date"]:
-        op.drop_column("pooja_bookings", col)
+    for col in ["price", "special_instructions", "nakshatra", "gothram", "devotee_names", "pooja_time", "pooja_date"]:
+        drop_column_if_exists("pooja_bookings", col)
  
-    # booking_travelers
-    op.drop_column("booking_travelers", "family_member_id")
+    drop_column_if_exists("booking_travelers", "family_member_id")
+    drop_column_if_exists("guide_bookings", "destination_id")
  
-    # guide_bookings
-    op.drop_column("guide_bookings", "destination_id")
+    for col in ["toll_charges", "driver_allowance", "drop_lng", "drop_lat", "pickup_lng", "pickup_lat", "actual_km"]:
+        drop_column_if_exists("vehicle_bookings", col)
  
-    # vehicle_bookings
-    for col in ["toll_charges", "driver_allowance", "drop_lng", "drop_lat",
-                "pickup_lng", "pickup_lat", "actual_km"]:
-        op.drop_column("vehicle_bookings", col)
+    drop_column_if_exists("hotel_bookings", "check_out_time")
+    drop_column_if_exists("hotel_bookings", "check_in_time")
  
-    # hotel_bookings
-    op.drop_column("hotel_bookings", "check_out_time")
-    op.drop_column("hotel_bookings", "check_in_time")
+    if index_exists("ix_bookings_booking_number"):
+        op.drop_index("ix_bookings_booking_number", table_name="bookings")
+    if index_exists("ix_bookings_start_date"):
+        op.drop_index("ix_bookings_start_date", table_name="bookings")
  
-    # bookings
-    op.drop_index("ix_bookings_booking_number", table_name="bookings")
-    op.drop_index("ix_bookings_start_date",     table_name="bookings")
     for col in [
         "custom_trip_details", "refund_status", "refund_amount",
         "completed_at", "confirmed_at", "cancelled_at", "cancellation_reason",
@@ -231,4 +241,5 @@ def downgrade() -> None:
         "paid_amount", "convenience_fee", "tax_amount", "discount_amount",
         "subtotal", "end_date", "start_date", "booking_date", "booking_number",
     ]:
-        op.drop_column("bookings", col)
+        drop_column_if_exists("bookings", col)
+ 
