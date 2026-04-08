@@ -25,7 +25,7 @@ from src.core.exceptions import (
     InternalServerException, NotFoundException,
 )
 from src.schemas.booking import (
-    CartItemAddRequest, CartItemUpdateRequest, CartResponse, CartItemResponse,
+    AssignGuideRequest, AssignVehicleRequest, CartItemAddRequest, CartItemUpdateRequest, CartResponse, CartItemResponse,
     BookHotelRequest, BookVehicleRequest, BookDarshanRequest, BookPoojaRequest,
     BookPrasadamRequest, BookPackageRequest, BookGuideRequest,
     BookComboRequest, BookCustomRequest,
@@ -929,7 +929,7 @@ async def _notify_silently(db: AsyncSession, user_ids: list, ntype: str, title: 
         logger.warning("Notification failed type=%s error=%s", ntype, e)
 
 
-async def assign_guide(booking_id: str, data: dict, db: AsyncSession) -> dict:
+async def assign_guide(booking_id: str, data: AssignGuideRequest, db: AsyncSession) -> dict:
     """Admin: assign a guide to a guide booking sub-record."""
     from src.models.booking import Booking, GuideBooking
     from src.models.guide import Guide
@@ -937,7 +937,7 @@ async def assign_guide(booking_id: str, data: dict, db: AsyncSession) -> dict:
     booking = (await db.execute(select(Booking).where(Booking.id == booking_id))).scalar_one_or_none()
     if not booking: raise NotFoundException("Booking not found")
 
-    guide_id = data.get("guide_id")
+    guide_id = data.guide_id
     guide    = (await db.execute(select(Guide).where(Guide.id == guide_id))).scalar_one_or_none()
     if not guide: raise NotFoundException("Guide not found")
 
@@ -953,7 +953,7 @@ async def assign_guide(booking_id: str, data: dict, db: AsyncSession) -> dict:
     return {"booking_id": booking_id, "guide_id": guide_id}
 
 
-async def assign_vehicle(booking_id: str, data: dict, db: AsyncSession) -> dict:
+async def assign_vehicle(booking_id: str, data: AssignVehicleRequest, db: AsyncSession) -> dict:
     """Admin: assign a vehicle to a vehicle booking sub-record."""
     from src.models.booking import Booking, VehicleBooking
     from src.models.vehicle import Vehicle
@@ -961,7 +961,7 @@ async def assign_vehicle(booking_id: str, data: dict, db: AsyncSession) -> dict:
     booking    = (await db.execute(select(Booking).where(Booking.id == booking_id))).scalar_one_or_none()
     if not booking: raise NotFoundException("Booking not found")
 
-    vehicle_id = data.get("vehicle_id")
+    vehicle_id = data.vehicle_id
     vehicle    = (await db.execute(select(Vehicle).where(Vehicle.id == vehicle_id))).scalar_one_or_none()
     if not vehicle: raise NotFoundException("Vehicle not found")
 

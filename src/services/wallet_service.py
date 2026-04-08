@@ -1,4 +1,3 @@
-
 """
 services/wallet_service.py
 All Wallet business logic:
@@ -42,15 +41,16 @@ async def get_or_create_wallet(user_id: str, db: AsyncSession) -> Wallet:
     result = await db.execute(
         select(Wallet).where(Wallet.user_id == user_id).with_for_update()
     )
-    wallet = result.scalar_one_or_none()
+    # FIX 1: renamed 'wallet' to 'wallet_obj' to avoid clash with the module-level import
+    wallet_obj = result.scalar_one_or_none()
 
-    if not wallet:
-        wallet = Wallet(user_id=user_id, balance=Decimal("0.00"), status="active")
-        db.add(wallet)
+    if not wallet_obj:
+        wallet_obj = Wallet(user_id=user_id, balance=Decimal("0.00"), status="active")
+        db.add(wallet_obj)
         await db.commit()
-        await db.refresh(wallet)
+        await db.refresh(wallet_obj)
 
-    return wallet
+    return wallet_obj
 
 
 async def record_transaction(
@@ -127,7 +127,7 @@ async def initiate_topup(
 
     client = get_razorpay_client()
     order = client.order.create({
-        "amount":   amount_paise,
+        "amount":   amount_paise,   # Razorpay needs paise
         "currency": "INR",
         "notes": {
             "user_id":   str(user.id),
@@ -138,7 +138,7 @@ async def initiate_topup(
 
     return {
         "order_id": order["id"],
-        "amount":   amount_paise,
+        "amount":   data.amount,    # FIX 2: return INR amount, not paise — was amount_paise
         "currency": "INR",
         "key_id":   settings.RAZORPAY_KEY_ID,
     }
@@ -160,8 +160,8 @@ async def verify_topup(
     If valid → credit wallet balance.
     If invalid → reject (possible tampering).
     """
+
     # ── Step 1: Verify HMAC-SHA256 Signature ──────────────────
-    
     expected_signature = hmac.new(
         settings.RAZORPAY_KEY_SECRET.encode(),
         f"{data.razorpay_order_id}|{data.razorpay_payment_id}".encode(),
@@ -179,38 +179,31 @@ async def verify_topup(
         raise ValueError(f"Payment not captured. Status: {payment['status']}")
 
     # ── Step 3: Credit wallet ─────────────────────────────────
-    # ── Step 3: Credit wallet ─────────────────────────────────
+    # FIX 3: Use Decimal division to avoid float precision issues
+    amount_inr = Decimal(payment["amount"]) / Decimal(100)
 
-    amount_inr = Decimal(str(payment["amount"] / 100))   # convert paise to INR
- 
     # Idempotency check — prevent double-credit on retries
-
     existing = await db.execute(
-
         select(WalletTransaction).where(
-
             WalletTransaction.reference_id == data.razorpay_payment_id
-
         )
-
     )
-
     if existing.scalar_one_or_none():
-
         raise ValueError("Payment already processed. Duplicate request detected.")
- 
+
     wallet = await get_or_create_wallet(str(user.id), db)
- 
- 
+
     txn = await record_transaction(
-        wallet      = wallet,
-        txn_type    = "credit",
-        category    = "topup",
-        amount      = amount_inr,
-        description = f"Wallet topup via Razorpay",
+        wallet       = wallet,
+        txn_type     = "credit",
+        category     = "topup",
+        amount       = amount_inr,
+        description  = "Wallet topup via Razorpay",
         reference_id = data.razorpay_payment_id,
-        db          = db,
+        db           = db,
     )
+
+    await db.refresh(wallet)
 
     return {
         "message":         "Wallet topped up successfully",
@@ -314,9 +307,10 @@ async def request_withdrawal(
     if wallet.status != "active":
         raise ValueError("Your wallet is frozen. Contact support.")
 
-    if data.amount < Decimal("500"):
-        raise ValueError("Minimum withdrawal amount is ₹500")
- 
+    # FIX 4: was ₹500 here but schema validator allows ₹100 minimum — aligned to ₹100
+    if data.amount < Decimal("100"):
+        raise ValueError("Minimum withdrawal amount is ₹100")
+
     if wallet.balance < data.amount:
         raise ValueError(
             f"Insufficient balance. Available: ₹{wallet.balance}"
