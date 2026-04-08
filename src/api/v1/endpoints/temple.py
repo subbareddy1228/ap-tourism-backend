@@ -28,10 +28,19 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.core.database import get_db
 from src.api.deps.auth import get_admin_user, get_current_user, get_verified_user
 from src.models.user import User
+# from src.services import temple_service
 from src.services import temple_service
 from src.services.temple_service import TempleService
-from src.schemas.temple import TempleCreate, TempleReviewCreate, TempleUpdate, PoojaServiceCreate,PoojaServiceUpdate
+from src.schemas.temple import (
+    TempleCreate,
+    TempleReviewCreate,
+    TempleUpdate,
+    TempleEventCreate,
+    PoojaServiceCreate,
+    PoojaServiceUpdate
+)
 from src.common.responses import APIResponse
+from src.services.temple_service import TempleService
 
 router = APIRouter(prefix="/temples", tags=["Temples"])
 
@@ -451,32 +460,22 @@ async def update_darshan_slot(
  
  
 @router.post(
-
     "/{temple_id}/events",
-
     response_model=APIResponse,
-
     status_code=201,
-
     summary="[Admin] Create temple event"
-
 )
-
 async def create_temple_event(
-
-    temple_id: str,
-
-    data: dict,
-
-    current_user: User = Depends(get_admin_user),
-
-    db: AsyncSession = Depends(get_db)
-
+    temple_id: UUID,
+    data: TempleEventCreate,
+    svc: TempleService = Depends(get_service)
 ):
+    event = await svc.create_event(temple_id, data)
 
-    result = await temple_service.create_event(temple_id, data, db)
-
-    return APIResponse.success(message="Event created", data=result)
+    return APIResponse.success(
+        message="Temple event created",
+        data=event.model_dump()
+    )
  
  
 @router.put(

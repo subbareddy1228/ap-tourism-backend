@@ -169,3 +169,11 @@ class PoojaServiceUpdate(BaseModel):
     price: float | None = None
     duration_minutes: int | None = None
     description: str | None = None
+
+class TempleEventCreate(BaseModel):
+    name: str
+    description: Optional[str] = None
+    event_date: date
+    start_time: Optional[time] = None
+    end_time: Optional[time] = None
+    is_active: bool = True

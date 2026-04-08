@@ -42,7 +42,7 @@ from sqlalchemy.dialects import postgresql
 
 revision      = "a3f1c9e2b841"
 
-down_revision = "b1c2d3e4f5a6"
+down_revision = '4a09aa407a94'
 
 branch_labels = None
 
