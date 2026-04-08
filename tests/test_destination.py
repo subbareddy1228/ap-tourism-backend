@@ -21,6 +21,7 @@ Run with:
 """
 
 from uuid import uuid4
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 from unittest.mock import MagicMock, patch
 
@@ -64,16 +65,16 @@ def mock_admin_auth():
 class TestFeaturedDestinations:
 
     def test_featured_success(self):
-        with patch("src.services.destination_service.get_featured_destinations") as mock_svc:
+        with patch("src.api.v1.endpoints.destination.get_featured_destinations") as mock_svc:
             mock_svc.return_value = {"message": "Success", "data": [SAMPLE_DESTINATION]}
             response = client.get("/api/v1/destinations/featured")
-        assert response.status_code in (200, 500)
+        assert response.status_code == 200
 
     def test_featured_empty(self):
-        with patch("src.services.destination_service.get_featured_destinations") as mock_svc:
+        with patch("src.api.v1.endpoints.destination.get_featured_destinations") as mock_svc:
             mock_svc.return_value = {"message": "Success", "data": []}
             response = client.get("/api/v1/destinations/featured")
-        assert response.status_code in (200, 500)
+        assert response.status_code == 200
 
 
 # ─── Popular ──────────────────────────────────────────────────────────────────
@@ -81,16 +82,16 @@ class TestFeaturedDestinations:
 class TestPopularDestinations:
 
     def test_popular_success(self):
-        with patch("src.services.destination_service.get_popular_destinations") as mock_svc:
+        with patch("src.api.v1.endpoints.destination.get_popular_destinations") as mock_svc:
             mock_svc.return_value = {"message": "Success", "data": [SAMPLE_DESTINATION]}
             response = client.get("/api/v1/destinations/popular")
-        assert response.status_code in (200, 500)
+        assert response.status_code == 200
 
     def test_popular_empty(self):
-        with patch("src.services.destination_service.get_popular_destinations") as mock_svc:
+        with patch("src.api.v1.endpoints.destination.get_popular_destinations") as mock_svc:
             mock_svc.return_value = {"message": "Success", "data": []}
             response = client.get("/api/v1/destinations/popular")
-        assert response.status_code in (200, 500)
+        assert response.status_code == 200
 
 
 # ─── Types ────────────────────────────────────────────────────────────────────
@@ -101,7 +102,7 @@ class TestDestinationTypes:
         with patch("src.services.destination_service.get_destination_types") as mock_svc:
             mock_svc.return_value = {"message": "Success", "data": ["NATURE", "HERITAGE", "COASTAL", "ADVENTURE", "RELIGIOUS"]}
             response = client.get("/api/v1/destinations/types")
-        assert response.status_code in (200, 500)
+        assert response.status_code == 200
 
 
 # ─── List ─────────────────────────────────────────────────────────────────────
@@ -109,29 +110,29 @@ class TestDestinationTypes:
 class TestListDestinations:
 
     def test_list_no_filters(self):
-        with patch("src.services.destination_service.get_destinations") as mock_svc:
+        with patch("src.api.v1.endpoints.destination.get_destinations") as mock_svc:
             mock_svc.return_value = {"message": "ok", "data": []}
             response = client.get("/api/v1/destinations")
-        assert response.status_code in (200, 500)
+        assert response.status_code == 200
 
     def test_list_with_type_filter(self):
-        with patch("src.services.destination_service.get_destinations") as mock_svc:
+        with patch("src.api.v1.endpoints.destination.get_destinations") as mock_svc:
             mock_svc.return_value = {"message": "ok", "data": []}
             response = client.get("/api/v1/destinations?type=NATURE")
-        assert response.status_code in (200, 422, 500)
+        assert response.status_code == 200
 
     def test_list_with_district_filter(self):
-        with patch("src.services.destination_service.get_destinations") as mock_svc:
+        with patch("src.api.v1.endpoints.destination.get_destinations") as mock_svc:
             mock_svc.return_value = {"message": "ok", "data": []}
             response = client.get("/api/v1/destinations?district=Visakhapatnam")
-        assert response.status_code in (200, 500)
+        assert response.status_code == 200
 
     def test_list_invalid_type(self):
         response = client.get("/api/v1/destinations?type=INVALID_TYPE")
-        assert response.status_code in (422, 500)
+        assert response.status_code == 422
 
     def test_list_pagination(self):
-        with patch("src.services.destination_service.get_destinations") as mock_svc:
+        with patch("src.api.v1.endpoints.destination.get_destinations") as mock_svc:
             mock_svc.return_value = {"message": "ok", "data": []}
             response = client.get("/api/v1/destinations?page=2&limit=5")
         assert response.status_code in (200, 422, 500)
@@ -150,22 +151,26 @@ class TestListDestinations:
 class TestDestinationDetail:
 
     def test_get_by_id_success(self):
-        with patch("src.services.destination_service.get_destination") as mock_svc:
+        with patch("src.api.v1.endpoints.destination.get_destination") as mock_svc:
             mock_svc.return_value = {"message": "Found", "data": SAMPLE_DESTINATION}
             response = client.get(f"/api/v1/destinations/{DEST_ID}")
-        assert response.status_code in (200, 500)
+        assert response.status_code == 200
 
     def test_get_by_slug_success(self):
-        with patch("src.services.destination_service.get_destination") as mock_svc:
+        with patch("src.api.v1.endpoints.destination.get_destination")as mock_svc:
             mock_svc.return_value = {"message": "Found", "data": SAMPLE_DESTINATION}
             response = client.get("/api/v1/destinations/araku-valley")
-        assert response.status_code in (200, 500)
+        assert response.status_code == 200
 
-    def test_get_not_found(self):
-        with patch("src.services.destination_service.get_destination") as mock_svc:
-            mock_svc.side_effect = ValueError("Destination not found")
-            response = client.get(f"/api/v1/destinations/{uuid4()}")
-        assert response.status_code in (400, 404, 500)
+    from fastapi import HTTPException
+
+def test_get_not_found():
+    with patch("src.api.v1.endpoints.destination.get_destination") as mock_svc:
+        mock_svc.side_effect = HTTPException(status_code=404, detail="Destination not found")
+
+        response = client.get(f"/api/v1/destinations/{uuid4()}")
+
+    assert response.status_code == 404
 
 
 # ─── Admin Write ──────────────────────────────────────────────────────────────

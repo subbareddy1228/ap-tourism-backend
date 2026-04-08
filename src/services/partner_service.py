@@ -1,52 +1,65 @@
 """
 services/partner_service.py
 Partners module — complete business logic for all 20 endpoints.
+
+Fixes applied:
+  upload_document() — S3 call was fully commented out and replaced with a
+    hardcoded fake URL string. The file was never read (await file.read()
+    was never called) and the stored file_url was broken. Fixed:
+      - await file.read() now called to get file bytes.
+      - File size validated against MAX_DOC_SIZE (10 MB).
+      - content_type validated against ALLOWED_DOC_TYPES before S3 call.
+      - upload_file() from aws_s3 called with correct arguments.
+      - Old S3 object deleted when a doc of the same type is re-uploaded.
 """
- 
+
 import logging
 import csv
 import io
 from datetime import datetime, date
 from decimal import Decimal
- 
-from fastapi import UploadFile, status
+
+from fastapi import UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
- 
+
 from src.models.partner import Partner, PartnerDocument, PartnerPayout, PartnerBankDetails
 from src.models.user import User
-
-from src.core.exceptions import (
-    BadRequestException,
-    NotFoundException,
-)
+from src.integrations.aws_s3 import upload_file, delete_file, ALLOWED_DOC_TYPES, MAX_DOC_SIZE
+from src.core.exceptions import BadRequestException, NotFoundException
 from src.schemas.partner import (
     PartnerRegisterRequest, PartnerUpdateRequest,
     BankDetailsRequest, AvailabilityRequest, SettingsRequest,
-    ReviewReplyRequest, BookingActionRequest
+    ReviewReplyRequest, BookingActionRequest,
 )
- 
+
 logger = logging.getLogger(__name__)
- 
- 
-# ══════════════════ HELPERS ══════════════════
- 
+
+# ── Constants ─────────────────────────────────────────────────────────────────
+VALID_DOC_TYPES: frozenset[str] = frozenset({
+    "GSTIN", "PAN", "BANK_PROOF", "PROPERTY_DOC", "OTHER",
+})
+
+
+# ── Helpers ───────────────────────────────────────────────────────────────────
+
 async def get_partner_or_404(user_id, db: AsyncSession) -> Partner:
-    result = await db.execute(select(Partner).where(Partner.user_id == user_id))
+    result  = await db.execute(select(Partner).where(Partner.user_id == user_id))
     partner = result.scalar_one_or_none()
     if not partner:
-        raise NotFoundException("Partner profile not found. Please register first via POST /partners/register")
+        raise NotFoundException(
+            "Partner profile not found. Please register first via POST /partners/register"
+        )
     return partner
- 
- 
-# ══════════════════ PROFILE ══════════════════
- 
+
+
+# ── Profile ───────────────────────────────────────────────────────────────────
+
 async def register_partner(data: PartnerRegisterRequest, current_user: User, db: AsyncSession) -> Partner:
- 
     result = await db.execute(select(Partner).where(Partner.user_id == current_user.id))
     if result.scalar_one_or_none():
         raise BadRequestException("Already registered as a partner")
- 
+
     partner = Partner(
         user_id=current_user.id,
         business_name=data.business_name,
@@ -70,71 +83,84 @@ async def register_partner(data: PartnerRegisterRequest, current_user: User, db:
     await db.refresh(partner)
     logger.info("Partner registered user_id=%s business=%s", current_user.id, data.business_name)
     return partner
- 
- 
+
+
 async def get_my_profile(current_user: User, db: AsyncSession) -> dict:
     partner = await get_partner_or_404(current_user.id, db)
     return _partner_to_dict(partner)
- 
- 
+
+
+async def update_profile(data: PartnerUpdateRequest, current_user: User, db: AsyncSession) -> dict:
+    partner = await get_partner_or_404(current_user.id, db)
+
+    update_fields = data.model_dump(exclude_unset=True)
+    for field, value in update_fields.items():
+        setattr(partner, field, value)
+
+    partner.updated_at = datetime.utcnow()
+    await db.commit()
+    await db.refresh(partner)
+    logger.info("Partner profile updated user_id=%s", current_user.id)
+    return _partner_to_dict(partner)
+
+
 async def get_dashboard(current_user: User, db: AsyncSession) -> dict:
     partner = await get_partner_or_404(current_user.id, db)
- 
-    # Placeholder stats — will be real once Bookings module is integrated
+    # Placeholder stats — real values connected once Bookings module is integrated
     return {
-        "today_bookings":        0,
-        "this_month_earnings":   float(partner.total_earnings or 0),
-        "pending_payout":        float(partner.pending_payout or 0),
-        "active_listings":       1 if partner.is_active else 0,
-        "total_bookings":        0,
-        "this_month_bookings":   0,
-        "average_rating":        partner.rating or 0.0,
-        "verification_status":   partner.verification_status,
+        "today_bookings":      0,
+        "this_month_earnings": float(partner.total_earnings or 0),
+        "pending_payout":      float(partner.pending_payout or 0),
+        "active_listings":     1 if partner.is_active else 0,
+        "total_bookings":      0,
+        "this_month_bookings": 0,
+        "average_rating":      partner.rating or 0.0,
+        "verification_status": partner.verification_status,
     }
- 
- 
-# ══════════════════ BOOKINGS ══════════════════
- 
+
+
+# ── Bookings ──────────────────────────────────────────────────────────────────
+
 async def get_partner_bookings(current_user: User, status_filter: str, db: AsyncSession) -> list:
-    partner = await get_partner_or_404(current_user.id, db)
-    # Bookings module not yet integrated — returns empty list
-    # Will be connected once Booking model is available
+    await get_partner_or_404(current_user.id, db)
+    # Will be connected once Booking model is integrated
     return []
- 
- 
+
+
 async def get_partner_booking_detail(booking_id: str, current_user: User, db: AsyncSession) -> dict:
     await get_partner_or_404(current_user.id, db)
     raise NotFoundException("Booking not found")
- 
- 
+
+
 async def accept_booking(booking_id: str, current_user: User, db: AsyncSession) -> dict:
     await get_partner_or_404(current_user.id, db)
     # Will be implemented once Booking model is integrated
     return {"message": "Booking accepted. Traveler notified."}
- 
- 
+
+
 async def reject_booking(booking_id: str, data: BookingActionRequest, current_user: User, db: AsyncSession) -> dict:
     if not data.reason:
         raise BadRequestException("Reason is required to reject a booking")
     await get_partner_or_404(current_user.id, db)
     return {"message": "Booking rejected. Admin will reassign."}
- 
- 
-# ══════════════════ EARNINGS ══════════════════
- 
+
+
+# ── Earnings ──────────────────────────────────────────────────────────────────
+
 async def get_earnings_summary(current_user: User, db: AsyncSession) -> dict:
     partner = await get_partner_or_404(current_user.id, db)
- 
-    # Get last payout
+
     result = await db.execute(
         select(PartnerPayout)
-        .where(PartnerPayout.partner_id == partner.id,
-               PartnerPayout.status == "TRANSFERRED")
+        .where(
+            PartnerPayout.partner_id == partner.id,
+            PartnerPayout.status == "TRANSFERRED",
+        )
         .order_by(PartnerPayout.transfer_date.desc())
         .limit(1)
     )
     last_payout = result.scalar_one_or_none()
- 
+
     return {
         "total_earned":       float(partner.total_earnings or 0),
         "this_month":         0.0,  # will calc from bookings once integrated
@@ -143,55 +169,55 @@ async def get_earnings_summary(current_user: User, db: AsyncSession) -> dict:
         "last_payout_date":   last_payout.transfer_date if last_payout else None,
         "last_payout_amount": float(last_payout.amount) if last_payout else None,
     }
- 
- 
+
+
 async def get_earnings_report(current_user: User, from_date: str, to_date: str, db: AsyncSession) -> bytes:
-    partner = await get_partner_or_404(current_user.id, db)
- 
+    await get_partner_or_404(current_user.id, db)
+
     output = io.StringIO()
     writer = csv.writer(output)
     writer.writerow(["Date", "Description", "Amount", "Commission", "Net Amount", "Status"])
     writer.writerow([datetime.utcnow().date(), "Sample entry", "1000.00", "100.00", "900.00", "PAID"])
- 
+
     return output.getvalue().encode("utf-8")
- 
- 
-# ══════════════════ PAYOUTS ══════════════════
- 
+
+
+# ── Payouts ───────────────────────────────────────────────────────────────────
+
 async def get_payouts(current_user: User, db: AsyncSession) -> list:
     partner = await get_partner_or_404(current_user.id, db)
-    result = await db.execute(
+    result  = await db.execute(
         select(PartnerPayout)
         .where(PartnerPayout.partner_id == partner.id)
         .order_by(PartnerPayout.created_at.desc())
     )
     return result.scalars().all()
- 
- 
+
+
 async def get_payout_detail(payout_id: str, current_user: User, db: AsyncSession) -> PartnerPayout:
     partner = await get_partner_or_404(current_user.id, db)
-    result = await db.execute(
+    result  = await db.execute(
         select(PartnerPayout).where(
             PartnerPayout.id == payout_id,
-            PartnerPayout.partner_id == partner.id
+            PartnerPayout.partner_id == partner.id,
         )
     )
     payout = result.scalar_one_or_none()
     if not payout:
         raise NotFoundException("Payout not found")
     return payout
- 
- 
-# ══════════════════ BANK DETAILS ══════════════════
- 
+
+
+# ── Bank Details ──────────────────────────────────────────────────────────────
+
 async def update_bank_details(data: BankDetailsRequest, current_user: User, db: AsyncSession) -> PartnerBankDetails:
     partner = await get_partner_or_404(current_user.id, db)
- 
+
     result = await db.execute(
         select(PartnerBankDetails).where(PartnerBankDetails.partner_id == partner.id)
     )
     bank = result.scalar_one_or_none()
- 
+
     if bank:
         bank.account_number      = data.account_number
         bank.ifsc_code           = data.ifsc_code
@@ -210,34 +236,98 @@ async def update_bank_details(data: BankDetailsRequest, current_user: User, db: 
             branch_name=data.branch_name,
         )
         db.add(bank)
- 
+
     await db.commit()
     await db.refresh(bank)
     return bank
- 
- 
-# ══════════════════ DOCUMENTS ══════════════════
- 
+
+
+# ── Documents ─────────────────────────────────────────────────────────────────
+
 async def list_documents(current_user: User, db: AsyncSession) -> list:
     partner = await get_partner_or_404(current_user.id, db)
-    result = await db.execute(
-        select(PartnerDocument).where(PartnerDocument.partner_id == partner.id)
+    result  = await db.execute(
+        select(PartnerDocument)
+        .where(PartnerDocument.partner_id == partner.id)
+        .order_by(PartnerDocument.created_at.desc())
     )
     return result.scalars().all()
- 
- 
-async def upload_document(doc_type: str, file: UploadFile, current_user: User, db: AsyncSession) -> PartnerDocument:
-    partner = await get_partner_or_404(current_user.id, db)
- 
-    doc_type = doc_type.upper()
-    if doc_type not in ["GSTIN", "PAN", "BANK_PROOF", "PROPERTY_DOC", "OTHER"]:
-        raise BadRequestException("Invalid doc_type")
- 
-    # S3 upload — stub until AWS S3 is configured
-    # from src.integrations.aws_s3 import upload_file
-    # file_url = await upload_file(await file.read(), file.content_type, f"partners/{partner.id}/{doc_type}")
-    file_url = f"https://ap-tourism-media.s3.ap-south-1.amazonaws.com/partners/{partner.id}/{doc_type}_{file.filename}"
- 
+
+
+async def upload_document(
+    doc_type: str,
+    file: UploadFile,
+    current_user: User,
+    db: AsyncSession,
+) -> PartnerDocument:
+    """
+    Upload a KYC document to S3 and save the record in the database.
+
+    Validation order:
+      1. doc_type must be in VALID_DOC_TYPES.
+      2. file.content_type must be in ALLOWED_DOC_TYPES (images or PDF).
+      3. File size must not exceed MAX_DOC_SIZE (10 MB).
+      4. Upload to S3 via upload_file().
+      5. If a document of the same doc_type already exists and is NOT yet
+         verified, delete the old S3 object and replace the DB record.
+         If the existing document IS verified, raise 400 — verified docs
+         cannot be replaced without admin action.
+      6. Persist the new PartnerDocument record and return it.
+    """
+    partner  = await get_partner_or_404(current_user.id, db)
+    doc_type = doc_type.upper().strip()
+
+    # ── 1. Validate doc_type ─────────────────────────────────────────────────
+    if doc_type not in VALID_DOC_TYPES:
+        raise BadRequestException(
+            f"Invalid doc_type '{doc_type}'. "
+            f"Allowed: {', '.join(sorted(VALID_DOC_TYPES))}"
+        )
+
+    # ── 2. Validate content_type ─────────────────────────────────────────────
+    if not file.content_type or file.content_type not in ALLOWED_DOC_TYPES:
+        raise BadRequestException(
+            f"Invalid file type '{file.content_type}'. "
+            f"Allowed: JPEG, PNG, WEBP, PDF (application/pdf)"
+        )
+
+    # ── 3. Read and size-check ────────────────────────────────────────────────
+    file_bytes = await file.read()
+    if len(file_bytes) > MAX_DOC_SIZE:
+        raise BadRequestException(
+            f"File too large. Maximum allowed size is {MAX_DOC_SIZE // (1024 * 1024)} MB."
+        )
+
+    # ── 4. Check for existing doc of same type ────────────────────────────────
+    existing_result = await db.execute(
+        select(PartnerDocument).where(
+            PartnerDocument.partner_id == partner.id,
+            PartnerDocument.doc_type   == doc_type,
+        )
+    )
+    existing_doc = existing_result.scalar_one_or_none()
+
+    if existing_doc:
+        if existing_doc.is_verified:
+            raise BadRequestException(
+                f"A verified {doc_type} document already exists. "
+                "Contact admin to replace a verified document."
+            )
+        # Delete the old S3 object before replacing
+        await delete_file(existing_doc.file_url)
+        await db.delete(existing_doc)
+        await db.flush()   # ensure delete is committed before insert
+
+    # ── 5. Upload to S3 ───────────────────────────────────────────────────────
+    folder   = f"partners/{partner.id}/{doc_type}"
+    file_url = await upload_file(
+        file_bytes=file_bytes,
+        content_type=file.content_type,
+        folder=folder,
+        original_filename=file.filename or f"{doc_type}_document",
+    )
+
+    # ── 6. Persist DB record ──────────────────────────────────────────────────
     doc = PartnerDocument(
         partner_id=partner.id,
         doc_type=doc_type,
@@ -247,16 +337,20 @@ async def upload_document(doc_type: str, file: UploadFile, current_user: User, d
     db.add(doc)
     await db.commit()
     await db.refresh(doc)
-    logger.info("Document uploaded partner_id=%s doc_type=%s", partner.id, doc_type)
+
+    logger.info(
+        "Document uploaded partner_id=%s doc_type=%s file_name=%s",
+        partner.id, doc_type, file.filename,
+    )
     return doc
- 
- 
+
+
 async def delete_document(doc_id: str, current_user: User, db: AsyncSession) -> dict:
     partner = await get_partner_or_404(current_user.id, db)
-    result = await db.execute(
+    result  = await db.execute(
         select(PartnerDocument).where(
-            PartnerDocument.id == doc_id,
-            PartnerDocument.partner_id == partner.id
+            PartnerDocument.id         == doc_id,
+            PartnerDocument.partner_id == partner.id,
         )
     )
     doc = result.scalar_one_or_none()
@@ -264,75 +358,79 @@ async def delete_document(doc_id: str, current_user: User, db: AsyncSession) -> 
         raise NotFoundException("Document not found")
     if doc.is_verified:
         raise BadRequestException("Cannot delete a verified document")
- 
+
+    # Delete from S3 before removing DB record
+    await delete_file(doc.file_url)
+
     await db.delete(doc)
     await db.commit()
+    logger.info("Document deleted partner_id=%s doc_id=%s", partner.id, doc_id)
     return {"message": "Document deleted successfully"}
- 
- 
-# ══════════════════ SETTINGS ══════════════════
- 
+
+
+# ── Settings ──────────────────────────────────────────────────────────────────
+
 async def set_availability(data: AvailabilityRequest, current_user: User, db: AsyncSession) -> dict:
     partner = await get_partner_or_404(current_user.id, db)
     partner.unavailable_dates = data.unavailable_dates
-    partner.updated_at = datetime.utcnow()
+    partner.updated_at        = datetime.utcnow()
     await db.commit()
     return {"message": "Availability updated", "unavailable_dates": data.unavailable_dates}
- 
- 
+
+
 async def update_settings(data: SettingsRequest, current_user: User, db: AsyncSession) -> dict:
     partner = await get_partner_or_404(current_user.id, db)
- 
+
     if data.auto_accept is not None:
         partner.auto_accept = data.auto_accept
     if data.notification_prefs is not None:
         partner.notification_prefs = data.notification_prefs
- 
+
     partner.updated_at = datetime.utcnow()
     await db.commit()
- 
+
     return {
         "auto_accept":        partner.auto_accept,
         "notification_prefs": partner.notification_prefs,
     }
- 
- 
+
+
 async def get_analytics(current_user: User, db: AsyncSession) -> dict:
     partner = await get_partner_or_404(current_user.id, db)
     # Placeholder — will connect to bookings/payments once integrated
     return {
-        "booking_trend":    [],
-        "revenue_chart":    [],
-        "occupancy_rate":   0.0,
-        "total_earnings":   float(partner.total_earnings or 0),
-        "average_rating":   partner.rating or 0.0,
+        "booking_trend":  [],
+        "revenue_chart":  [],
+        "occupancy_rate": 0.0,
+        "total_earnings": float(partner.total_earnings or 0),
+        "average_rating": partner.rating or 0.0,
     }
- 
- 
+
+
 async def get_notifications(current_user: User, db: AsyncSession) -> list:
     await get_partner_or_404(current_user.id, db)
     # Will connect to Notifications module once integrated
     return []
- 
- 
-# ══════════════════ REVIEWS ══════════════════
- 
+
+
+# ── Reviews ───────────────────────────────────────────────────────────────────
+
 async def get_reviews(current_user: User, db: AsyncSession) -> list:
     await get_partner_or_404(current_user.id, db)
     # Will connect to Reviews module once integrated
     return []
- 
- 
+
+
 async def reply_to_review(review_id: str, data: ReviewReplyRequest, current_user: User, db: AsyncSession) -> dict:
     await get_partner_or_404(current_user.id, db)
     if not data.reply.strip():
         raise BadRequestException("Reply cannot be empty")
     # Will connect to Reviews module once integrated
     return {"message": "Reply posted successfully"}
- 
- 
-# ══════════════════ PRIVATE HELPERS ══════════════════
- 
+
+
+# ── Private Helpers ───────────────────────────────────────────────────────────
+
 def _partner_to_dict(partner: Partner) -> dict:
     return {
         "id":                  str(partner.id),

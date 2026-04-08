@@ -167,26 +167,35 @@ async def update_driver_status(
 
 @router.get("", response_model=APIResponse, summary="List available vehicles")
 async def list_vehicles(
-    vehicle_type:  Optional[VehicleType] = Query(None),
-    city:          Optional[str]         = Query(None),
-    pickup_date:   Optional[datetime]    = Query(None),
-    capacity:      Optional[int]         = Query(None),
-    has_ac:        Optional[bool]        = Query(None),
-    page:          int                   = Query(1, ge=1),
-    limit:         int                   = Query(20, ge=1, le=100),
+    vehicle_type: Optional[VehicleType] = Query(None),
+    city: Optional[str] = Query(None),
+    pickup_date: Optional[datetime] = Query(None),
+    capacity: Optional[int] = Query(None),
+    has_ac: Optional[bool] = Query(None),
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=100),
     service: VehicleService = Depends(get_vehicle_service),
 ):
     """Browse active vehicles with filters: type, city, date, capacity, AC."""
     vehicles, total, page, pages = await service.list_vehicles(
-        vehicle_type=vehicle_type, city=city, pickup_date=pickup_date,
-        capacity=capacity, has_ac=has_ac, page=page, limit=limit,
+        vehicle_type=vehicle_type,
+        city=city,
+        pickup_date=pickup_date,
+        capacity=capacity,
+        has_ac=has_ac,
+        page=page,
+        limit=limit,
     )
+
     return APIResponse.success(
         message=f"{total} vehicles found",
         data={
-            "data":  [VehicleService.vehicle_to_dict(v) for v in vehicles],
-            "total": total, "page": page, "pages": pages, "limit": limit,
-        }
+            "data": [VehicleService.vehicle_to_dict(v) for v in vehicles],
+            "total": total,
+            "page": page,
+            "pages": pages,
+            "limit": limit,
+        },
     )
 
 

@@ -179,7 +179,7 @@ async def calculate_price(
     Applies surge pricing for peak seasons and weekends.
     """
     result = await package_service.calculate_price(data, db)
-    return APIResponse.success(message="Price calculated", data=result)
+    return {"message": "Price calculated", "data": result}
  
  
 @router.post("/customize", response_model=APIResponse, status_code=201, summary="Build a custom package")

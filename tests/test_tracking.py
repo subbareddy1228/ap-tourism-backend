@@ -117,7 +117,7 @@ class TestSendPing:
 
     def test_ping_success(self):
         with mock_auth():
-            with patch("src.services.tracking_service.send_ping") as mock_svc:
+            with patch("src.api.v1.endpoints.tracking.send_ping") as mock_svc:
                 mock_svc.return_value = {"message": "Location updated"}
                 response = client.post(
                     f"/api/v1/tracking/sessions/{SESSION_ID}/ping",
@@ -137,7 +137,7 @@ class TestSendPing:
 
     def test_ping_session_not_found(self):
         with mock_auth():
-            with patch("src.services.tracking_service.send_ping") as mock_svc:
+            with patch("src.api.v1.endpoints.tracking.send_ping") as mock_svc:
                 mock_svc.side_effect = ValueError("Session not found")
                 response = client.post(
                     f"/api/v1/tracking/sessions/{uuid4()}/ping",
@@ -205,7 +205,7 @@ class TestLocationRetrieval:
 
     def test_get_booking_location_success(self):
         with mock_auth():
-            with patch("src.services.tracking_service.get_trip_location") as mock_svc:
+            with patch("src.api.v1.endpoints.tracking.tracking_service.get_booking_location") as mock_svc:
                 mock_svc.return_value = {"latitude": 13.63, "longitude": 79.42, "status": "IN_TRANSIT"}
                 response = client.get(
                     f"/api/v1/tracking/bookings/{BOOKING_ID}",
@@ -215,7 +215,7 @@ class TestLocationRetrieval:
 
     def test_get_booking_location_not_found(self):
         with mock_auth():
-            with patch("src.services.tracking_service.get_trip_location") as mock_svc:
+            with patch("src.api.v1.endpoints.tracking.tracking_service.get_booking_location") as mock_svc:
                 mock_svc.side_effect = ValueError("No active session for this booking")
                 response = client.get(
                     f"/api/v1/tracking/bookings/{uuid4()}",
@@ -229,7 +229,7 @@ class TestLocationRetrieval:
 
     def test_get_route_history_success(self):
         with mock_auth():
-            with patch("src.services.tracking_service.get_route_history") as mock_svc:
+            with patch("src.api.v1.endpoints.tracking.tracking_service.get_booking_route_history") as mock_svc:
                 mock_svc.return_value = [
                     {"latitude": 13.63, "longitude": 79.42, "timestamp": "2025-06-15T08:00:00Z"},
                     {"latitude": 13.64, "longitude": 79.43, "timestamp": "2025-06-15T08:05:00Z"},
@@ -242,7 +242,7 @@ class TestLocationRetrieval:
 
     def test_get_route_history_empty(self):
         with mock_auth():
-            with patch("src.services.tracking_service.get_route_history") as mock_svc:
+            with patch("src.api.v1.endpoints.tracking.tracking_service.get_booking_route_history") as mock_svc:
                 mock_svc.return_value = []
                 response = client.get(
                     f"/api/v1/tracking/sessions/{SESSION_ID}/history",
@@ -287,7 +287,7 @@ class TestTrackingShare:
 
     def test_get_share_link_success(self):
         with mock_auth():
-            with patch("src.services.tracking_service.get_share_link") as mock_svc:
+            with patch("src.api.v1.endpoints.tracking.tracking_service.generate_share_link") as mock_svc:
                 mock_svc.return_value = {"share_url": f"https://example.com/track/{SHARE_TOKEN}", "expires_at": "2025-06-16T08:00:00Z"}
                 response = client.get(
                     f"/api/v1/tracking/sessions/{SESSION_ID}/share",
@@ -297,7 +297,7 @@ class TestTrackingShare:
 
     def test_get_share_link_sharing_disabled(self):
         with mock_auth():
-            with patch("src.services.tracking_service.get_share_link") as mock_svc:
+            with patch("src.api.v1.endpoints.tracking.tracking_service.generate_share_link") as mock_svc:
                 mock_svc.side_effect = ValueError("Sharing is not enabled for this session")
                 response = client.get(
                     f"/api/v1/tracking/sessions/{SESSION_ID}/share",
@@ -311,7 +311,7 @@ class TestTrackingShare:
 class TestPublicShareView:
 
     def test_public_view_success(self):
-        with patch("src.services.tracking_service.get_public_share_view") as mock_svc:
+        with patch("src.api.v1.endpoints.tracking.tracking_service.get_public_tracking_view") as mock_svc:
             mock_svc.return_value = {
                 "session_id": SESSION_ID,
                 "latitude":   13.63,
@@ -322,20 +322,20 @@ class TestPublicShareView:
         assert response.status_code in (200, 404, 410, 500)
 
     def test_public_view_invalid_token(self):
-        with patch("src.services.tracking_service.get_public_share_view") as mock_svc:
+        with patch("src.api.v1.endpoints.tracking.tracking_service.get_public_tracking_view") as mock_svc:
             mock_svc.side_effect = ValueError("Invalid or expired share token")
             response = client.get("/api/v1/tracking/share/invalid-token-xyz")
         assert response.status_code in (400, 404, 410, 500)
 
     def test_public_view_expired_token(self):
-        with patch("src.services.tracking_service.get_public_share_view") as mock_svc:
+        with patch("src.api.v1.endpoints.tracking.tracking_service.get_public_tracking_view") as mock_svc:
             mock_svc.side_effect = ValueError("Share link has expired")
             response = client.get(f"/api/v1/tracking/share/expired-token")
         assert response.status_code in (400, 404, 410, 500)
 
     def test_public_view_no_auth_required(self):
         # Public endpoint — no auth header needed
-        with patch("src.services.tracking_service.get_public_share_view") as mock_svc:
+        with patch("src.api.v1.endpoints.tracking.tracking_service.get_public_tracking_view") as mock_svc:
             mock_svc.return_value = {"latitude": 13.63, "longitude": 79.42}
             response = client.get(f"/api/v1/tracking/share/{SHARE_TOKEN}")
         assert response.status_code in (200, 404, 410, 500)

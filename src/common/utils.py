@@ -23,17 +23,37 @@ def generate_otp() -> str:
 
  
 async def set_cache(key: str, value, ttl: int = 3600):
-    """Store a value in Redis. value is auto-serialized to JSON."""
+    """
+    Store value in Redis cache.
+    Safe if Redis not available.
+    """
+
     r = await get_redis()
+
+    # Redis may not exist during tests
+    if r is None:
+        return
+
     await r.set(key, json.dumps(value), ex=ttl)
  
  
 async def get_cache(key: str):
-    """Retrieve value from Redis. Returns None if not found or expired."""
+    """
+    Retrieve value from Redis.
+    Returns None if Redis not available or key not found.
+    """
+
     r = await get_redis()
+
+    # FIX: Redis not available during tests
+    if r is None:
+        return None
+
     raw = await r.get(key)
+
     if raw is None:
         return None
+
     return json.loads(raw)
  
  

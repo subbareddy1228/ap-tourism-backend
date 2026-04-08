@@ -26,6 +26,7 @@ Run with:
     pytest tests/test_guide.py -v
 """
 
+from fastapi import HTTPException
 from uuid import uuid4
 from fastapi.testclient import TestClient
 from unittest.mock import MagicMock, patch
@@ -143,25 +144,37 @@ class TestListGuides:
 
     def test_list_no_filters(self):
         with patch("src.services.guide_service.list_guides") as mock_svc:
-            mock_svc.return_value = []
+            mock_svc.return_value = {
+    "total": 0,
+    "items": []
+}
             response = client.get("/api/v1/guides")
         assert response.status_code in (200, 500)
 
     def test_list_with_city_filter(self):
         with patch("src.services.guide_service.list_guides") as mock_svc:
-            mock_svc.return_value = []
+            mock_svc.return_value = {
+    "total": 0,
+    "items": []
+}
             response = client.get("/api/v1/guides?city=Tirupati")
         assert response.status_code in (200, 422, 500)
 
     def test_list_with_language_filter(self):
         with patch("src.services.guide_service.list_guides") as mock_svc:
-            mock_svc.return_value = []
+            mock_svc.return_value = {
+    "total": 0,
+    "items": []
+}
             response = client.get("/api/v1/guides?language=Telugu")
         assert response.status_code in (200, 422, 500)
 
     def test_list_pagination(self):
         with patch("src.services.guide_service.list_guides") as mock_svc:
-            mock_svc.return_value = []
+            mock_svc.return_value = {
+    "total": 0,
+    "items": []
+}
             response = client.get("/api/v1/guides?page=1&limit=10")
         assert response.status_code in (200, 422, 500)
 
@@ -182,7 +195,7 @@ class TestGuideDetail:
 
     def test_get_detail_not_found(self):
         with patch("src.services.guide_service.get_guide_detail") as mock_svc:
-            mock_svc.side_effect = ValueError("Guide not found")
+            mock_svc.side_effect = HTTPException(status_code=404, detail="Guide not found")
             response = client.get(f"/api/v1/guides/{uuid4()}")
         assert response.status_code in (400, 404, 500)
 
@@ -209,7 +222,7 @@ class TestGuideWrite:
 
     def test_register_success(self):
         with mock_auth():
-            with patch("src.services.guide_service.create_guide") as mock_svc:
+            with patch("src.api.v1.endpoints.guide.register_guide") as mock_svc:
                 mock_svc.return_value = {"id": GUIDE_ID, "message": "Guide profile created"}
                 response = client.post("/api/v1/guides", json=GUIDE_PAYLOAD, headers=AUTH_HEADER)
         assert response.status_code in (200, 201, 401, 422)
@@ -281,7 +294,7 @@ class TestGuideLanguagesSpecializations:
 
     def test_add_language_success(self):
         with mock_auth():
-            with patch("src.services.guide_service.add_guide_language") as mock_svc:
+            with patch("src.api.v1.endpoints.guide.add_language") as mock_svc:
                 mock_svc.return_value = {"message": "Language added"}
                 response = client.post(
                     f"/api/v1/guides/{GUIDE_ID}/languages",
@@ -296,7 +309,7 @@ class TestGuideLanguagesSpecializations:
 
     def test_remove_language_success(self):
         with mock_auth():
-            with patch("src.services.guide_service.remove_guide_language") as mock_svc:
+            with patch("src.api.v1.endpoints.guide.remove_language") as mock_svc:
                 mock_svc.return_value = {"message": "Language removed"}
                 response = client.delete(
                     f"/api/v1/guides/{GUIDE_ID}/languages/{LANG_ID}",
@@ -310,7 +323,7 @@ class TestGuideLanguagesSpecializations:
 
     def test_add_specialization_success(self):
         with mock_auth():
-            with patch("src.services.guide_service.add_guide_specialization") as mock_svc:
+            with patch("src.api.v1.endpoints.guide.add_specialization") as mock_svc:
                 mock_svc.return_value = {"message": "Specialization added"}
                 response = client.post(
                     f"/api/v1/guides/{GUIDE_ID}/specializations",
@@ -329,7 +342,7 @@ class TestGuideLanguagesSpecializations:
 
     def test_upload_document_success(self):
         with mock_auth():
-            with patch("src.services.guide_service.upload_guide_document") as mock_svc:
+            with patch("src.api.v1.endpoints.guide.upload_document") as mock_svc:
                 mock_svc.return_value = {"doc_id": str(uuid4())}
                 response = client.post(
                     f"/api/v1/guides/{GUIDE_ID}/documents",
