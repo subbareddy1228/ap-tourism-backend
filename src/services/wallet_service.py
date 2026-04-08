@@ -180,7 +180,6 @@ async def verify_topup(
         raise ValueError(f"Payment not captured. Status: {payment['status']}")
 
     # ── Step 3: Credit wallet ─────────────────────────────────
-    # ── Step 3: Credit wallet ─────────────────────────────────
 
     def paise_to_rupees(paise: int) -> Decimal:
         return (Decimal(paise) / Decimal("100")).quantize(Decimal("0.00"))
