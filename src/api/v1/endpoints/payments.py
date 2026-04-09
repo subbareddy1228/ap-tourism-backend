@@ -1,13 +1,9 @@
 """
 api/v1/endpoints/payments.py
-Payment module — fixed for LEV146 integration.
-Changes:
-  - from src.database → from src.core.database
-  - Uses get_current_user from src.api.deps.auth (LEV146 pattern)
-  - Uses APIResponse wrapper
-  - prefix /payments (not /payment) — consistent with LEV146 naming
+Payment module endpoints (M12).
 """
 from uuid import UUID
+
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -44,40 +40,39 @@ from src.services.payment_service import (
     apply_pay_later,
     handle_webhook,
 )
+from src.integrations.razorpay import verify_webhook_signature as rzp_verify_webhook
 
 router = APIRouter(prefix="/payments", tags=["Payments"])
 
 
-# ─── GET /methods (no auth needed) ───────────
-@router.get(
-    "/methods",
-    response_model=PaymentMethodsResponse,
-    summary="Get payment methods"
-)
+# ── GET /methods (no auth) ────────────────────────────────────────────────────
+
+@router.get("/methods", response_model=PaymentMethodsResponse, summary="Get payment methods")
 async def payment_methods():
-    """
-    List all available payment methods:
-    UPI, CARD, NET_BANKING, WALLET, EMI, PAY_LATER.
-    """
-
-    methods = await get_payment_methods()
-
-    return methods
+    """List all available payment methods: UPI, CARD, NET_BANKING, WALLET, EMI, PAY_LATER."""
+    return await get_payment_methods()
 
 
-# ─── POST /initiate ───────────────────────────
-@router.post("/initiate", response_model=InitiatePaymentResponse, status_code=201, summary="Initiate payment")
+# ── POST /initiate ────────────────────────────────────────────────────────────
+
+@router.post(
+    "/initiate",
+    response_model=InitiatePaymentResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Initiate payment",
+)
 async def initiate(
     data: InitiatePaymentRequest,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Create Razorpay order and return order_id for frontend."""
+    """Create Razorpay order and return order_id + key_id for frontend checkout."""
     data.user_id = current_user.id
     return await initiate_payment(db, data)
 
 
-# ─── POST /verify ─────────────────────────────
+# ── POST /verify ──────────────────────────────────────────────────────────────
+
 @router.post("/verify", response_model=VerifyPaymentResponse, summary="Verify payment signature")
 async def verify(
     data: VerifyPaymentRequest,
@@ -88,27 +83,30 @@ async def verify(
     return await verify_payment(db, data)
 
 
-# ─── GET /history ─────────────────────────────
+# ── GET /history ──────────────────────────────────────────────────────────────
+
 @router.get("/history", response_model=PaymentHistoryResponse, summary="Payment history")
 async def history(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """All transactions for the current user."""
+    """All transactions for the current user, newest first."""
     return await get_payment_history(db, current_user.id)
 
 
-# ─── POST /validate-upi ───────────────────────
+# ── POST /validate-upi ────────────────────────────────────────────────────────
+
 @router.post("/validate-upi", response_model=ValidateUPIResponse, summary="Validate UPI ID")
 async def validate_upi_id(
     data: ValidateUPIRequest,
     current_user: User = Depends(get_current_user),
 ):
-    """Validate format of a UPI ID."""
-    return validate_upi(data)
+    """Validate format and basic structure of a UPI ID."""
+    return await validate_upi(data)   # was missing await — validate_upi is async
 
 
-# ─── GET /saved-cards ─────────────────────────
+# ── GET /saved-cards ──────────────────────────────────────────────────────────
+
 @router.get("/saved-cards", response_model=SavedCardsResponse, summary="Get saved cards")
 async def saved_cards(
     current_user: User = Depends(get_current_user),
@@ -117,8 +115,14 @@ async def saved_cards(
     return await get_saved_cards(db, current_user.id)
 
 
-# ─── POST /saved-cards ────────────────────────
-@router.post("/saved-cards", response_model=SaveCardResponse, status_code=201, summary="Save card")
+# ── POST /saved-cards ─────────────────────────────────────────────────────────
+
+@router.post(
+    "/saved-cards",
+    response_model=SaveCardResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Save card",
+)
 async def add_card(
     data: SaveCardRequest,
     current_user: User = Depends(get_current_user),
@@ -128,8 +132,13 @@ async def add_card(
     return await save_card(db, data)
 
 
-# ─── DELETE /saved-cards/{card_id} ───────────
-@router.delete("/saved-cards/{card_id}", response_model=DeleteCardResponse, summary="Delete saved card")
+# ── DELETE /saved-cards/{card_id} ─────────────────────────────────────────────
+
+@router.delete(
+    "/saved-cards/{card_id}",
+    response_model=DeleteCardResponse,
+    summary="Delete saved card",
+)
 async def remove_card(
     card_id: UUID,
     current_user: User = Depends(get_current_user),
@@ -138,7 +147,8 @@ async def remove_card(
     return await delete_saved_card(db, card_id, current_user.id)
 
 
-# ─── GET /refunds ─────────────────────────────
+# ── GET /refunds ──────────────────────────────────────────────────────────────
+
 @router.get("/refunds", response_model=RefundsListResponse, summary="List refunds")
 async def refunds_list(
     current_user: User = Depends(get_current_user),
@@ -147,8 +157,14 @@ async def refunds_list(
     return await get_refunds(db, current_user.id)
 
 
-# ─── POST /refund/request ─────────────────────
-@router.post("/refund/request", response_model=RefundResponse, status_code=201, summary="Request refund")
+# ── POST /refund/request ──────────────────────────────────────────────────────
+
+@router.post(
+    "/refund/request",
+    response_model=RefundResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Request refund",
+)
 async def refund_request(
     data: RefundRequest,
     current_user: User = Depends(get_current_user),
@@ -158,7 +174,8 @@ async def refund_request(
     return await request_refund(db, data)
 
 
-# ─── GET /refund/{refund_id} ──────────────────
+# ── GET /refund/{refund_id} ───────────────────────────────────────────────────
+
 @router.get("/refund/{refund_id}", response_model=RefundResponse, summary="Get refund detail")
 async def refund_detail(
     refund_id: UUID,
@@ -168,18 +185,29 @@ async def refund_detail(
     return await get_refund(db, refund_id)
 
 
-# ─── POST /pay-later/check ────────────────────
-@router.post("/pay-later/check", response_model=PayLaterCheckResponse, summary="Check Pay Later eligibility")
+# ── POST /pay-later/check ─────────────────────────────────────────────────────
+
+@router.post(
+    "/pay-later/check",
+    response_model=PayLaterCheckResponse,
+    summary="Check Pay Later eligibility",
+)
 async def pay_later_check(
     data: PayLaterCheckRequest,
     current_user: User = Depends(get_current_user),
 ):
     data.user_id = current_user.id
-    return check_pay_later(data)
+    return await check_pay_later(data)   # was missing await — check_pay_later is async
 
 
-# ─── POST /pay-later/apply ────────────────────
-@router.post("/pay-later/apply", response_model=PayLaterApplyResponse, status_code=201, summary="Apply Pay Later")
+# ── POST /pay-later/apply ─────────────────────────────────────────────────────
+
+@router.post(
+    "/pay-later/apply",
+    response_model=PayLaterApplyResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Apply Pay Later",
+)
 async def pay_later_apply(
     data: PayLaterApplyRequest,
     current_user: User = Depends(get_current_user),
@@ -189,30 +217,30 @@ async def pay_later_apply(
     return await apply_pay_later(db, data)
 
 
-from src.integrations.razorpay import verify_webhook_signature as rzp_verify_webhook
+# ── POST /webhook/razorpay (no auth) ─────────────────────────────────────────
 
-# ─── POST /webhook/razorpay (no auth) ─────────
 @router.post("/webhook/razorpay", summary="Razorpay webhook")
 async def razorpay_webhook(
     request: Request,
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Called by Razorpay on payment events.
-    Verifies X-Razorpay-Signature before processing.
+    Called by Razorpay on payment events (payment.captured, refund.created etc.).
+    Verifies X-Razorpay-Signature header before processing any state changes.
     """
-    raw_body = await request.body()
+    import json
+    raw_body  = await request.body()
     signature = request.headers.get("X-Razorpay-Signature", "")
 
     if not rzp_verify_webhook(raw_body, signature):
         raise HTTPException(status_code=400, detail="Invalid webhook signature.")
 
-    import json
     payload = json.loads(raw_body)
     return await handle_webhook(db, payload)
 
 
-# ─── GET /{transaction_id} ────────────────────
+# ── GET /{transaction_id} ─────────────────────────────────────────────────────
+
 @router.get("/{transaction_id}", response_model=TransactionOut, summary="Get transaction detail")
 async def transaction_detail(
     transaction_id: UUID,

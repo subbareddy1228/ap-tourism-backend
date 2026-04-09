@@ -260,3 +260,13 @@ class PrasadamOrderResponse(BaseModel):
     # Removed: payment_id (no payment_id column on PrasadamOrder)
 
     model_config = {"from_attributes": True}
+
+class DarshanTypeCreate(BaseModel):
+    name: str
+    darshan_type: str
+    description: str | None = None
+    price: float = 0
+    duration_minutes: int = 30
+    what_is_included: str | None = None
+    max_persons_per_booking: int = 6
+    is_active: bool = True
