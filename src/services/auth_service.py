@@ -20,6 +20,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_
 
 from src.common.email_templates import otp_email_template
+from src.models import user
 from src.models.user import User
 from src.models.user_profile import UserProfile
 from src.schemas.auth import (
@@ -46,6 +47,7 @@ from src.common.enums import LanguageEnum, UserStatus
 from src.core.config import settings
 from src.integrations.twilio import send_sms
 from src.integrations.email import send_email_otp
+from src.core.redis import store_register_data, get_register_data, delete_register_data
 
 logger = logging.getLogger(__name__)
 
@@ -172,24 +174,13 @@ async def register_user(data: RegisterRequest, db: AsyncSession) -> dict:
             detail="An account already exists with this phone or email."
         )
 
-    # Create user
-    user = User(
-        phone             = data.phone,
-        email             = data.email,
-        full_name         = data.full_name,
-        password_hash     = hash_password(data.password),
-        is_phone_verified = False,
-        is_email_verified = False,
-        role              = "TRAVELER",
-        status            = UserStatus.ACTIVE,
-    )
-    db.add(user)
-    await db.commit()
-    await db.refresh(user)
-
-    # Create profile
-    db.add(UserProfile(user_id=user.id, preferences={}, language=LanguageEnum.EN, kyc_status="pending"))
-    await db.commit()
+    # Store user data temporarily in Redis
+    await store_register_data(data.phone, {
+        "phone": data.phone,
+        "email": data.email,
+        "full_name": data.full_name,
+        "password_hash": hash_password(data.password)
+})
 
     # Send phone OTP
     phone_otp = generate_otp()
@@ -204,25 +195,15 @@ async def register_user(data: RegisterRequest, db: AsyncSession) -> dict:
         await send_email_otp(data.email, email_otp, purpose="verify_email")
 
         email_otp_sent = True
-        logger.info("Email OTP sent user_id=%s email=%s", user.id, data.email)
+        logger.info("Email OTP sent phone=%s email=%s", data.phone, data.email)
 
-    logger.info("Registration success user_id=%s", user.id)
+    logger.info("Registration OTP sent phone=%s", data.phone)
 
     return {
-        "user_id": str(user.id),
-        "message": (
-            "Registration successful. OTP sent to your phone."
-            + (" Email verification OTP also sent." if email_otp_sent else "")
-        ),
-        "email_otp_sent": email_otp_sent,
-        "next_steps": {
-            "step_1": "POST /api/v1/auth/verify-otp  — verify your phone number",
-            "step_2": (
-                "POST /api/v1/auth/verify-email — verify your email address"
-                if email_otp_sent else "No email provided"
-            ),
-        },
-    }
+    "message": "OTP sent to your phone. Please verify to complete registration.",
+    "phone": data.phone,
+    "email_otp_sent": email_otp_sent
+}
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -360,6 +341,45 @@ async def verify_otp_and_login(data: VerifyOTPRequest, db: AsyncSession, device_
 
     await delete_otp(data.phone, purpose=data.purpose)
     await clear_otp_attempts(data.phone)
+
+    # Check if user exists
+    result = await db.execute(select(User).where(User.phone == data.phone))
+    user = result.scalar_one_or_none()
+
+    # If NOT exist → create from Redis
+    if not user:
+        reg_data = await get_register_data(data.phone)
+
+        if not reg_data:
+            raise HTTPException(status_code=400, detail="Registration data expired. Please register again.")
+
+        user = User(
+            phone=reg_data["phone"],
+            email=reg_data.get("email"),
+            full_name=reg_data["full_name"],
+            password_hash=reg_data["password_hash"],
+            is_phone_verified=True,
+            is_email_verified=False,
+            role="TRAVELER",
+            status=UserStatus.ACTIVE,
+        )
+
+        db.add(user)
+        await db.commit()
+        await db.refresh(user)
+
+        # Create profile
+        db.add(UserProfile(
+            user_id=user.id,
+            preferences={},
+            language=LanguageEnum.ENGLISH,
+            kyc_status="pending"
+        ))
+        await db.commit()
+
+    # Delete temp Redis data
+        await delete_register_data(data.phone)
+
 
     result = await db.execute(select(User).where(User.phone == data.phone))
     user = result.scalar_one_or_none()

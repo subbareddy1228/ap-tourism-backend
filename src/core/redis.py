@@ -261,3 +261,23 @@ async def get_email_resend_count(email: str) -> int:
     r = await get_redis()
     val = await r.get(f"email_resend:{email}")
     return int(val) if val else 0
+
+import json
+
+# ── Temporary Register Data ─────────────────────────
+
+async def store_register_data(phone: str, data: dict):
+    r = await get_redis()
+    key = f"register:{phone}"
+    await r.setex(key, 300, json.dumps(data))  # 5 min
+
+async def get_register_data(phone: str):
+    r = await get_redis()
+    key = f"register:{phone}"
+    data = await r.get(key)
+    return json.loads(data) if data else None
+
+async def delete_register_data(phone: str):
+    r = await get_redis()
+    key = f"register:{phone}"
+    await r.delete(key)
