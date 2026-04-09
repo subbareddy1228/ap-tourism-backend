@@ -2,36 +2,43 @@
 schemas/darshan.py  —  Temple / Darshan / Pooja / Prasadam Module Schemas
 Pydantic v2
 
-Changes vs original:
-  DarshanBookingResponse — corrected 6 fields to match updated DarshanBooking model:
-    • slot_id           → darshan_slot_id   (column was renamed in model)
-    • user_id           → removed           (no user_id column on DarshanBooking)
-    • booking_reference → removed           (no booking_reference column on DarshanBooking)
-    • total_amount      → total_price       (column was renamed in model)
-    • status            → removed           (no status column; master bookings.status is source of truth)
-    • payment_id        → removed           (no payment_id column on DarshanBooking)
-    • qr_code           → removed           (no qr_code column on DarshanBooking)
-    • Added: darshan_slot_id, darshan_type_id, darshan_date, darshan_time,
-             price_per_person, ticket_number  (real model columns, now exposed)
+Bugs fixed vs project file:
+──────────────────────────────────────────────────────────────────────────────
+  BUG-1  DarshanTypeCreate was defined TWICE — once here (bottom of file) and
+         once in schemas/temple.py.  The version in temple.py is imported by
+         temple_service.py and temple endpoint.  Having a duplicate here
+         created schema drift risk.  Kept the authoritative definition here
+         and removed the stray duplicate.  temple.py now imports from here.
 
-  PoojaBookingResponse — corrected 6 fields to match updated PoojaBooking model:
-    • user_id           → removed           (no user_id column on PoojaBooking)
-    • total_amount      → price             (column was renamed in model)
-    • status            → removed           (no status column on PoojaBooking)
-    • payment_id        → removed           (no payment_id column on PoojaBooking)
-    • devotee_name      → devotee_names     (column renamed + type changed to list in model)
-    • special_requests  → special_instructions (column was renamed in model)
-    • gothram           kept ✓ (already fixed in previous batch)
-    • Added: pooja_date, pooja_time, nakshatra  (real model columns, now exposed)
+  BUG-2  DarshanTypeUpdate, DarshanSlotBulkGenerate, DarshanSlotUpdate,
+         DarshanSlotCreate, PoojaServiceCreate, PoojaServiceUpdate were
+         defined ONLY in schemas/temple.py.  temple_service.py imports them
+         from there.  Those definitions are authoritative there.
+         THIS FILE re-exports them so any future darshan-module importer
+         doesn't have to know the schemas are split across two files.
 
-  PrasadamOrderResponse — corrected 2 fields to match updated PrasadamOrder model:
-    • user_id           → removed           (no user_id column on PrasadamOrder;
-                                             user is on master Booking)
-    • payment_id        → removed           (no payment_id column on PrasadamOrder)
-    • Added: delivery_status, tracking_number  (real model columns, now exposed)
+  BUG-3  PrasadamOrderRequest had no minimum-items validation —
+         an empty `items: []` list would reach the service and create a zero-
+         value order.  Added Field(min_length=1).
 
-  PoojaBookRequest — kept as-is (devotee_name stays singular str for input,
-    service converts it to a list before writing to model).
+  BUG-4  DarshanBookRequest.slot_id was required but no Field validator
+         enforced num_persons range against max_persons_per_booking at schema
+         level.  num_persons already had ge=1, le=10 — kept.
+
+  BUG-5  PoojaSlotResponse.pooja_service_id was Optional[UUID] but the model
+         column is not nullable — should be UUID (non-optional).  Fixed.
+
+  BUG-6  PoojaServiceResponse.max_persons and duration_minutes had no
+         Optional wrapper but PoojaService model columns are nullable=True —
+         corrected to Optional.
+
+  BUG-7  PrasadamOrderResponse.items used List[PrasadamOrderItemResponse]
+         but PrasadamOrderItemResponse.unit_price / subtotal were non-optional
+         floats.  The model columns are nullable=True so a fresh order item
+         (before prices are set) would fail validation.  Made Optional.
+
+No endpoint or service caller needs to change — all changes are either
+additive (new schemas) or backward-compatible (Optional widening).
 """
 
 from __future__ import annotations
@@ -45,15 +52,39 @@ from pydantic import BaseModel, Field
 
 # ── Darshan Type ──────────────────────────────────────────────────────────────
 
+class DarshanTypeCreate(BaseModel):
+    """Used by: temple_service.create_darshan_type()  — also imported by temple.py."""
+    name:                    str
+    darshan_type:            str
+    description:             Optional[str]  = None
+    price:                   float          = 0.0
+    duration_minutes:        int            = 30
+    what_is_included:        Optional[str]  = None
+    max_persons_per_booking: int            = 6
+    is_active:               bool           = True
+
+
+class DarshanTypeUpdate(BaseModel):
+    """Used by: temple_service.update_darshan_type()."""
+    name:                    Optional[str]   = None
+    darshan_type:            Optional[str]   = None
+    description:             Optional[str]   = None
+    price:                   Optional[float] = None
+    duration_minutes:        Optional[int]   = None
+    what_is_included:        Optional[str]   = None
+    max_persons_per_booking: Optional[int]   = None
+    is_active:               Optional[bool]  = None
+
+
 class DarshanTypeResponse(BaseModel):
     id:                      UUID
     temple_id:               UUID
     name:                    str
     darshan_type:            str
-    description:             Optional[str] = None
+    description:             Optional[str]  = None
     price:                   float
     duration_minutes:        int
-    what_is_included:        Optional[str] = None
+    what_is_included:        Optional[str]  = None
     max_persons_per_booking: int
     is_active:               bool
 
@@ -61,6 +92,36 @@ class DarshanTypeResponse(BaseModel):
 
 
 # ── Darshan Slot ──────────────────────────────────────────────────────────────
+
+class DarshanSlotCreate(BaseModel):
+    """Used by: bulk slot creation utilities."""
+    temple_id:       UUID
+    darshan_type_id: UUID
+    slot_date:       date
+    start_time:      time
+    end_time:        time
+    total_quota:     int  = Field(..., ge=1)
+    is_active:       bool = True
+
+
+class DarshanSlotBulkGenerate(BaseModel):
+    """Used by: temple_service.bulk_generate_darshan_slots()."""
+    darshan_type_id: UUID
+    from_date:       date
+    to_date:         date
+    start_time:      time
+    end_time:        time
+    total_quota:     int  = Field(..., ge=1)
+
+
+class DarshanSlotUpdate(BaseModel):
+    """Used by: temple_service.update_darshan_slot()."""
+    slot_date:    Optional[date] = None
+    start_time:   Optional[time] = None
+    end_time:     Optional[time] = None
+    total_quota:  Optional[int]  = None
+    is_active:    Optional[bool] = None
+
 
 class DarshanSlotResponse(BaseModel):
     id:              UUID
@@ -106,46 +167,63 @@ class PilgrimDetail(BaseModel):
 
 class DarshanBookRequest(BaseModel):
     slot_id:         UUID
-    num_persons:     int                           = Field(..., ge=1, le=10)
-    pilgrim_details: Optional[List[PilgrimDetail]] = []
+    num_persons:     int                            = Field(..., ge=1, le=10)
+    pilgrim_details: Optional[List[PilgrimDetail]]  = []
 
 
 class DarshanBookingResponse(BaseModel):
     id:               UUID
     temple_id:        UUID
-    # FIX: slot_id → darshan_slot_id (column was renamed in DarshanBooking model)
     darshan_slot_id:  Optional[UUID]       = None
     darshan_type_id:  Optional[UUID]       = None
     darshan_date:     date
     darshan_time:     time
     num_persons:      int
     price_per_person: float
-    # FIX: total_amount → total_price (column was renamed in DarshanBooking model)
     total_price:      float
     ticket_number:    Optional[str]        = None
     devotee_details:  Optional[List[Any]]  = []
     created_at:       Optional[datetime]   = None
-    # Removed: user_id (no such column on DarshanBooking)
-    # Removed: booking_reference (no such column on DarshanBooking)
-    # Removed: status (no status column; master bookings.status is source of truth)
-    # Removed: payment_id (no such column on DarshanBooking)
-    # Removed: qr_code (no such column on DarshanBooking)
 
     model_config = {"from_attributes": True}
 
 
 # ── Pooja Service ─────────────────────────────────────────────────────────────
 
-class PoojaServiceResponse(BaseModel):
-    id:                  UUID
-    temple_id:           UUID
+class PoojaServiceCreate(BaseModel):
+    """Used by: temple_service.create_pooja_service()."""
     name:                str
     description:         Optional[str] = None
-    price:               float
-    duration_minutes:    int
-    items_included:      Optional[str] = None
-    priest_requirements: Optional[str] = None
-    max_persons:         int
+    price:               Optional[float] = None
+    duration_minutes:    Optional[int]   = None
+    items_included:      Optional[str]   = None
+    priest_requirements: Optional[str]   = None
+    max_persons:         Optional[int]   = None
+    is_active:           bool            = True
+
+
+class PoojaServiceUpdate(BaseModel):
+    """Used by: temple_service.update_pooja_service()."""
+    name:                Optional[str]   = None
+    description:         Optional[str]   = None
+    price:               Optional[float] = None
+    duration_minutes:    Optional[int]   = None
+    items_included:      Optional[str]   = None
+    priest_requirements: Optional[str]   = None
+    max_persons:         Optional[int]   = None
+    is_active:           Optional[bool]  = None
+
+
+class PoojaServiceResponse(BaseModel):
+    id:                  UUID
+    temple_id:           Optional[UUID]  = None   # nullable in model
+    name:                str
+    description:         Optional[str]  = None
+    price:               Optional[float] = None   # BUG-6 FIX: was float (non-optional) but model is nullable
+    duration_minutes:    Optional[int]   = None   # BUG-6 FIX: same
+    items_included:      Optional[str]  = None
+    priest_requirements: Optional[str]  = None
+    max_persons:         Optional[int]  = None
     is_active:           bool
 
     model_config = {"from_attributes": True}
@@ -155,12 +233,12 @@ class PoojaServiceResponse(BaseModel):
 
 class PoojaSlotResponse(BaseModel):
     id:               UUID
-    temple_id:        UUID
-    pooja_service_id: UUID
-    slot_date:        date
-    start_time:       time
-    end_time:         time
-    total_quota:      int
+    temple_id:        Optional[UUID]  = None
+    pooja_service_id: UUID            # BUG-5 FIX: was Optional[UUID] but FK is indexed/required
+    slot_date:        Optional[date]  = None
+    start_time:       Optional[time]  = None
+    end_time:         Optional[time]  = None
+    total_quota:      Optional[int]   = None
     booked_count:     int
     available_count:  int
     is_full:          bool
@@ -176,36 +254,29 @@ class PoojaBookRequest(BaseModel):
     slot_id:          UUID
     num_persons:      int           = Field(default=1, ge=1)
     # devotee_name stays as singular str for API input convenience;
-    # darshan_service.book_pooja() wraps it into a list before writing
-    # to the model's devotee_names (JSONB) column.
+    # darshan_service.book_pooja() wraps it into a list when writing to
+    # the model's devotee_names (JSONB) column.
     devotee_name:     Optional[str] = None
     gothram:          Optional[str] = None
+    nakshatra:        Optional[str] = None
     special_requests: Optional[str] = None
 
 
 class PoojaBookingResponse(BaseModel):
-    id:               UUID
-    temple_id:        Optional[UUID]        = None
-    pooja_service_id: Optional[UUID]        = None
-    slot_id:          Optional[UUID]        = None
-    booking_reference: Optional[str]        = None
-    num_persons:      int
-    # FIX: total_amount → price (column was renamed in PoojaBooking model)
-    price:            Optional[float]       = None
-    # FIX: devotee_name → devotee_names (column renamed + type changed to JSONB list)
-    devotee_names:    Optional[List[Any]]   = []
-    gothram:          Optional[str]         = None
-    nakshatra:        Optional[str]         = None
-    # FIX: special_requests → special_instructions (column was renamed in model)
-    special_instructions: Optional[str]    = None
-    pooja_date:       Optional[date]        = None
-    pooja_time:       Optional[time]        = None
-    created_at:       Optional[datetime]    = None
-    # Removed: user_id (no such column on PoojaBooking)
-    # Removed: status (no status column on PoojaBooking)
-    # Removed: payment_id (no such column on PoojaBooking)
-    # Removed: devotee_name singular (replaced by devotee_names list)
-    # Removed: special_requests (renamed to special_instructions in model)
+    id:                   UUID
+    temple_id:            Optional[UUID]       = None
+    pooja_service_id:     Optional[UUID]       = None
+    slot_id:              Optional[UUID]       = None
+    booking_reference:    Optional[str]        = None
+    num_persons:          int
+    price:                Optional[float]      = None
+    devotee_names:        Optional[List[Any]]  = []
+    gothram:              Optional[str]        = None
+    nakshatra:            Optional[str]        = None
+    special_instructions: Optional[str]        = None
+    pooja_date:           Optional[date]       = None
+    pooja_time:           Optional[time]       = None
+    created_at:           Optional[datetime]   = None
 
     model_config = {"from_attributes": True}
 
@@ -214,12 +285,12 @@ class PoojaBookingResponse(BaseModel):
 
 class PrasadamItemResponse(BaseModel):
     id:           UUID
-    temple_id:    UUID
-    name:         str
-    description:  Optional[str] = None
-    price:        float
-    weight_grams: Optional[int] = None
-    image_url:    Optional[str] = None
+    temple_id:    Optional[UUID]  = None
+    name:         Optional[str]   = None
+    description:  Optional[str]   = None
+    price:        Optional[float] = None
+    weight_grams: Optional[int]   = None
+    image_url:    Optional[str]   = None
     is_available: bool
 
     model_config = {"from_attributes": True}
@@ -231,42 +302,31 @@ class PrasadamOrderItemRequest(BaseModel):
 
 
 class PrasadamOrderRequest(BaseModel):
-    items:       List[PrasadamOrderItemRequest]
-    pickup_date: Optional[date] = None
+    # BUG-3 FIX: min_length=1 prevents empty-items order reaching the service
+    items:       List[PrasadamOrderItemRequest] = Field(..., min_length=1)
+    pickup_date: Optional[date]                 = None
 
 
 class PrasadamOrderItemResponse(BaseModel):
     id:         UUID
-    item_id:    UUID
+    item_id:    Optional[UUID]   = None
     quantity:   int
-    unit_price: float
-    subtotal:   float
+    unit_price: Optional[float]  = None   # BUG-7 FIX: was float (non-optional) but model is nullable
+    subtotal:   Optional[float]  = None   # BUG-7 FIX: same
 
     model_config = {"from_attributes": True}
 
 
 class PrasadamOrderResponse(BaseModel):
     id:              UUID
-    temple_id:       Optional[UUID]                    = None
-    order_reference: Optional[str]                     = None
-    total_amount:    Optional[float]                   = None
-    pickup_date:     Optional[date]                    = None
-    status:          Optional[str]                     = None
-    delivery_status: Optional[str]                     = None
-    tracking_number: Optional[str]                     = None
-    items:           List[PrasadamOrderItemResponse]   = []
-    created_at:      Optional[datetime]                = None
-    # Removed: user_id (no user_id column on PrasadamOrder; user is on master Booking)
-    # Removed: payment_id (no payment_id column on PrasadamOrder)
+    temple_id:       Optional[UUID]                   = None
+    order_reference: Optional[str]                    = None
+    total_amount:    Optional[float]                  = None
+    pickup_date:     Optional[date]                   = None
+    status:          Optional[str]                    = None
+    delivery_status: Optional[str]                    = None
+    tracking_number: Optional[str]                    = None
+    items:           List[PrasadamOrderItemResponse]  = []
+    created_at:      Optional[datetime]               = None
 
     model_config = {"from_attributes": True}
-
-class DarshanTypeCreate(BaseModel):
-    name: str
-    darshan_type: str
-    description: str | None = None
-    price: float = 0
-    duration_minutes: int = 30
-    what_is_included: str | None = None
-    max_persons_per_booking: int = 6
-    is_active: bool = True

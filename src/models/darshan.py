@@ -1,26 +1,32 @@
 """
 models/darshan.py  —  Temple / Darshan / Pooja / Prasadam Module
 
-Changes vs original:
-  PoojaBooking — 7 columns fixed:
-    • Renamed  gotram          → gothram  (matches booking schema PoojaBookingDetail)
-    • Renamed  devotee_name    → devotee_names (JSONB list, not a single string)
-    • Renamed  special_requests→ special_instructions (matches booking schema)
-    • Renamed  total_amount    → price  (matches booking schema PoojaBookingDetail)
-    • Added    pooja_date      (Date)   — booking_repo writes it, column was missing
-    • Added    pooja_time      (Time)   — booking_repo writes it, column was missing
-    • Added    nakshatra       (String) — booking schema sends it, column was missing
+Bugs fixed vs project file:
+──────────────────────────────────────────────────────────────────────────────
+  BUG-1  DarshanBooking.booking_id  — was nullable=False (NOT NULL) but
+         darshan_service.book_darshan() never passes booking_id, which causes
+         an IntegrityError on every direct darshan booking.  Changed to
+         nullable=True so the temple-side booking path works without a master
+         Booking record. The booking_service.book_darshan() path which DOES
+         create a master Booking first can still populate this FK.
 
-  PrasadamOrder — 4 columns fixed:
-    • Added    prasadam_item_id (UUID) — booking_repo writes it, column was missing
-    • Added    quantity         (Integer) — booking_repo writes it, column was missing
-    • Added    unit_price       (Numeric) — booking_repo writes it, column was missing
-    • Added    total_price      (Numeric) — booking_repo writes it, column was missing
-    • Added    delivery_address_id (UUID) — booking_repo writes it, column was missing
-    • Added    delivery_status  (String)  — booking_repo writes it, column was missing
-    • Added    tracking_number  (String)  — used by PrasadamOrderDetail schema
+  BUG-2  PrasadamOrder.user_id — The column was ABSENT from the model but
+         darshan_service.order_prasadam() writes `user_id=user_id` to the
+         PrasadamOrder constructor, and darshan_repo.get_prasadam_orders_by_user()
+         filters on PrasadamOrder.user_id.  Both calls raise AttributeError
+         at runtime.  Added user_id column.
 
-  All new columns nullable=True for safe Alembic migration on existing rows.
+  BUG-3  PoojaBooking.booking_id — same as BUG-1: nullable=False but
+         darshan_service.book_pooja() never passes booking_id. Changed to
+         nullable=True.
+
+  BUG-4  DarshanBooking — missing Index on temple_id for performance.
+         All other booking tables index temple_id.  Added.
+
+  BUG-5  PrasadamOrder — missing Index on temple_id and user_id. Added.
+
+  All new / changed columns are nullable=True so the existing Alembic
+  migration can apply on live data without touching existing rows.
 """
 
 import uuid
@@ -30,7 +36,7 @@ from datetime import datetime, date
 
 from sqlalchemy import (
     Column, String, Text, Float, Integer, Boolean,
-    DateTime, Date, Time, ForeignKey, Numeric,
+    DateTime, Date, Time, ForeignKey, Numeric, Index,
 )
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
@@ -55,23 +61,21 @@ def generate_reference(prefix: str) -> str:
 class DarshanType(Base):
     __tablename__ = "darshan_types"
 
-    id       = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id        = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     temple_id = Column(
         UUID(as_uuid=True),
         ForeignKey("temples.id", ondelete="CASCADE"),
         nullable=False, index=True,
     )
 
-    name         = Column(String(100), nullable=False)
-    darshan_type = Column(String(50),  nullable=False, index=True)
-    description  = Column(Text,        nullable=True)
-
-    price            = Column(Float,   default=0.0)
-    duration_minutes = Column(Integer, default=30)
-    what_is_included = Column(Text,    nullable=True)
-
-    max_persons_per_booking = Column(Integer, default=6)
-    is_active               = Column(Boolean, default=True)
+    name                    = Column(String(100), nullable=False)
+    darshan_type            = Column(String(50),  nullable=False, index=True)
+    description             = Column(Text,        nullable=True)
+    price                   = Column(Float,       default=0.0)
+    duration_minutes        = Column(Integer,     default=30)
+    what_is_included        = Column(Text,        nullable=True)
+    max_persons_per_booking = Column(Integer,     default=6)
+    is_active               = Column(Boolean,     default=True)
 
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -93,12 +97,12 @@ class DarshanSlot(Base):
     __tablename__ = "darshan_slots"
 
     id              = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    temple_id       = Column(UUID(as_uuid=True), ForeignKey("temples.id"), nullable=False)
-    darshan_type_id = Column(UUID(as_uuid=True), ForeignKey("darshan_types.id"), nullable=False)
+    temple_id       = Column(UUID(as_uuid=True), ForeignKey("temples.id"),        nullable=False, index=True)
+    darshan_type_id = Column(UUID(as_uuid=True), ForeignKey("darshan_types.id"),  nullable=False, index=True)
 
-    slot_date  = Column(Date, nullable=False)
-    start_time = Column(Time, nullable=False)
-    end_time   = Column(Time, nullable=False)
+    slot_date  = Column(Date,    nullable=False)
+    start_time = Column(Time,    nullable=False)
+    end_time   = Column(Time,    nullable=False)
 
     total_quota  = Column(Integer, nullable=False)
     booked_count = Column(Integer, default=0)
@@ -111,6 +115,10 @@ class DarshanSlot(Base):
     darshan_type = relationship("DarshanType", back_populates="slots")
     bookings     = relationship(
         "DarshanBooking", back_populates="slot", cascade="all, delete-orphan"
+    )
+
+    __table_args__ = (
+        Index("ix_darshan_slots_temple_date", "temple_id", "slot_date"),
     )
 
     @property
@@ -134,24 +142,36 @@ class DarshanBooking(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
+    # BUG-1 FIX: Changed nullable=False → nullable=True.
+    # The temple-side darshan booking path (darshan_service.book_darshan)
+    # does NOT create a master Booking first, so booking_id is unavailable
+    # at insert time and the NOT NULL constraint caused IntegrityError on
+    # every booking attempt via this path.
     booking_id = Column(
         UUID(as_uuid=True),
         ForeignKey("bookings.id", ondelete="CASCADE"),
-        nullable=False, unique=True,
+        nullable=True,      # was nullable=False — caused IntegrityError
+        unique=True,
+        index=True,
     )
-    temple_id       = Column(UUID(as_uuid=True), ForeignKey("temples.id"),       nullable=False)
-    darshan_slot_id = Column(UUID(as_uuid=True), ForeignKey("darshan_slots.id"), nullable=True)
-    darshan_type_id = Column(UUID(as_uuid=True), ForeignKey("darshan_types.id"), nullable=True)
+
+    # BUG-4 FIX: Added index on temple_id (was missing)
+    temple_id       = Column(UUID(as_uuid=True), ForeignKey("temples.id"),        nullable=False, index=True)
+    darshan_slot_id = Column(UUID(as_uuid=True), ForeignKey("darshan_slots.id"),  nullable=True,  index=True)
+    darshan_type_id = Column(UUID(as_uuid=True), ForeignKey("darshan_types.id"),  nullable=True,  index=True)
 
     darshan_date = Column(Date, nullable=False)
     darshan_time = Column(Time, nullable=False)
 
-    num_persons      = Column(Integer,       nullable=False)
+    num_persons      = Column(Integer,        nullable=False)
     price_per_person = Column(Numeric(10, 2), nullable=False)
     total_price      = Column(Numeric(10, 2), nullable=False)
 
-    devotee_details = Column(JSONB,       nullable=True)   # [{name, age, id_proof_type, id_proof_number}]
-    ticket_number   = Column(String(50),  unique=True, nullable=True)  # generated after payment
+    devotee_details = Column(JSONB,      nullable=True)
+    ticket_number   = Column(String(50), unique=True, nullable=True)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     booking = relationship("Booking",     back_populates="darshan_booking")
     temple  = relationship("Temple",      back_populates="darshan_bookings")
@@ -169,7 +189,7 @@ class PoojaService(Base):
     __tablename__ = "pooja_services"
 
     id        = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    temple_id = Column(UUID(as_uuid=True), ForeignKey("temples.id"), nullable=True)
+    temple_id = Column(UUID(as_uuid=True), ForeignKey("temples.id"), nullable=True, index=True)
 
     name                = Column(String(255), nullable=False)
     description         = Column(Text,        nullable=True)
@@ -183,8 +203,8 @@ class PoojaService(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    temple   = relationship("Temple",      back_populates="pooja_services")
-    slots    = relationship("PoojaSlot",   back_populates="pooja_service", cascade="all, delete-orphan")
+    temple   = relationship("Temple",       back_populates="pooja_services")
+    slots    = relationship("PoojaSlot",    back_populates="pooja_service", cascade="all, delete-orphan")
     bookings = relationship("PoojaBooking", back_populates="pooja_service")
 
     def __repr__(self) -> str:
@@ -199,8 +219,8 @@ class PoojaSlot(Base):
     __tablename__ = "pooja_slots"
 
     id               = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    temple_id        = Column(UUID(as_uuid=True), ForeignKey("temples.id"),       nullable=True)
-    pooja_service_id = Column(UUID(as_uuid=True), ForeignKey("pooja_services.id"), nullable=True)
+    temple_id        = Column(UUID(as_uuid=True), ForeignKey("temples.id"),        nullable=True, index=True)
+    pooja_service_id = Column(UUID(as_uuid=True), ForeignKey("pooja_services.id"), nullable=True, index=True)
 
     slot_date    = Column(Date,    nullable=True)
     start_time   = Column(Time,    nullable=True)
@@ -229,7 +249,6 @@ class PoojaSlot(Base):
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Pooja Booking
-# Fixed: 7 columns corrected/added — see module docstring above.
 # ─────────────────────────────────────────────────────────────────────────────
 
 class PoojaBooking(Base):
@@ -237,25 +256,31 @@ class PoojaBooking(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
+    # BUG-3 FIX: Changed nullable=False → nullable=True.
+    # Same issue as DarshanBooking — darshan_service.book_pooja() never
+    # creates/passes booking_id, causing IntegrityError at INSERT.
     booking_id = Column(
-        UUID(as_uuid=True), ForeignKey("bookings.id"),
-        nullable=False, unique=True,
+        UUID(as_uuid=True),
+        ForeignKey("bookings.id"),
+        nullable=True,      # was nullable=False — caused IntegrityError
+        unique=True,
+        index=True,
     )
-    temple_id        = Column(UUID(as_uuid=True), ForeignKey("temples.id"),        nullable=True)
-    pooja_service_id = Column(UUID(as_uuid=True), ForeignKey("pooja_services.id"), nullable=True)
-    slot_id          = Column(UUID(as_uuid=True), ForeignKey("pooja_slots.id"),    nullable=True)
 
-    # ── Corrected / added columns ──────────────────────────────────────────
-    pooja_date           = Column(Date,         nullable=True)   # was missing
-    pooja_time           = Column(Time,         nullable=True)   # was missing
-    devotee_names        = Column(JSONB,        nullable=True)   # was devotee_name (singular String)
-    gothram              = Column(String(100),  nullable=True)   # was gotram (spelling mismatch)
-    nakshatra            = Column(String(100),  nullable=True)   # was missing entirely
-    special_instructions = Column(Text,         nullable=True)   # was special_requests
-    price                = Column(Numeric(10,2),nullable=True)   # was total_amount (Float)
+    temple_id        = Column(UUID(as_uuid=True), ForeignKey("temples.id"),         nullable=True, index=True)
+    pooja_service_id = Column(UUID(as_uuid=True), ForeignKey("pooja_services.id"),  nullable=True, index=True)
+    slot_id          = Column(UUID(as_uuid=True), ForeignKey("pooja_slots.id"),     nullable=True)
 
-    # ── Kept from original ─────────────────────────────────────────────────
-    num_persons       = Column(Integer,     default=1)
+    # Corrected columns (from previous batch — kept intact)
+    pooja_date           = Column(Date,          nullable=True)
+    pooja_time           = Column(Time,          nullable=True)
+    devotee_names        = Column(JSONB,         nullable=True)
+    gothram              = Column(String(100),   nullable=True)
+    nakshatra            = Column(String(100),   nullable=True)
+    special_instructions = Column(Text,          nullable=True)
+    price                = Column(Numeric(10,2), nullable=True)
+
+    num_persons       = Column(Integer, default=1)
     booking_reference = Column(
         String(20),
         default=lambda: generate_reference("POJ"),
@@ -267,9 +292,9 @@ class PoojaBooking(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     booking       = relationship("Booking",      back_populates="pooja_booking")
-    temple        = relationship("Temple",        back_populates="pooja_bookings")
-    pooja_service = relationship("PoojaService",  back_populates="bookings")
-    slot          = relationship("PoojaSlot",     back_populates="bookings")
+    temple        = relationship("Temple",       back_populates="pooja_bookings")
+    pooja_service = relationship("PoojaService", back_populates="bookings")
+    slot          = relationship("PoojaSlot",    back_populates="bookings")
 
     def __repr__(self) -> str:
         return f"<PoojaBooking service={self.pooja_service_id} date={self.pooja_date}>"
@@ -283,7 +308,7 @@ class PrasadamItem(Base):
     __tablename__ = "prasadam_items"
 
     id        = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    temple_id = Column(UUID(as_uuid=True), ForeignKey("temples.id"), nullable=True)
+    temple_id = Column(UUID(as_uuid=True), ForeignKey("temples.id"), nullable=True, index=True)
 
     name         = Column(String(255), nullable=True)
     description  = Column(Text,        nullable=True)
@@ -295,7 +320,7 @@ class PrasadamItem(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    temple      = relationship("Temple",           back_populates="prasadam_items")
+    temple      = relationship("Temple",            back_populates="prasadam_items")
     order_items = relationship(
         "PrasadamOrderItem", back_populates="item", cascade="all, delete-orphan"
     )
@@ -306,7 +331,6 @@ class PrasadamItem(Base):
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Prasadam Order
-# Fixed: 7 columns added — see module docstring above.
 # ─────────────────────────────────────────────────────────────────────────────
 
 class PrasadamOrder(Base):
@@ -314,30 +338,40 @@ class PrasadamOrder(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
-    booking_id = Column(
-        UUID(as_uuid=True), ForeignKey("bookings.id"), nullable=False
-    )
-    temple_id = Column(UUID(as_uuid=True), ForeignKey("temples.id"), nullable=True)
+    booking_id = Column(UUID(as_uuid=True), ForeignKey("bookings.id"), nullable=True, index=True)
+    temple_id  = Column(UUID(as_uuid=True), ForeignKey("temples.id"),  nullable=True, index=True)
 
-    # ── Columns that booking_repo writes — were absent from original model ──
-    prasadam_item_id    = Column(UUID(as_uuid=True), nullable=True)   # item being ordered
+    # BUG-2 FIX: Added user_id column.
+    # darshan_service.order_prasadam() passes user_id=user_id to the
+    # PrasadamOrder constructor, and darshan_repo.get_prasadam_orders_by_user()
+    # filters on PrasadamOrder.user_id == user_id.  Both raise AttributeError
+    # without this column.
+    user_id = Column(UUID(as_uuid=True), nullable=True, index=True)   # BUG-2 FIX
+
+    # BUG-5 FIX: Added composite index on (temple_id, user_id) for the
+    # "my orders" query which filters on both columns.
+    __table_args__ = (
+        Index("ix_prasadam_orders_temple_user", "temple_id", "user_id"),
+    )
+
+    # Columns added in previous batch — kept intact
+    prasadam_item_id    = Column(UUID(as_uuid=True), nullable=True)
     quantity            = Column(Integer,            nullable=True, default=1)
     unit_price          = Column(Numeric(10, 2),     nullable=True)
     total_price         = Column(Numeric(10, 2),     nullable=True)
-    delivery_address_id = Column(UUID(as_uuid=True), nullable=True)   # None = pickup at temple
+    delivery_address_id = Column(UUID(as_uuid=True), nullable=True)
     delivery_status     = Column(String(20),         nullable=True, default="pending")
     tracking_number     = Column(String(100),        nullable=True)
 
-    # ── Kept from original ─────────────────────────────────────────────────
     order_reference = Column(
         String(20),
         default=lambda: generate_reference("PRS"),
         unique=True,
         nullable=True,
     )
-    pickup_date = Column(Date,      nullable=True)
-    total_amount = Column(Float,    nullable=True)   # kept for backward compat
-    status      = Column(String(20), default="PENDING")
+    pickup_date  = Column(Date,    nullable=True)
+    total_amount = Column(Float,   nullable=True)
+    status       = Column(String(20), default="PENDING")
 
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -360,8 +394,8 @@ class PrasadamOrderItem(Base):
     __tablename__ = "prasadam_order_items"
 
     id       = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    order_id = Column(UUID(as_uuid=True), ForeignKey("prasadam_orders.id"), nullable=True)
-    item_id  = Column(UUID(as_uuid=True), ForeignKey("prasadam_items.id"),  nullable=True)
+    order_id = Column(UUID(as_uuid=True), ForeignKey("prasadam_orders.id"), nullable=True, index=True)
+    item_id  = Column(UUID(as_uuid=True), ForeignKey("prasadam_items.id"),  nullable=True, index=True)
 
     quantity   = Column(Integer, default=1)
     unit_price = Column(Float,   nullable=True)
