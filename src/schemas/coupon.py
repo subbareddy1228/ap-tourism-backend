@@ -3,6 +3,15 @@ from typing import List, Optional
 from uuid import UUID
 from pydantic import BaseModel, Field, field_validator
 from src.models.coupon import DiscountType, CouponStatus, CouponType, ApplicableOn
+ 
+ 
+def _strip_tz(v: datetime) -> datetime:
+    """Convert any tz-aware datetime to naive UTC for TIMESTAMP WITHOUT TIME ZONE columns."""
+    if isinstance(v, datetime) and v.tzinfo is not None:
+        return v.replace(tzinfo=None)
+    return v
+ 
+ 
 class CouponOut(BaseModel):
     id: UUID
     code: str
@@ -17,22 +26,26 @@ class CouponOut(BaseModel):
     coupon_type: Optional[str] = "public"
     applicable_on: Optional[str] = "all"
     usage_per_user: int = 1
-
+ 
+    @field_validator("valid_from", "valid_until", mode="before")
+    @classmethod
+    def strip_timezone(cls, v): return _strip_tz(v)
+ 
     class Config:
         from_attributes = True
-
-
+ 
+ 
 class ValidateCouponRequest(BaseModel):
     user_id: UUID
     code: str = Field(..., min_length=3, max_length=50)
     order_value: float = Field(..., gt=0)
     booking_type: Optional[str] = None
-
+ 
     @field_validator("code")
     @classmethod
     def upper(cls, v): return v.strip().upper()
-
-
+ 
+ 
 class ValidateCouponResponse(BaseModel):
     success: bool = True
     is_valid: bool
@@ -43,19 +56,19 @@ class ValidateCouponResponse(BaseModel):
     discount_value: Optional[float] = None
     message: str
     coupon: Optional[CouponOut] = None
-
-
+ 
+ 
 class ApplyCouponRequest(BaseModel):
     user_id: UUID
     code: str = Field(..., min_length=3, max_length=50)
     booking_id: UUID
     order_value: float = Field(..., gt=0)
-
+ 
     @field_validator("code")
     @classmethod
     def upper(cls, v): return v.strip().upper()
-
-
+ 
+ 
 class ApplyCouponResponse(BaseModel):
     success: bool
     code: str
@@ -63,34 +76,38 @@ class ApplyCouponResponse(BaseModel):
     final_amount: float
     message: str
     coupon: Optional[CouponOut] = None
-
-
+ 
+ 
 class RemoveCouponRequest(BaseModel):
     user_id: UUID
     booking_id: UUID
-
-
+ 
+ 
 class RemoveCouponResponse(BaseModel):
     success: bool
     message: str
     refunded_amount: float = 0.0
-
-
+ 
+ 
 class MyCouponItem(BaseModel):
     coupon: CouponOut
     is_used: bool
     used_at: Optional[datetime] = None
     discount_applied: Optional[float] = None
     is_applicable: bool = True
-
-
+ 
+    @field_validator("used_at", mode="before")
+    @classmethod
+    def strip_timezone(cls, v): return _strip_tz(v) if v else v
+ 
+ 
 class MyCouponsResponse(BaseModel):
     success: bool = True
     available: List[MyCouponItem]
     used: List[MyCouponItem]
     total_savings: float = 0.0
-
-
+ 
+ 
 class ReferralResponse(BaseModel):
     success: bool = True
     referral_code: str
@@ -100,16 +117,16 @@ class ReferralResponse(BaseModel):
     total_referrals: int = 0
     successful_referrals: int = 0
     total_earned: float = 0.0
-
-
+ 
+ 
 class ActiveCouponsResponse(BaseModel):
     success: bool = True
     coupons: List[CouponOut]
     total: int
     page: int
     per_page: int
-
-
+ 
+ 
 class CreateCouponRequest(BaseModel):
     code: str = Field(..., min_length=3, max_length=50)
     title: str = Field(..., min_length=3, max_length=200)
@@ -124,12 +141,16 @@ class CreateCouponRequest(BaseModel):
     usage_per_user: int = 1
     coupon_type: str = "public"
     applicable_on: str = "all"
-
+ 
     @field_validator("code")
     @classmethod
     def upper(cls, v): return v.strip().upper()
-
-
+ 
+    @field_validator("valid_from", "valid_until", mode="before")
+    @classmethod
+    def strip_timezone(cls, v): return _strip_tz(v)
+ 
+ 
 class UpdateCouponRequest(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
@@ -141,19 +162,27 @@ class UpdateCouponRequest(BaseModel):
     usage_limit: Optional[int] = None
     usage_per_user: Optional[int] = None
     applicable_on: Optional[str] = None
-
-
+ 
+    @field_validator("valid_from", "valid_until", mode="before")
+    @classmethod
+    def strip_timezone(cls, v): return _strip_tz(v) if v else v
+ 
+ 
 class AdminCouponOut(CouponOut):
     usage_limit: Optional[int] = None
     used_count: int = 0
     created_by: Optional[UUID] = None
     created_at: datetime
     updated_at: datetime
-
+ 
+    @field_validator("created_at", "updated_at", mode="before")
+    @classmethod
+    def strip_timezone(cls, v): return _strip_tz(v)
+ 
     class Config:
         from_attributes = True
-
-
+ 
+ 
 class MessageResponse(BaseModel):
     success: bool = True
     message: str

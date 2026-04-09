@@ -1,12 +1,17 @@
+from ast import stmt
+from asyncio import wait
 from datetime import date
 from typing import List, Optional
 from uuid import UUID
 
+from celery import result
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import event, select, func
 from sqlalchemy.orm import selectinload
+from sqlalchemy import select
 
-from src.models.temple import Temple, TempleEvent, TempleReview
+from src.models.temple import Temple, TempleEvent, TempleReview,TemplePoojaService
+from src.schemas import review
 from src.schemas.temple import TempleCreate, TempleUpdate
 
 
@@ -14,6 +19,25 @@ class TempleRepository:
 
     def __init__(self, db: AsyncSession):
         self.db = db
+
+
+    async def create_event(self, temple_id: UUID, data):
+
+        event = TempleEvent(
+            temple_id=temple_id,
+            name=data.name,
+            description=data.description,
+            event_date=data.event_date,
+            start_time=data.start_time,
+            end_time=data.end_time,
+            is_active=data.is_active
+        )
+
+        self.db.add(event)
+        await self.db.commit()
+        await self.db.refresh(event)
+
+        return event
 
     # ─────────────────────────────────────────────
     # GET / — list with filters
@@ -285,3 +309,52 @@ class TempleRepository:
         await self.db.commit()
  
         return image_url
+    
+
+    async def get_by_deity(self, deity: str, skip: int = 0, limit: int = 20):
+
+        stmt = (
+        select(Temple)
+        .where(Temple.deity.ilike(f"%{deity}%"))
+        .offset(skip)
+        .limit(limit)
+    )
+
+        result = await self.db.execute(stmt)
+
+        return result.scalars().all()
+    
+
+    async def create_review(self, temple_id, user_id, data):
+
+        review = TempleReview(
+            temple_id=temple_id,
+            user_id=user_id,
+            rating=data.rating,
+            title=data.title,
+            body=data.body,
+            visit_date=data.visit_date
+        )
+
+        self.db.add(review)
+        await self.db.commit()
+        await self.db.refresh(review)
+
+        return review
+    
+
+async def create_pooja_service(self, temple_id, data):
+
+    pooja = TemplePoojaService(
+        temple_id=temple_id,
+        name=data.name,
+        price=data.price,
+        duration_minutes=data.duration_minutes,
+        description=data.description
+    )
+
+    self.db.add(pooja)
+    await self.db.commit()
+    await self.db.refresh(pooja)
+
+    return pooja

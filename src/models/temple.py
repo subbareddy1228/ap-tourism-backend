@@ -96,3 +96,14 @@ class TempleReview(Base):
     updated_at  = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
     temple = relationship("Temple", back_populates="reviews")
+
+
+class TemplePoojaService(Base):
+    __tablename__ = "temple_pooja_services"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    temple_id = Column(UUID(as_uuid=True), ForeignKey("temples.id"))
+    name = Column(String)
+    price = Column(Float)
+    duration_minutes = Column(Integer)
+    description = Column(Text)

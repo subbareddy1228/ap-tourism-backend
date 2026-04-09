@@ -5,7 +5,7 @@ import requests
 KEY_ID     = "rzp_test_SaWfnSU89Lq5eA"
 KEY_SECRET = "fr2vbaGz7uwV83kLafIWjGk5"
 BASE_URL   = "http://localhost:8000/api/v1"
-TOKEN      = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjMzc0ZmQ5NC1kNWI4LTQ0YWItYjdlOS1lM2E5NTFmNDNiZjgiLCJyb2xlIjoidHJhdmVsZXIiLCJ0eXBlIjoiYWNjZXNzIiwianRpIjoiMjg3ZTVhMmUtZDI0NS00NjQ5LTgyNGMtMzRmOTExZGQwMmRjIiwiZXhwIjoxNzc1Njk3NDI3LCJpYXQiOjE3NzU2MTEwMjd9.YFHMx6rFg2MNr7eZBEa2ydDbTYjNTd4k8SctVsMs5Gk"
+TOKEN      = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4YWNjN2YwNy02N2E0LTRkN2UtYjUxZi1mMDZjMTA5NWU5NDAiLCJyb2xlIjoidHJhdmVsZXIiLCJ0eXBlIjoiYWNjZXNzIiwianRpIjoiNzNlMDI4NmItNTBkYy00MThkLWE5NTItZjY4MzUzYTQ0ZmVlIiwiZXhwIjoxNzc1NjE1MDUwLCJpYXQiOjE3NzU2MTQxNTB9.5OozU8DIkX2hjiyO_XVIOFEqkV6nyDOpqUplG5NmR0I"
 
 # ── Step 1: Create fresh order via YOUR api ──────
 order_resp = requests.post(
