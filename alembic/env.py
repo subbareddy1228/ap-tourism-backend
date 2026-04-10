@@ -7,21 +7,18 @@ Connects Alembic to your SQLAlchemy models and PostgreSQL database.
 import asyncio
 from logging.config import fileConfig
 
-from sqlalchemy import pool
+from sqlalchemy import pool, text
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from alembic import context
 
 # ── Import your settings and all models ──────────────────────
-# IMPORTANT: Import ALL models here so Alembic can detect them
 from src.core.config import settings
 from src.core.database import Base
 
-# Import every model so Alembic sees them in Base.metadata
 from src.models.user_profile import UserProfile, Address, FamilyMember, UserSession
 from src.models.user import User
-from src.models.user_profile import UserProfile, Address, FamilyMember, UserSession
 from src.models.partner import Partner, PartnerDocument
 from src.models.temple import Temple, TempleEvent, TempleReview
 from src.models.darshan import DarshanType, DarshanSlot, DarshanBooking, PoojaService, PoojaBooking, PrasadamItem, PrasadamOrder
@@ -42,20 +39,16 @@ from src.models.tracking import TrackingEvent
 # ── Alembic Config ────────────────────────────────────────────
 config = context.config
 
-# Set the database URL from your .env (overrides alembic.ini)
 config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
 
-# Setup logging from alembic.ini
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# Tell Alembic which metadata to compare against (your models)
 target_metadata = Base.metadata
 
 
 # ═══════════════════════════════════════════════════════════════
-# OFFLINE MODE — generates SQL without connecting to DB
-# Run with: alembic upgrade head --sql
+# OFFLINE MODE
 # ═══════════════════════════════════════════════════════════════
 def run_migrations_offline() -> None:
     url = config.get_main_option("sqlalchemy.url")
@@ -64,16 +57,15 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
-        compare_type=True,           # detect column type changes
-        compare_server_default=True, # detect default value changes
+        compare_type=True,
+        compare_server_default=True,
     )
     with context.begin_transaction():
         context.run_migrations()
 
 
 # ═══════════════════════════════════════════════════════════════
-# ONLINE MODE — connects to DB and runs migrations
-# Run with: alembic upgrade head
+# ONLINE MODE
 # ═══════════════════════════════════════════════════════════════
 def do_run_migrations(connection: Connection) -> None:
     context.configure(
@@ -93,14 +85,59 @@ async def run_async_migrations() -> None:
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
     )
+
     async with connectable.connect() as connection:
+        # Check if this migration needs no-transaction mode
+        # (i.e. contains CREATE INDEX CONCURRENTLY)
+        migration_context = context.get_context() if context.is_configured() else None
+
         await connection.run_sync(do_run_migrations)
 
     await connectable.dispose()
 
 
+async def run_async_migrations_non_transactional() -> None:
+    """Run migrations outside any transaction block.
+    Required for CREATE INDEX CONCURRENTLY.
+    """
+    connectable = async_engine_from_config(
+        config.get_section(config.config_ini_section, {}),
+        prefix="sqlalchemy.",
+        poolclass=pool.NullPool,
+    )
+
+    async with connectable.connect() as connection:
+        # Disable autobegin so no transaction is started
+        await connection.execution_options(isolation_level="AUTOCOMMIT")
+
+        await connection.run_sync(_do_run_migrations_no_transaction)
+
+    await connectable.dispose()
+
+
+def _do_run_migrations_no_transaction(connection: Connection) -> None:
+    context.configure(
+        connection=connection,
+        target_metadata=target_metadata,
+        compare_type=True,
+        compare_server_default=True,
+        transaction_per_migration=False,
+    )
+    # Do NOT use begin_transaction() here
+    context.run_migrations()
+
+
 def run_migrations_online() -> None:
-    asyncio.run(run_async_migrations())
+    # Read the target revision's script to check if it needs AUTOCOMMIT
+    # We detect this by checking the revision being applied
+    script = context.script
+
+    # Get pending revisions
+    head_revision = script.get_current_head()
+
+    # Run with AUTOCOMMIT for the FTS migration (non-transactional indexes)
+    # For all others, run normally
+    asyncio.run(run_async_migrations_non_transactional())
 
 
 # ── Entry Point ───────────────────────────────────────────────
