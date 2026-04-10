@@ -5,6 +5,7 @@ Changes:
   - Added vehicle_to_dict() and driver_to_dict() helpers
   - UPLOAD_DIR uses local fallback if not in config
   - No .from_orm() usage
+  - [MAPS] Replaced GoogleMapsClient with maps_client (Ola Maps)
 """
 
 import uuid
@@ -25,7 +26,8 @@ from src.schemas.vehicle import (
     FareCalculationRequest, AvailabilityRequest,
     VehicleTypeInfo,
 )
-from src.integrations.google_maps import GoogleMapsClient
+# [MAPS] replaced: from src.integrations.google_maps import GoogleMapsClient
+from src.integrations import maps_client
 from src.core.exceptions import (
     BadRequestException,
     ConflictException,
@@ -57,7 +59,8 @@ class VehicleService:
             self.driver_repo = None
             self.doc_repo = None
 
-        self.maps_client = GoogleMapsClient()
+        # [MAPS] removed: self.maps_client = GoogleMapsClient()
+        # maps_client is now a module-level set of functions, no instance needed
 
     # ── Dict Helpers (replaces .from_orm()) ───────────────────
 
@@ -169,15 +172,25 @@ class VehicleService:
         return reviews, total, page, pages
 
     async def calculate_fare(self, request: FareCalculationRequest) -> Dict[str, Any]:
-        """Calculate trip fare using OSRM (free, no API key needed)."""
+        """
+        Calculate trip fare using Ola Maps distance_matrix.
+        [MAPS] Replaced: self.maps_client.get_distance() (Nominatim + OSRM)
+               With    : maps_client.distance_matrix()   (Ola Maps)
+        Raises HTTPException 503 if maps service is down (no silent zero fallback).
+        """
         try:
-            distance_result = await self.maps_client.get_distance(
+            result = await maps_client.distance_matrix(
                 origin=request.pickup_address,
                 destination=request.drop_address,
             )
-            distance_km = distance_result.get("distance_km", 0)
-        except Exception as e:
-            distance_km = 0.0
+            distance_km = result["distance_km"]
+        except ValueError as e:
+            # Address not found — return 400 to the caller
+            raise BadRequestException(str(e))
+        except RuntimeError as e:
+            # Ola Maps API is down — return 503
+            from src.core.exceptions import ServiceUnavailableException
+            raise ServiceUnavailableException(f"Maps service unavailable: {e}")
 
         if request.vehicle_id:
             vehicle = await self.vehicle_repo.get_by_id(request.vehicle_id)

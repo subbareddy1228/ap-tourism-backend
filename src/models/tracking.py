@@ -15,7 +15,7 @@ import enum
 from datetime import datetime
 
 from sqlalchemy import (
-    Column, Integer, String, Float, Boolean, DateTime,
+    Column, Integer, String, Float, Boolean, DateTime, Text,
     ForeignKey, Enum as SAEnum, Index,
 )
 from sqlalchemy.dialects.postgresql import UUID
@@ -70,7 +70,10 @@ class TrackingSession(Base):
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-
+    # [MAPS] route fetched once at session start via Ola Maps directions API
+    route_polyline     = Column(Text,  nullable=True)
+    route_distance_km  = Column(Float, nullable=True)
+    route_duration_min = Column(Float, nullable=True)
     current_location = relationship(
         "TripLocation", back_populates="session",
         uselist=False, cascade="all, delete-orphan",

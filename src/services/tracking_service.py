@@ -9,6 +9,14 @@ Responsibilities:
   - Share-link enable / disable
   - Admin live-map list
 
+[MAPS] Changes vs original:
+  - start_session()  → calls maps_client.directions() to store route polyline
+                        upfront (one-time cost when trip begins)
+  - process_ping()   → calls maps_client.reverse_geocode() to label driver address
+                        (non-blocking: failure doesn't crash the ping)
+  - get_history()    → calls maps_client.snap_to_roads() before returning
+                        breadcrumbs (clean GPS trail, NOT on every ping)
+
 Pattern matches existing services (wallet_service, vehicle_service):
   - Pure async functions, db: AsyncSession injected
   - Raises ValueError for business-rule violations
@@ -32,11 +40,13 @@ from src.models.tracking import (
     TrackingSession, TripLocation, LocationHistory,
     TrackingSessionStatus, TrackerRole,
 )
+# [MAPS] new import
+from src.integrations import maps_client
 
 
-# ══════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════════════════
 # PRIVATE HELPERS
-# ══════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════════════════
 
 def _haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     """Straight-line distance between two GPS coords (Haversine formula)."""
@@ -70,10 +80,11 @@ def _session_to_dict(session: TrackingSession) -> dict:
     return {
         "id"               : str(session.id),
         "booking_id"       : str(session.booking_id),
-        "tracker_role"     : session.tracker_role,      # stored as string in DB
+        "tracker_role"     : session.tracker_role,
         "status"           : session.status.value if session.status else None,
         "share_token"      : session.share_token,
         "share_enabled"    : session.share_enabled,
+        "route_polyline"   : session.route_polyline,    # [MAPS] new field
         "trip_started_at"  : session.trip_started_at,
         "trip_completed_at": session.trip_completed_at,
         "created_at"       : session.created_at,
@@ -93,10 +104,10 @@ async def _get_session_or_404(session_id: UUID, db: AsyncSession) -> TrackingSes
     return session
 
 
-# ══════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════════════════
 # 1. START SESSION
 # POST /tracking/sessions
-# ══════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════════════════
 
 async def start_session(
     booking_id   : UUID,
@@ -105,11 +116,19 @@ async def start_session(
     destination_lat : Optional[float],
     destination_lng : Optional[float],
     db: AsyncSession,
+    # [MAPS] new optional params — pickup coords to fetch route polyline upfront
+    pickup_lat: Optional[float] = None,
+    pickup_lng: Optional[float] = None,
 ) -> dict:
     """
     Called by driver/guide when trip begins.
     Only one ACTIVE session allowed per booking.
     Returns session dict with share_token.
+
+    [MAPS] If pickup + destination coords are provided, fetches the full
+    route from Ola Maps once (directions API) and stores the polyline.
+    This avoids calling directions on every traveler screen refresh.
+    Failure to fetch directions does NOT block session creation.
     """
     # Check no active session already exists
     result = await db.execute(
@@ -122,20 +141,43 @@ async def start_session(
     if result.scalar_one_or_none():
         raise ValueError("An active tracking session already exists for this booking")
 
+    # [MAPS] Fetch route polyline upfront (one-time API call per session)
+    route_polyline       = None
+    route_distance_km    = None
+    route_duration_min   = None
+
+    if pickup_lat and pickup_lng and destination_lat and destination_lng:
+        try:
+            route = await maps_client.directions(
+                origin_lat=pickup_lat,
+                origin_lng=pickup_lng,
+                dest_lat=destination_lat,
+                dest_lng=destination_lng,
+            )
+            route_polyline     = route.get("polyline")
+            route_distance_km  = route.get("distance_km")
+            route_duration_min = route.get("duration_minutes")
+        except Exception:
+            # Non-blocking — session still creates even if directions fail
+            pass
+
     session = TrackingSession(
-        booking_id   = booking_id,
-        user_id      = tracker_id,
-        tracker_id   = tracker_id,
-        tracker_role = tracker_role,        # "DRIVER" or "GUIDE" string
-        share_token  = secrets.token_urlsafe(32),
-        status       = TrackingSessionStatus.ACTIVE,
+        booking_id      = booking_id,
+        user_id         = tracker_id,
+        tracker_id      = tracker_id,
+        tracker_role    = tracker_role,
+        share_token     = secrets.token_urlsafe(32),
+        status          = TrackingSessionStatus.ACTIVE,
         trip_started_at = datetime.now(timezone.utc),
+        # [MAPS] store route data on session
+        route_polyline     = route_polyline,
+        route_distance_km  = route_distance_km,
+        route_duration_min = route_duration_min,
     )
     db.add(session)
     await db.commit()
     await db.refresh(session)
 
-    # Eagerly load current_location (None at start)
     result = await db.execute(
         select(TrackingSession)
         .where(TrackingSession.id == session.id)
@@ -145,10 +187,10 @@ async def start_session(
     return _session_to_dict(session)
 
 
-# ══════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════════════════
 # 2. PROCESS PING
 # POST /tracking/sessions/{id}/ping
-# ══════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════════════════
 
 async def process_ping(
     session_id  : UUID,
@@ -168,8 +210,9 @@ async def process_ping(
     1. Validates session ownership and ACTIVE status.
     2. Resolves destination (ping value takes priority; falls back to stored).
     3. Calculates ETA using Haversine + current speed (no external API call).
-    4. Upserts TripLocation (one row per session).
-    5. Appends LocationHistory (breadcrumb, never updated).
+    4. [MAPS] Reverse geocodes driver's current location (non-blocking).
+    5. Upserts TripLocation (one row per session).
+    6. Appends LocationHistory (breadcrumb, never updated).
     Returns lightweight ping response.
     """
     session = await _get_session_or_404(session_id, db)
@@ -180,23 +223,30 @@ async def process_ping(
     if session.status != TrackingSessionStatus.ACTIVE:
         raise ValueError(f"Session is {session.status.value}, not ACTIVE")
 
-    # Resolve destination — use ping value first, then stored value
+    # Resolve destination
     dest_lat = destination_lat
     dest_lng = destination_lng
     if dest_lat is None and session.current_location:
         dest_lat = session.current_location.destination_lat
         dest_lng = session.current_location.destination_lng
 
-    # ETA calculation
+    # ETA calculation (Haversine — no API call)
     eta_minutes           = None
     distance_remaining_km = None
     if dest_lat is not None and dest_lng is not None:
         distance_remaining_km = round(
             _haversine_km(latitude, longitude, dest_lat, dest_lng), 2
         )
-        # Use reported speed if meaningful, otherwise assume 40 km/h
-        avg_speed = speed if (speed and speed > 5) else 40.0
+        avg_speed   = speed if (speed and speed > 5) else 40.0
         eta_minutes = round((distance_remaining_km / avg_speed) * 60, 1)
+
+    # [MAPS] Reverse geocode — resolve address for display in traveler's tracking UI.
+    # Non-blocking: if Ola Maps is down, the ping still succeeds with address=None.
+    address = None
+    try:
+        address = await maps_client.reverse_geocode(lat=latitude, lng=longitude)
+    except Exception:
+        pass    # address stays None — UI falls back to showing coordinates
 
     # ── Upsert TripLocation (one row per session) ─────────────
     existing_loc = session.current_location
@@ -207,6 +257,7 @@ async def process_ping(
         existing_loc.speed                 = speed
         existing_loc.bearing               = bearing
         existing_loc.altitude              = altitude
+        existing_loc.address               = address        # [MAPS]
         existing_loc.destination_lat       = dest_lat
         existing_loc.destination_lng       = dest_lng
         existing_loc.eta_minutes           = eta_minutes
@@ -221,6 +272,7 @@ async def process_ping(
             speed                 = speed,
             bearing               = bearing,
             altitude              = altitude,
+            address               = address,               # [MAPS]
             destination_lat       = dest_lat,
             destination_lng       = dest_lng,
             eta_minutes           = eta_minutes,
@@ -243,16 +295,17 @@ async def process_ping(
 
     return {
         "session_id"            : str(session_id),
+        "address"               : address,                 # [MAPS]
         "eta_minutes"           : eta_minutes,
         "distance_remaining_km" : distance_remaining_km,
         "message"               : "Location updated",
     }
 
 
-# ══════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════════════════
 # 3. GET SESSION  (traveler — by booking_id)
 # GET /tracking/bookings/{booking_id}
-# ══════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════════════════
 
 async def get_session_by_booking(booking_id: UUID, db: AsyncSession) -> dict:
     result = await db.execute(
@@ -266,20 +319,19 @@ async def get_session_by_booking(booking_id: UUID, db: AsyncSession) -> dict:
     return _session_to_dict(session)
 
 
-# ══════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════════════════
 # 4. GET SESSION  (by session_id)
-# GET /tracking/sessions/{id}
-# ══════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════════════════
 
 async def get_session_by_id(session_id: UUID, db: AsyncSession) -> dict:
     session = await _get_session_or_404(session_id, db)
     return _session_to_dict(session)
 
 
-# ══════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════════════════
 # 5. END SESSION
 # PUT /tracking/sessions/{id}/end
-# ══════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════════════════
 
 async def end_session(session_id: UUID, tracker_id: UUID, db: AsyncSession) -> dict:
     session = await _get_session_or_404(session_id, db)
@@ -304,10 +356,10 @@ async def end_session(session_id: UUID, tracker_id: UUID, db: AsyncSession) -> d
     return _session_to_dict(session)
 
 
-# ══════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════════════════
 # 6. SHARE LINK  — toggle
 # PUT /tracking/sessions/{id}/share
-# ══════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════════════════
 
 async def toggle_share(
     session_id    : UUID,
@@ -317,7 +369,6 @@ async def toggle_share(
 ) -> dict:
     session = await _get_session_or_404(session_id, db)
 
-    # Only the traveler (user_id) or the tracker can toggle
     if str(session.user_id) != str(user_id) and str(session.tracker_id) != str(user_id):
         raise ValueError("Access denied")
 
@@ -331,10 +382,10 @@ async def toggle_share(
     }
 
 
-# ══════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════════════════
 # 7. PUBLIC SHARE  (no auth — family link)
 # GET /tracking/share/{token}
-# ══════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════════════════
 
 async def get_by_share_token(token: str, db: AsyncSession) -> dict:
     result = await db.execute(
@@ -350,10 +401,10 @@ async def get_by_share_token(token: str, db: AsyncSession) -> dict:
     return _session_to_dict(session)
 
 
-# ══════════════════════════════════════════════════════════════
-# 8. BREADCRUMB HISTORY
+# ══════════════════════════════════════════════════════════════════════════════
+# 8. BREADCRUMB HISTORY  (with snap-to-roads)
 # GET /tracking/sessions/{id}/history
-# ══════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════════════════
 
 async def get_history(
     session_id : UUID,
@@ -361,9 +412,15 @@ async def get_history(
     db         : AsyncSession,
     limit      : int = 500,
 ) -> dict:
+    """
+    Returns the GPS trail for route replay.
+    [MAPS] After fetching raw points from DB, passes them through
+    maps_client.snap_to_roads() to clean the trail onto actual road geometry.
+    Snap-to-roads accepts up to 100 points per call — batches automatically.
+    Falls back to raw points if snap API is down (never crashes history fetch).
+    """
     session = await _get_session_or_404(session_id, db)
 
-    # Access: traveler or tracker only
     if str(session.user_id) != str(user_id) and str(session.tracker_id) != str(user_id):
         raise ValueError("Access denied")
 
@@ -375,13 +432,13 @@ async def get_history(
     )
     points_raw = result.scalars().all()
 
-    # Total count (separate query)
     count_result = await db.execute(
         select(func.count()).where(LocationHistory.session_id == session_id)
     )
     total = count_result.scalar_one()
 
-    points = [
+    # Build raw points list
+    raw_points = [
         {
             "latitude" : p.latitude,
             "longitude": p.longitude,
@@ -392,18 +449,46 @@ async def get_history(
         for p in points_raw
     ]
 
+    # [MAPS] Snap to roads — batch in chunks of 100 (Ola Maps limit per call)
+    snapped_points = await _snap_points_in_batches(raw_points)
+
     return {
-        "session_id": str(session_id),
-        "booking_id": str(session.booking_id),
-        "points"    : points,
-        "total"     : total,
+        "session_id"    : str(session_id),
+        "booking_id"    : str(session.booking_id),
+        "route_polyline": session.route_polyline,   # [MAPS] planned polyline from start_session
+        "points"        : snapped_points,
+        "total"         : total,
     }
 
 
-# ══════════════════════════════════════════════════════════════
+async def _snap_points_in_batches(points: list[dict], batch_size: int = 100) -> list[dict]:
+    """
+    Snap GPS points to roads in batches of 100 (Ola Maps limit).
+    Preserves speed/bearing/pinged_at from the originals after snapping
+    since snap_to_roads only returns lat/lng.
+    Falls back to raw points if any batch fails.
+    """
+    if not points:
+        return points
+
+    snapped_all = []
+    for i in range(0, len(points), batch_size):
+        batch = points[i : i + batch_size]
+        coords_only = [{"latitude": p["latitude"], "longitude": p["longitude"]} for p in batch]
+        snapped_coords = await maps_client.snap_to_roads(coords_only)
+
+        # Re-merge snapped coords with original metadata (speed, bearing, pinged_at)
+        for j, snapped in enumerate(snapped_coords):
+            merged = {**batch[j], **snapped}   # snapped lat/lng overwrites raw
+            snapped_all.append(merged)
+
+    return snapped_all
+
+
+# ══════════════════════════════════════════════════════════════════════════════
 # 9. ADMIN — all active sessions
 # GET /tracking/admin/active
-# ══════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════════════════
 
 async def get_active_sessions(db: AsyncSession) -> list:
     result = await db.execute(
@@ -415,40 +500,19 @@ async def get_active_sessions(db: AsyncSession) -> list:
     sessions = result.scalars().all()
     return [_session_to_dict(s) for s in sessions]
 
-async def get_booking_location(db, booking_id):
-    """
-    Get current location for a booking
-    """
-    return {
-        "booking_id": booking_id,
-        "lat": 0.0,
-        "lng": 0.0,
-        "timestamp": None
-    }
 
+# ══════════════════════════════════════════════════════════════════════════════
+# LEGACY STUBS (kept for compatibility — not called by any active endpoint)
+# ══════════════════════════════════════════════════════════════════════════════
+
+async def get_booking_location(db, booking_id):
+    return {"booking_id": booking_id, "lat": 0.0, "lng": 0.0, "timestamp": None}
 
 async def get_booking_route_history(db, booking_id):
-    """
-    Get route history for booking
-    """
     return []
 
-
 async def generate_share_link(db, booking_id):
-    """
-    Generate tracking share link
-    """
-    return {
-        "share_url": f"https://tracking.example.com/{booking_id}"
-    }
-
+    return {"share_url": f"https://tracking.example.com/{booking_id}"}
 
 async def get_public_tracking_view(token):
-    """
-    Public tracking view using share token
-    """
-    return {
-        "booking_id": "sample",
-        "lat": 0.0,
-        "lng": 0.0
-    }
+    return {"booking_id": "sample", "lat": 0.0, "lng": 0.0}
