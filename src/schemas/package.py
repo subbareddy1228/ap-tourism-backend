@@ -1,6 +1,7 @@
 from typing import List, Optional
 from datetime import datetime
 from pydantic import BaseModel, Field
+from uuid import UUID
 
 from src.models.package import PackageType
 
@@ -78,7 +79,7 @@ class PackageCreate(PackageBase):
 class PackageUpdate(BaseModel):
     name: Optional[str] = None
     slug: Optional[str] = None
-    destination_id: Optional[str] = None
+    destination_id: Optional[UUID] = None
     type: Optional[PackageType] = None
 
     duration_days: Optional[int] = None
@@ -103,7 +104,7 @@ class PackageUpdate(BaseModel):
 # ─────────────────────────────────────────
 
 class PackageResponse(PackageBase):
-    id: str
+    id: UUID
     rating: float
     reviews_count: int
     total_bookings: int
