@@ -12,64 +12,27 @@ import logging
 from src.core.config import settings
 from src.core.redis import init_redis, close_redis
 from src.core.logging import setup_logging
-# from src.core.elasticsearch import init_elasticsearch, close_elasticsearch
-
 from src.api.v1.router import router as v1_router
 from src.core.exceptions import register_exception_handlers
 
-
-# ─────────────────────────────────────────────
-# Logging Setup
-# ─────────────────────────────────────────────
 setup_logging()
-
 logger = logging.getLogger(__name__)
 
-# # Reduce Elasticsearch logs
-# logging.getLogger("elastic_transport").setLevel(logging.ERROR)
-# logging.getLogger("elasticsearch").setLevel(logging.ERROR)
-# logging.getLogger("src.core.elasticsearch").setLevel(logging.ERROR)
-
-
-# ─────────────────────────────────────────────
-# Lifespan (Startup / Shutdown)
-# ─────────────────────────────────────────────
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-
     logger.info("Starting services...")
-
-    # Redis startup
     try:
         await init_redis()
         logger.info("Redis initialized")
     except Exception as e:
         logger.warning(f"Redis unavailable: {e}")
 
-    # # Elasticsearch startup
-    # try:
-    #     await init_elasticsearch()
-    #     logger.info("Elasticsearch initialized")
-    # except Exception as e:
-    #     logger.warning(f"Elasticsearch unavailable: {e}. Search disabled.")
-
     yield
 
-    # logger.info("Shutting down services...")
-
-    # Close Redis
     try:
         await close_redis()
     except Exception as e:
         logger.warning(f"Error closing Redis: {e}")
-
-    # # Close Elasticsearch
-    # try:
-    #     await close_elasticsearch()
-    # except Exception as e:
-    #     logger.warning(f"Error closing Elasticsearch: {e}")
-
-
 # ─────────────────────────────────────────────
 # FastAPI App
 # ─────────────────────────────────────────────
