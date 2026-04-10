@@ -32,7 +32,7 @@ from src.schemas.notification import (
     UpdatePreferencesRequest,
 )
 from src.integrations.firebase import send_push, send_multicast
-from src.integrations.twilio import send_sms
+from src.integrations.msg91 import send_sms
 from src.core.exceptions import (
     NotFoundException,
 )

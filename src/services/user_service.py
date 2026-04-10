@@ -27,7 +27,7 @@ from src.core.redis import (
 
 from src.common.utils import generate_otp
 from src.core.config import settings
-from src.integrations.twilio import send_sms
+from src.integrations.msg91 import send_sms
 from src.integrations.aws_s3 import upload_avatar, delete_avatar
 from src.common.enums import UserStatus
 

@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 def send_sms_task(phone: str, message: str):
     """Send a generic SMS message in the background."""
     try:
-        from src.integrations.twilio import send_sms
+        from src.integrations.msg91 import send_sms
         # FIX: was send_sms(phone=phone, message=message) — wrong keyword
         async_to_sync(send_sms)(phone=phone, otp=message)
         logger.info("SMS sent  phone=%s", phone)
@@ -32,7 +32,7 @@ def send_sms_task(phone: str, message: str):
 def send_otp_sms_task(phone: str, otp: str):
     """Send OTP via SMS in the background."""
     try:
-        from src.integrations.twilio import send_sms
+        from src.integrations.msg91 import send_sms
         async_to_sync(send_sms)(phone=phone, otp=otp)
         logger.info("OTP SMS sent  phone=%s", phone)
     except Exception as e:

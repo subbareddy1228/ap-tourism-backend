@@ -45,7 +45,7 @@ from src.core.redis import (
 from src.common.utils import generate_otp
 from src.common.enums import LanguageEnum, UserStatus
 from src.core.config import settings
-from src.integrations.twilio import send_sms
+from src.integrations.msg91 import send_sms
 from src.integrations.email import send_email_otp
 from src.core.redis import store_register_data, get_register_data, delete_register_data
 
