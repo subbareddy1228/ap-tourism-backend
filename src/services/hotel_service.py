@@ -237,9 +237,10 @@ async def get_featured_hotels(db: AsyncSession, redis=None) -> list:
 async def get_popular_hotels(db: AsyncSession, limit: int = 10, redis=None) -> list:
     """Popular hotels sorted by booking_count — cached 30 minutes."""
     cache_key = f"hotels:popular:{limit}"
+
     if redis:
         try:
-            cached = redis.get(cache_key)
+            cached = await redis.get(cache_key)
             if cached:
                 return json.loads(cached)
         except Exception:
@@ -247,16 +248,19 @@ async def get_popular_hotels(db: AsyncSession, limit: int = 10, redis=None) -> l
 
     result = await db.execute(
         select(Hotel)
+        .options(selectinload(Hotel.rooms))  
         .where(Hotel.is_active == True, Hotel.status == "ACTIVE")
         .order_by(Hotel.total_reviews.desc(), Hotel.rating.desc())
         .limit(limit)
     )
+
     hotels = result.scalars().all()
+
     data = [_hotel_list_dict(h) for h in hotels]
 
     if redis:
-        try:
-            redis.setex(cache_key, 1800, json.dumps(data, default=str))
+        try:    
+            await redis.setex(cache_key, 1800, json.dumps(data, default=str))
         except Exception:
             pass
     return data
