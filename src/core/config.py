@@ -54,7 +54,6 @@ class Settings(BaseSettings):
     SMS_PROVIDER: str = "msg91"
     MSG91_API_KEY: str = ""
     MSG91_TEMPLATE_ID: str = ""
-    MSG91_SENDER_ID: str = "APTRMS"
     # TWILIO_ACCOUNT_SID: str = ""
     # TWILIO_AUTH_TOKEN: str = ""
     # TWILIO_FROM_NUMBER: str = ""
@@ -81,6 +80,10 @@ class Settings(BaseSettings):
     SENDGRID_API_KEY: str | None = None
     SENDGRID_FROM_EMAIL: str | None = None
     SENDGRID_FROM_NAME: str = "AP Tourism"
+
+    # ── Ola Maps ──────────────────────────────────────────────
+    # [MAPS] Get your key at: https://maps.olakrutrim.com/
+    OLA_MAPS_API_KEY: str = ""
 
     # ── Load Environment Variables from .env ──────────────────
     model_config = SettingsConfigDict(

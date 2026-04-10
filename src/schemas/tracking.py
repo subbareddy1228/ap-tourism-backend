@@ -9,6 +9,12 @@ Three schemas per resource (project standard):
 
 Branch : feature/LEV156-tracking
 Author : LEV156 Ram Kishore Pawar
+
+[MAPS] Changes:
+  - TrackingSessionCreate   — added pickup_lat, pickup_lng (optional)
+  - TrackingSessionResponse — added route_polyline, route_distance_km, route_duration_min
+  - LocationHistoryResponse — added route_polyline (returned alongside breadcrumb points)
+  - PingResponse            — added address field (reverse geocoded on each ping)
 """
 
 from typing import Optional, List
@@ -25,9 +31,15 @@ from pydantic import BaseModel, Field
 class TrackingSessionCreate(BaseModel):
     """Body for POST /tracking/sessions  (driver or guide starts trip)."""
     booking_id      : UUID
-    tracker_role    : str = Field(..., description="DRIVER or GUIDE")
+    tracker_role    : str   = Field(..., description="DRIVER or GUIDE")
     destination_lat : Optional[float] = Field(None, ge=-90,  le=90)
     destination_lng : Optional[float] = Field(None, ge=-180, le=180)
+
+    # [MAPS] Send pickup coords so the backend can fetch the full route
+    # polyline from Ola Maps once at session start (cheaper than per-ping).
+    # Optional — session still creates fine without them.
+    pickup_lat : Optional[float] = Field(None, ge=-90,  le=90,  description="Driver's starting latitude")
+    pickup_lng : Optional[float] = Field(None, ge=-180, le=180, description="Driver's starting longitude")
 
 
 class LocationPingCreate(BaseModel):
@@ -63,7 +75,7 @@ class CurrentLocationResponse(BaseModel):
     speed                 : Optional[float]
     bearing               : Optional[float]
     altitude              : Optional[float]
-    address               : Optional[str]
+    address               : Optional[str]       # [MAPS] reverse geocoded address
     eta_minutes           : Optional[float]
     distance_remaining_km : Optional[float]
     destination_lat       : Optional[float]
@@ -72,21 +84,25 @@ class CurrentLocationResponse(BaseModel):
 
 
 class TrackingSessionResponse(BaseModel):
-    id                : UUID
-    booking_id        : UUID
-    tracker_role      : str
-    status            : str
-    share_token       : str
-    share_enabled     : bool
-    trip_started_at   : Optional[datetime]
-    trip_completed_at : Optional[datetime]
-    created_at        : datetime
-    current_location  : Optional[CurrentLocationResponse] = None
+    id                 : UUID
+    booking_id         : UUID
+    tracker_role       : str
+    status             : str
+    share_token        : str
+    share_enabled      : bool
+    route_polyline     : Optional[str]   = None  # [MAPS] planned route polyline
+    route_distance_km  : Optional[float] = None  # [MAPS] planned trip distance
+    route_duration_min : Optional[float] = None  # [MAPS] planned trip duration
+    trip_started_at    : Optional[datetime]
+    trip_completed_at  : Optional[datetime]
+    created_at         : datetime
+    current_location   : Optional[CurrentLocationResponse] = None
 
 
 class PingResponse(BaseModel):
     """Returned after a successful GPS ping."""
     session_id            : UUID
+    address               : Optional[str]    # [MAPS] reverse geocoded on each ping
     eta_minutes           : Optional[float]
     distance_remaining_km : Optional[float]
     message               : str = "Location updated"
@@ -101,10 +117,11 @@ class BreadcrumbPoint(BaseModel):
 
 
 class LocationHistoryResponse(BaseModel):
-    session_id : UUID
-    booking_id : UUID
-    points     : List[BreadcrumbPoint]
-    total      : int
+    session_id     : UUID
+    booking_id     : UUID
+    route_polyline : Optional[str] = None   # [MAPS] planned polyline from session start
+    points         : List[BreadcrumbPoint]  # [MAPS] snap-to-road applied before returning
+    total          : int
 
 
 class ShareLinkResponse(BaseModel):
