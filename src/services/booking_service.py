@@ -35,6 +35,7 @@ from src.schemas.booking import (
     ModifyBookingRequest, ModifyBookingResponse,
     InvoiceResponse, InvoiceLineItem, TicketResponse,
     PaymentInfoSchema,
+    BookCorporateRequest, CorporateInvoiceResponse,
 )
 
 logger = logging.getLogger(__name__)
@@ -44,6 +45,21 @@ CGST_RATE       = Decimal("0.09")
 SGST_RATE       = Decimal("0.09")
 CONVENIENCE_FEE = Decimal("29.00")
 CART_TTL        = 3600   # 1 hour
+
+# Corporate bulk discount slabs (applied on top of any coupon discount)
+# Group size  →  % discount off subtotal
+CORPORATE_SLABS = [
+    (50, Decimal("0.15")),   # 50+ people  → 15% off
+    (30, Decimal("0.10")),   # 30–49       → 10% off
+    (10, Decimal("0.05")),   # 10–29       →  5% off
+]
+
+def _corporate_bulk_discount(group_size: int, subtotal: Decimal) -> Decimal:
+    """Return bulk discount amount based on group size slab."""
+    for min_size, rate in CORPORATE_SLABS:
+        if group_size >= min_size:
+            return (subtotal * rate).quantize(Decimal("0.01"))
+    return Decimal("0")
 
 # ── Stub Prices (replaced when upstream modules are ready) ───────────────────
 _STUB = {
@@ -990,3 +1006,140 @@ async def list_bookings(
     )
     response = await get_my_bookings(db, user_id=user.id, filters=filters)
     return response.model_dump()
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CORPORATE BOOKING
+# ─────────────────────────────────────────────────────────────────────────────
+
+async def book_corporate(
+    db: AsyncSession, redis, user_id: UUID, req: BookCorporateRequest
+) -> BookingCreatedResponse:
+    """
+    POST /bookings/corporate
+    Same flow as book_package but with:
+      - Minimum 10 travelers enforced (already validated by schema ge=10)
+      - Group-size bulk discount applied on top of any coupon
+      - company_name + gst_number stored in contact_details JSON
+    """
+    async with _locked_booking(redis, db, [("package", str(req.package_id))], user_id):
+        group_size    = req.num_adults + req.num_children
+        addon_charges = sum(a.total_price for a in req.addons) if req.addons else Decimal("0")
+        subtotal      = _STUB["package"] * group_size + addon_charges
+
+        coupon_discount = await _apply_coupon(req.coupon_code, subtotal)
+        bulk_discount   = _corporate_bulk_discount(group_size, subtotal)
+        total_discount  = coupon_discount + bulk_discount
+
+        totals = _calculate_totals(subtotal, total_discount, apply_convenience_fee=False)
+
+        contact = req.contact_details.model_dump()   # includes company_name + gst_number
+
+        booking = await booking_repo.create_booking(db, {
+            "user_id":          user_id,
+            "booking_type":     BookingType.CORPORATE,
+            "start_date":       req.start_date,
+            "end_date":         req.end_date,
+            "coupon_code":      req.coupon_code,
+            "special_requests": req.special_requests,
+            "contact_details":  contact,
+            **totals,
+        })
+        await booking_repo.create_package_booking(db, booking.id, {
+            "package_id":    req.package_id,
+            "start_date":    req.start_date,
+            "end_date":      req.end_date,
+            "num_adults":    req.num_adults,
+            "num_children":  req.num_children,
+            "package_price": _STUB["package"],
+            "addon_charges": addon_charges,
+            "total_price":   subtotal,
+            "customizations": {"bulk_discount": str(bulk_discount), "group_size": group_size},
+        })
+        if req.traveler_details:
+            await booking_repo.create_booking_travelers(
+                db, booking.id, [t.model_dump() for t in req.traveler_details]
+            )
+        if req.addons:
+            await booking_repo.create_booking_addons(
+                db, booking.id, [a.model_dump() for a in req.addons]
+            )
+
+        await db.commit()
+        logger.info(
+            "endpoint=POST /corporate user=%s booking=%s group=%d",
+            user_id, booking.booking_number, group_size,
+        )
+        return _booking_response(
+            booking, BookingType.CORPORATE, totals,
+            f"Corporate booking created for {group_size} travelers. Complete payment to confirm.",
+        )
+
+
+async def get_corporate_invoice(
+    db: AsyncSession, booking_id: UUID, user_id: UUID
+) -> CorporateInvoiceResponse:
+    """
+    GET /bookings/corporate/{id}/invoice
+    Extends the standard invoice with company name, GST, per-head price,
+    bulk discount line, and full traveler list.
+    """
+    booking = await booking_repo.get_invoice_data(db, booking_id)
+    if not booking:
+        raise NotFoundException("Booking not found")
+    if booking.user_id != user_id:
+        raise ForbiddenException("Access denied")
+    if booking.booking_type != BookingType.CORPORATE:
+        raise BadRequestException("This booking is not a corporate booking")
+
+    pb         = booking.package_booking
+    contact    = booking.contact_details or {}
+    group_size = (pb.num_adults + pb.num_children) if pb else 0
+    per_head   = (pb.package_price if pb else Decimal("0"))
+
+    custom       = pb.customizations or {} if pb else {}
+    bulk_discount = Decimal(str(custom.get("bulk_discount", "0")))
+
+    taxable = booking.subtotal - booking.discount_amount
+    cgst    = (taxable * CGST_RATE).quantize(Decimal("0.01"))
+    sgst    = (taxable * SGST_RATE).quantize(Decimal("0.01"))
+
+    travelers_raw = await booking_repo.get_booking_travelers(db, booking_id)
+    travelers = [
+        {
+            "name":            t.name,
+            "age":             t.age,
+            "gender":          t.gender.value if t.gender else None,
+            "id_proof_type":   t.id_proof_type,
+            "id_proof_number": t.id_proof_number,
+        }
+        for t in travelers_raw
+    ]
+
+    return CorporateInvoiceResponse(
+        invoice_number  = f"CORP-INV-{booking.booking_number}",
+        booking_number  = booking.booking_number,
+        invoice_date    = booking.booking_date,
+        company_name    = contact.get("company_name", ""),
+        gst_number      = contact.get("gst_number"),
+        contact_name    = contact.get("name", ""),
+        contact_phone   = contact.get("phone", ""),
+        contact_email   = contact.get("email"),
+        package_id      = pb.package_id if pb else booking_id,
+        start_date      = booking.start_date,
+        end_date        = booking.end_date,
+        num_adults      = pb.num_adults if pb else 0,
+        num_children    = pb.num_children if pb else 0,
+        group_size      = group_size,
+        per_head_price  = per_head,
+        subtotal        = booking.subtotal,
+        discount        = booking.discount_amount,
+        bulk_discount   = bulk_discount,
+        cgst            = cgst,
+        sgst            = sgst,
+        total_tax       = booking.tax_amount,
+        convenience_fee = booking.convenience_fee or Decimal("0"),
+        total_amount    = booking.total_amount,
+        travelers       = travelers,
+        pdf_url         = None,
+    )

@@ -46,16 +46,16 @@ class OTPPurpose(str, Enum):
 # ── Booking ───────────────────────────────────────────────────────────────────
 
 class BookingType(str, Enum):
-    HOTEL    = "hotel"
-    VEHICLE  = "vehicle"
-    DARSHAN  = "darshan"
-    PACKAGE  = "package"
-    # ── Added (were missing — crashed 5 endpoints) ──
-    POOJA    = "pooja"
-    PRASADAM = "prasadam"
-    GUIDE    = "guide"
-    COMBO    = "combo"
-    CUSTOM   = "custom"
+    HOTEL      = "hotel"
+    VEHICLE    = "vehicle"
+    DARSHAN    = "darshan"
+    PACKAGE    = "package"
+    POOJA      = "pooja"
+    PRASADAM   = "prasadam"
+    GUIDE      = "guide"
+    COMBO      = "combo"
+    CUSTOM     = "custom"
+    CORPORATE  = "corporate"
 
 
 class BookingStatus(str, Enum):

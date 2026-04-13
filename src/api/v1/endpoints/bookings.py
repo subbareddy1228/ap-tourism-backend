@@ -32,7 +32,8 @@ from src.schemas.booking import (
     # Create
     BookHotelRequest, BookVehicleRequest, BookDarshanRequest,
     BookPoojaRequest, BookPrasadamRequest, BookPackageRequest,
-    BookGuideRequest, BookComboRequest, BookCustomRequest,AssignGuideRequest, AssignVehicleRequest,
+    BookGuideRequest, BookComboRequest, BookCustomRequest, AssignGuideRequest, AssignVehicleRequest,
+    BookCorporateRequest, CorporateInvoiceResponse,
     # Responses
     BookingCreatedResponse, BookingDetailResponse, BookingListResponse,
     BookingListFilter, CancelBookingRequest, CancelBookingResponse,
@@ -344,6 +345,64 @@ async def book_combo(
     _log(request, current_user.id, "POST /combo", 201, start)
     return success(result.model_dump(), "Combo booking created. Complete payment to confirm.")
 
+#corporate booking endpoint 
+@router.post(
+    "/corporate",
+    response_model=APIResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="[Corporate] Create bulk group booking",
+    tags=["Bookings - Corporate"],
+)
+async def book_corporate(
+    request: Request,
+    req: BookCorporateRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+    redis=Depends(get_redis),
+):
+    """
+    Corporate / office group booking.
+
+    - Minimum 10 travelers required.
+    - Bulk discount applied automatically based on group size:
+      10–29 → 5%, 30–49 → 10%, 50+ → 15%
+    - No convenience fee charged for corporate bookings.
+    - company_name is required; gst_number optional (for B2B GST invoice).
+    """
+    start = time.time()
+    try:
+        result = await booking_service.book_corporate(db, redis, current_user.id, req)
+        _log(request, current_user.id, "POST /corporate", 201, start)
+        return success(result.model_dump(), result.message)
+    except Exception as e:
+        _log(request, current_user.id, "POST /corporate", 400, start)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.get(
+    "/corporate/{booking_id}/invoice",
+    response_model=APIResponse,
+    summary="[Corporate] Get bulk invoice with traveler list",
+    tags=["Bookings - Corporate"],
+)
+async def get_corporate_invoice(
+    booking_id: UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Corporate invoice includes:
+    - Company name and GST number
+    - Per-head price breakdown
+    - Bulk discount line item
+    - Full traveler list (name, age, ID proof)
+    - CORP-INV prefix on invoice number
+    """
+    try:
+        result = await booking_service.get_corporate_invoice(db, booking_id, current_user.id)
+        return success(result.model_dump(), "Corporate invoice fetched")
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 @router.post("/custom", response_model=APIResponse, status_code=status.HTTP_201_CREATED)
 async def book_custom(
