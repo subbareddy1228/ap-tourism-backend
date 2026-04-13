@@ -47,6 +47,7 @@ class Settings(BaseSettings):
     SMS_PROVIDER: str = "msg91"
     MSG91_API_KEY: str = ""
     MSG91_TEMPLATE_ID: str = ""
+    MSG91_SENDER_ID: str = "APTRMS"   
     # TWILIO_ACCOUNT_SID: str = ""
     # TWILIO_AUTH_TOKEN: str = ""
     # TWILIO_FROM_NUMBER: str = ""
