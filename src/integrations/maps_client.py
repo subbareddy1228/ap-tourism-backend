@@ -178,9 +178,19 @@ async def distance_matrix(origin: str, destination: str) -> dict:
             f"for '{origin}' → '{destination}'"
         )
 
+    # Ola Maps returns distance/duration as plain int (metres/seconds)
+    # not as {"value": ...} dict like Google Maps
+    distance = element.get("distance") or element.get("distanceMeters", 0)
+    duration = element.get("duration") or element.get("durationSeconds", 0)
+
+    if isinstance(distance, dict):
+        distance = distance.get("value", 0)
+    if isinstance(duration, dict):
+        duration = duration.get("value", 0)
+    
     return {
-        "distance_km"     : round(element["distance"]["value"] / 1000, 2),
-        "duration_minutes": round(element["duration"]["value"] / 60, 1),
+        "distance_km"     : round(distance / 1000, 2),
+        "duration_minutes": round(duration / 60, 1),
     }
 
 

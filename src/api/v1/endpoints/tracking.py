@@ -288,7 +288,7 @@ async def public_share_view(
     Returns 404 if the token is invalid.
     """
     try:
-        result = await tracking_service.get_public_tracking_view(token)
+        result = await tracking_service.get_by_share_token(token, db)
         return APIResponse.success(message="Live location", data=result)
     except ValueError as e:
         code = status.HTTP_403_FORBIDDEN if "disabled" in str(e) else status.HTTP_404_NOT_FOUND
