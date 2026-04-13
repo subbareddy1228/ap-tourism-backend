@@ -50,7 +50,9 @@ from src.models.darshan import (
     PrasadamItem, PrasadamOrder,
 )
 
-
+from src.schemas.darshan import (
+    PrasadamItemCreate   # ← add this
+)
 class DarshanRepository:
 
     def __init__(self, db: AsyncSession):
@@ -209,7 +211,19 @@ class DarshanRepository:
         return booking
 
     # ── Prasadam Items ────────────────────────────────────────────────────────
-
+    async def create_prasadam_item(self, temple_id: UUID, req: PrasadamItemCreate):
+        item = PrasadamItem(
+            id=uuid4(),
+            temple_id=temple_id,
+            name=req.name,
+            description=req.description,
+            price=req.price,
+            is_available=req.is_available,
+    )
+        self.db.add(item)
+        await self.db.commit()
+        await self.db.refresh(item)
+        return item
     async def get_prasadam_items(self, temple_id: UUID) -> List[PrasadamItem]:
         result = await self.db.execute(
             select(PrasadamItem).where(

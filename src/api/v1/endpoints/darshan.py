@@ -56,8 +56,10 @@ from src.services.darshan_service import DarshanService
 from src.schemas.darshan import (
     DarshanCheckAvailabilityRequest,
     DarshanBookRequest,
-    PoojaBookRequest,
+    PoojaBookRequest,PoojaSlotCreate,
+    PoojaSlotBulkGenerate,
     PrasadamOrderRequest,
+    PrasadamItemCreate
 )
 from src.common.responses import APIResponse
 
@@ -254,6 +256,45 @@ async def get_pooja_slots(
 
 
 @router.post(
+    "/{temple_id}/pooja-services/{service_id}/slots",
+    status_code=status.HTTP_201_CREATED,
+    response_model=APIResponse,
+    summary="[Admin] Create a single pooja slot",
+)
+async def create_pooja_slot(
+    temple_id:    UUID,
+    service_id:   UUID,
+    req:          PoojaSlotCreate,
+    current_user: User = Depends(get_current_user),
+    svc:          DarshanService = Depends(get_service),
+):
+    data = await svc.create_pooja_slot(temple_id, service_id, req)
+    return APIResponse.success(
+        message="Pooja slot created successfully",
+        # data=data  # ← make sure data is being passed
+        data=data.model_dump() if data else None  # ← change this line
+    )
+@router.post(
+    "/{temple_id}/pooja-services/{service_id}/slots/bulk-generate",
+    status_code=status.HTTP_201_CREATED,
+    response_model=APIResponse,
+    summary="[Admin] Bulk generate pooja slots for a date range",
+)
+async def bulk_generate_pooja_slots(
+    temple_id:    UUID,
+    service_id:   UUID,
+    req:          PoojaSlotBulkGenerate,
+    current_user: User = Depends(get_current_user),
+    svc:          DarshanService = Depends(get_service),
+):
+    data = await svc.bulk_generate_pooja_slots(temple_id, service_id, req)
+    return APIResponse.success(
+        message="Pooja slots generated successfully",
+        data=data
+    )
+
+
+@router.post(
     "/{temple_id}/pooja/book",
     status_code=status.HTTP_201_CREATED,
     response_model=APIResponse,
@@ -277,16 +318,26 @@ async def book_pooja(
     )
 
 
+
 # ══════════════════════════════════════════════════════════════════════════════
-# 12, 13, 14, 15 — PRASADAM
-#
-# IMPORTANT: Static routes MUST come before path-parameter routes.
-#   /prasadam/orders  →  endpoint 13 (MUST be defined before endpoint 14)
-#   /prasadam         →  endpoint 12
-#   /prasadam/{item}  →  endpoint 14
-#   /prasadam/order   →  endpoint 15 (POST — no conflict with GET /{item_id})
+# PRASADAM — correct order
 # ══════════════════════════════════════════════════════════════════════════════
 
+# 12 — GET all items
+@router.get(
+    "/{temple_id}/prasadam",
+    response_model=APIResponse,
+    summary="List all available prasadam items for a temple",
+)
+async def get_prasadam_items(
+    temple_id: UUID,
+    svc: DarshanService = Depends(get_service),
+):
+    data = await svc.get_prasadam_items(temple_id)
+    return APIResponse.success(message="Prasadam items fetched", data=data)
+
+
+# 13 — GET orders (static route BEFORE /{item_id})
 @router.get(
     "/{temple_id}/prasadam/orders",
     response_model=APIResponse,
@@ -304,19 +355,7 @@ async def get_my_prasadam_orders(
     return APIResponse.success(message="Orders fetched", data=data)
 
 
-@router.get(
-    "/{temple_id}/prasadam",
-    response_model=APIResponse,
-    summary="List all available prasadam items for a temple",
-)
-async def get_prasadam_items(
-    temple_id: UUID,
-    svc: DarshanService = Depends(get_service),
-):
-    data = await svc.get_prasadam_items(temple_id)
-    return APIResponse.success(message="Prasadam items fetched", data=data)
-
-
+# 14 — GET single item
 @router.get(
     "/{temple_id}/prasadam/{item_id}",
     response_model=APIResponse,
@@ -330,6 +369,8 @@ async def get_prasadam_item(
     data = await svc.get_prasadam_item(temple_id, item_id)
     return APIResponse.success(message="Prasadam item fetched", data=data)
 
+
+# 15 — POST order
 
 @router.post(
     "/{temple_id}/prasadam/order",
@@ -349,3 +390,19 @@ async def order_prasadam(
         req=req,
     )
     return APIResponse.success(message="Prasadam order placed successfully", data=data)
+
+
+# 16 — POST create item (Admin)
+@router.post(
+    "/{temple_id}/prasadam",
+    status_code=status.HTTP_201_CREATED,
+    response_model=APIResponse,
+    summary="[Admin] Add a prasadam item to a temple",
+)
+async def create_prasadam_item(
+    temple_id: UUID,
+    req:       PrasadamItemCreate,
+    svc:       DarshanService = Depends(get_service),
+):
+    data = await svc.create_prasadam_item(temple_id, req)
+    return APIResponse.success(message="Prasadam item created", data=data)
