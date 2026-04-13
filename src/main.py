@@ -43,7 +43,7 @@ async def global_exception_handler(request: Request, exc: Exception):
     )
 
 # ── Routers ───────────────────────────────────────────────────
-app.include_router(users_router,  prefix="/api/v1")
+#app.include_router(users_router,  prefix="/api/v1")
 app.include_router(wallet_router, prefix="/api/v1")
 
 @app.get("/api/v1/health", tags=["Health"])
