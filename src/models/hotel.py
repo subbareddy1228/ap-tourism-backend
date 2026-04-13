@@ -34,6 +34,7 @@ class Hotel(Base):
 
     id                  = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     partner_id          = Column(UUID(as_uuid=True), ForeignKey("partners.id", ondelete="CASCADE"), nullable=False, index=True)
+    destination_id      = Column(UUID(as_uuid=True), ForeignKey("destinations.id", ondelete="SET NULL"), nullable=True, index=True)
 
     # ── Basic Info ────────────────────────────────────────────
     name                = Column(String(200), nullable=False)
@@ -105,6 +106,7 @@ class Hotel(Base):
     rooms               = relationship("HotelRoom",    back_populates="hotel", cascade="all, delete-orphan")
     images              = relationship("HotelImage",   back_populates="hotel", cascade="all, delete-orphan")
     amenities           = relationship("HotelAmenity", back_populates="hotel", cascade="all, delete-orphan")
+    destination         = relationship("Destination", foreign_keys=[destination_id])
 
     def __repr__(self):
         return f"<Hotel {self.name} ({self.city}) status={self.status} stars={self.star_rating}>"

@@ -42,6 +42,7 @@ class Guide(Base):
     id          = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     partner_id  = Column(UUID(as_uuid=True), nullable=True)
     user_id     = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
+    destination_id = Column(UUID(as_uuid=True), ForeignKey("destinations.id", ondelete="SET NULL"), nullable=True, index=True)
 
     # Profile
     full_name        = Column(String(255), nullable=False)
@@ -83,6 +84,7 @@ class Guide(Base):
     languages       = relationship("GuideLanguage",       back_populates="guide", cascade="all, delete-orphan")
     specializations = relationship("GuideSpecialization", back_populates="guide", cascade="all, delete-orphan")
     documents       = relationship("GuideDocument",       back_populates="guide", cascade="all, delete-orphan")
+    destination     = relationship("Destination", foreign_keys=[destination_id])
 
 
 class GuideLanguage(Base):
