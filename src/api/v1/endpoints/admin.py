@@ -588,10 +588,21 @@ async def create_package(
 ):
     pkg = Package(
         name=data.name,
+        slug=data.slug,
+        destination_id=data.destination_id,
         type=data.type,
         duration_days=data.duration_days,
+        duration_nights=data.duration_nights or 0,
         price=data.price,
+        group_size=data.group_size,
+        itinerary=data.itinerary or [],
+        inclusions=data.inclusions or [],
+        exclusions=data.exclusions or [],
+        pricing_rules=data.pricing_rules or [],
+        departure_dates=data.departure_dates or [],
+        images=data.images or [],
         is_featured=data.is_featured or False,
+        is_active=data.is_active if data.is_active is not None else True,
     )
     db.add(pkg)
     await db.commit()

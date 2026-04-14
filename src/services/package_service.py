@@ -1,10 +1,10 @@
-from select import select
+from sqlalchemy import select
 
 from fastapi import status
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 
-from src.schemas.package import PackageCreate, PackageUpdate, PackageResponse
+from src.schemas.package import PackageCreate, PackageUpdate, PackageResponse, ItineraryDayCreate
 from src.models.package import Package, PackageType
 from src.repositories import package_repo as repo
 
@@ -300,34 +300,52 @@ async def update_existing_package(
     )
 
 async def calculate_price(data: dict, db: AsyncSession) -> dict:
+    from datetime import date
+    from sqlalchemy import select
+
     package_id = data.get("package_id")
     group_size = data.get("group_size", 1)
     travel_date = data.get("travel_date")
- 
+
     result = await db.execute(select(Package).where(Package.id == package_id))
     package = result.scalar_one_or_none()
     if not package:
         raise NotFoundException("Package not found")
- 
-    base_price = float(package.base_price) * group_size
- 
-    # Basic surge pricing — weekends +10%, peak months (Oct-Jan) +20%
+
+    # ── Step 1: Check pricing_rules for group size tier ──
+    base_price_per_person = float(package.price)  # fallback
+
+    if package.pricing_rules:
+        for rule in package.pricing_rules:
+            if rule["min_people"] <= group_size <= rule["max_people"]:
+                base_price_per_person = float(rule["price_per_person"])
+                break
+
+    base_price = base_price_per_person * group_size
+
+    # ── Step 2: Surge pricing ──
     surge_multiplier = 1.0
+    surge_reasons = []
+
     if travel_date:
-        from datetime import date
         td = date.fromisoformat(travel_date)
-        if td.weekday() >= 5:
+        if td.weekday() >= 5:  # Saturday/Sunday
             surge_multiplier += 0.10
-        if td.month in [10, 11, 12, 1]:
+            surge_reasons.append("Weekend +10%")
+        if td.month in [10, 11, 12, 1]:  # Peak season
             surge_multiplier += 0.20
- 
+            surge_reasons.append("Peak season +20%")
+
     final_price = round(base_price * surge_multiplier, 2)
- 
+
     return {
         "package_id": package_id,
+        "package_name": package.name,
         "group_size": group_size,
+        "price_per_person": base_price_per_person,
         "base_price": base_price,
         "surge_multiplier": surge_multiplier,
+        "surge_reasons": surge_reasons,
         "final_price": final_price,
         "currency": "INR"
     }
@@ -370,6 +388,38 @@ async def get_itinerary(package_id: str, db: AsyncSession) -> dict:
         "package_name": package.name,
         "num_days": package.duration_days,
         "itinerary": itinerary
+    }
+
+
+async def add_itinerary_day(package_id: str, data: ItineraryDayCreate, db: AsyncSession) -> dict:
+    result = await db.execute(select(Package).where(Package.id == package_id))
+    package = result.scalar_one_or_none()
+    if not package:
+        raise NotFoundException("Package not found")
+
+    # Get existing itinerary or start fresh
+    itinerary = list(package.itinerary) if package.itinerary else []
+
+    new_day = data.model_dump()
+
+    # Check if day already exists, replace if so
+    existing_days = [i["day"] for i in itinerary]
+    if new_day["day"] in existing_days:
+        itinerary = [new_day if i["day"] == new_day["day"] else i for i in itinerary]
+    else:
+        itinerary.append(new_day)
+
+    # Sort by day number
+    itinerary.sort(key=lambda x: x["day"])
+
+    package.itinerary = itinerary
+    await db.commit()
+    await db.refresh(package)
+
+    return {
+        "package_id": package_id,
+        "package_name": package.name,
+        "itinerary": package.itinerary
     }
  
  
