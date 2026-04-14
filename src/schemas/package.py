@@ -3,6 +3,7 @@ from datetime import datetime
 from pydantic import BaseModel, Field
 from uuid import UUID
 
+
 from src.models.package import PackageType
 
 
@@ -79,7 +80,7 @@ class PackageCreate(PackageBase):
 class PackageUpdate(BaseModel):
     name: Optional[str] = None
     slug: Optional[str] = None
-    destination_id: Optional[UUID] = None
+    destination_id: Optional[str] = None
     type: Optional[PackageType] = None
 
     duration_days: Optional[int] = None
@@ -117,21 +118,20 @@ class PackageResponse(PackageBase):
     class Config:
         from_attributes = True
 
-
 # ─────────────────────────────────────────
 # CALCULATE PRICE REQUEST
 # ─────────────────────────────────────────
-
+ 
 class CalculatePriceRequest(BaseModel):
     package_id: UUID = Field(..., example="00000000-0000-0000-0000-000000000001")
     group_size: int = Field(default=1, ge=1, example=4)
     travel_date: Optional[str] = Field(None, example="2025-12-25")
-
-
+ 
+ 
 # ─────────────────────────────────────────
 # CUSTOM PACKAGE REQUEST
 # ─────────────────────────────────────────
-
+ 
 class CustomPackageRequest(BaseModel):
     destination_ids: List[UUID] = Field(default_factory=list, example=["00000000-0000-0000-0000-000000000001"])
     hotel_id: Optional[UUID] = Field(None, example="00000000-0000-0000-0000-000000000002")
