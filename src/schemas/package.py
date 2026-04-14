@@ -117,3 +117,21 @@ class PackageResponse(PackageBase):
 
     class Config:
         from_attributes = True
+        
+# ─────────────────────────────────────────
+# REQUEST SCHEMAS
+# ─────────────────────────────────────────
+
+class CalculatePriceRequest(BaseModel):
+    package_id: UUID
+    num_people: int = Field(..., ge=1, example=4)
+    departure_date: Optional[str] = None
+
+class CustomPackageRequest(BaseModel):
+    destination_id: UUID
+    duration_days: int = Field(..., ge=1, example=3)
+    num_people: int = Field(..., ge=1, example=2)
+    preferences: Optional[List[str]] = Field(default_factory=list)
+    budget_per_person: Optional[float] = None
+    departure_date: Optional[str] = None
+    special_requests: Optional[str] = None        
