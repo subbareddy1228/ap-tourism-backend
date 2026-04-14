@@ -1,6 +1,8 @@
 from typing import List, Optional
 from datetime import datetime
 from pydantic import BaseModel, Field
+from uuid import UUID
+
 
 from src.models.package import PackageType
 
@@ -42,7 +44,7 @@ class PackageImage(BaseModel):
 class PackageBase(BaseModel):
     name: str = Field(..., example="Vizag Explorer")
     slug: str = Field(..., example="vizag-explorer")
-    destination_id: str = Field(..., example="00000000-0000-0000-0000-000000000001")
+    destination_id: UUID = Field(..., example="00000000-0000-0000-0000-000000000001")
     type: PackageType
 
     duration_days: int = Field(..., ge=1, example=3)
@@ -103,7 +105,7 @@ class PackageUpdate(BaseModel):
 # ─────────────────────────────────────────
 
 class PackageResponse(PackageBase):
-    id: str
+    id: UUID
     rating: float
     reviews_count: int
     total_bookings: int
