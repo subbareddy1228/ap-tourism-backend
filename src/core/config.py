@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
     # ── Database ──────────────────────────────────────────────
-    DATABASE_URL: str = "postgresql+asyncpg://postgres:1227@localhost:5432/ap_tourism"
+    DATABASE_URL: str = "postgresql+asyncpg://postgres:Mounika@localhost:5432/ap_tourism"
 
     # ── Redis ─────────────────────────────────────────────────
     REDIS_URL: str = "redis://localhost:6379/0"
