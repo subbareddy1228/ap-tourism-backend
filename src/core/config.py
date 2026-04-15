@@ -22,7 +22,11 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
     # ── Database ──────────────────────────────────────────────
-    DATABASE_URL: str = "postgresql+asyncpg://postgres:1227@localhost:5432/ap_tourism"
+<<<<<<< HEAD
+    DATABASE_URL: str = "postgresql+asyncpg://postgres:Mounika@localhost:5432/ap_tourism"
+=======
+    DATABASE_URL: str = "postgresql+asyncpg://postgres:12345@localhost:5432/ap_tourism"
+>>>>>>> fe3bab894963d61ef32c53e32b2b0d36555bd77b
 
     # ── Redis ─────────────────────────────────────────────────
     REDIS_URL: str = "redis://localhost:6379/0"
@@ -84,7 +88,8 @@ class Settings(BaseSettings):
     # ── Load Environment Variables from .env ──────────────────
     model_config = SettingsConfigDict(
         env_file=".env",
-        case_sensitive=True
+        case_sensitive=True,
+        extra="ignore"
     )
 
 
