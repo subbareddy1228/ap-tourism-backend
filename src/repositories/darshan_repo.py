@@ -38,8 +38,7 @@ change.
 
 from datetime import date, timedelta
 from typing import List, Optional
-from uuid import UUID
-
+from uuid import UUID, uuid4   # ← add uuid4
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
 from sqlalchemy.orm import selectinload
@@ -203,7 +202,11 @@ class DarshanRepository:
             .values(booked_count=PoojaSlot.booked_count + num_persons)
         )
         await self.db.commit()
-
+    async def bulk_create_pooja_slots(self, slots: list[PoojaSlot]) -> list[PoojaSlot]:
+        for slot in slots:
+            self.db.add(slot)
+        await self.db.commit()
+        return slots
     async def create_pooja_booking(self, booking: PoojaBooking) -> PoojaBooking:
         self.db.add(booking)
         await self.db.commit()

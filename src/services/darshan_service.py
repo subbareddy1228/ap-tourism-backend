@@ -47,7 +47,7 @@ from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.models.darshan import (
-    DarshanBooking, PoojaBooking, 
+    DarshanBooking, PoojaBooking, PoojaSlot,
     PrasadamOrder, PrasadamOrderItem,PrasadamItem
 )
 from src.repositories.darshan_repo import DarshanRepository
@@ -60,7 +60,7 @@ from src.schemas.darshan import (
     DarshanTypeResponse, DarshanSlotResponse,
     DarshanCheckAvailabilityRequest, DarshanCheckAvailabilityResponse,
     DarshanBookRequest, DarshanBookingResponse,
-    PoojaServiceResponse, PoojaSlotCreate,
+    PoojaServiceResponse, 
     PoojaSlotBulkGenerate, PoojaSlotResponse,
     PoojaBookRequest, PoojaBookingResponse,PrasadamItemCreate,
     PrasadamItemResponse, PrasadamOrderRequest, PrasadamOrderResponse,
@@ -242,7 +242,7 @@ class DarshanService:
             raise NotFoundException("Booking not found")
         return DarshanBookingResponse.model_validate(booking)
 
-    # ── Pooja Services ────────────────────────────────────────────────────────
+   
     # ── Pooja Services ────────────────────────────────────────────────────────
     async def get_pooja_services(self, temple_id: UUID):
         services = await self.repo.get_pooja_services(temple_id)
@@ -259,30 +259,16 @@ class DarshanService:
         slots = await self.repo.get_pooja_slots(service_id)
         return [PoojaSlotResponse.model_validate(s) for s in slots]
 
-    async def create_pooja_slot(self, temple_id: UUID, service_id: UUID, req: PoojaSlotCreate):
-        service = await self.repo.get_pooja_service_by_id(temple_id, service_id)
-        if not service:
-            raise NotFoundException("Pooja service not found")
-        slot = PoojaSlot(
-            temple_id        = temple_id,
-            pooja_service_id = service_id,
-            slot_date        = req.slot_date,
-            start_time       = req.start_time,
-            end_time         = req.end_time,
-            total_quota      = req.total_quota,
-            booked_count     = 0,
-            is_active        = req.is_active,
-        )
-        self.db.add(slot)
-        await self.db.commit()
-        await self.db.refresh(slot)
-        return PoojaSlotResponse.model_validate(slot)
-
-    async def bulk_generate_pooja_slots(self, temple_id: UUID, service_id: UUID, req: PoojaSlotBulkGenerate):
+    
+    async def bulk_generate_pooja_slots(
+    self, temple_id: UUID, service_id: UUID, req: PoojaSlotBulkGenerate
+    ):
         from datetime import timedelta
+
         service = await self.repo.get_pooja_service_by_id(temple_id, service_id)
         if not service:
             raise NotFoundException("Pooja service not found")
+
         slots = []
         current_date = req.from_date
         while current_date <= req.to_date:
@@ -299,13 +285,77 @@ class DarshanService:
             self.db.add(slot)
             slots.append(slot)
             current_date += timedelta(days=1)
-        await self.db.commit()
-        return {
-            "generated_count": len(slots),
-            "message": f"{len(slots)} pooja slots generated successfully"
+
+        await self.db.commit()   # ← OUTSIDE loop
+        return {                 # ← OUTSIDE loop
+        "generated_count": len(slots),
+        "message": f"{len(slots)} pooja slots generated successfully"
         }
+    
+        # ── Book Pooja ────────────────────────────────────────────────────────────
 
+    async def book_pooja(
+        self,
+        temple_id:  UUID,
+        service_id: UUID,
+        user_id:    UUID,
+        req:        PoojaBookRequest,
+    ):
+        """
+        Same lock-first flow as book_darshan.
+        BUG-5 FIX: Removed in-Python slot.booked_count mutation; uses atomic
+        repo.increment_pooja_slot_booking() instead.
+        """
+        service = await self.repo.get_pooja_service_by_id(temple_id, service_id)
+        if not service:
+            raise NotFoundException("Pooja service not found")
 
+        lock_key = f"pooja_lock:{req.slot_id}"
+
+        if self.redis:
+            acquired = await self.redis.set(lock_key, str(user_id), nx=True, ex=900)
+            if not acquired:
+                raise ConflictException(
+                    "This pooja slot is currently being booked. Please try again."
+                )
+
+        try:
+            slot = await self.repo.get_pooja_slot_by_id(req.slot_id)
+            if not slot:
+                raise NotFoundException("Pooja slot not found")
+            if slot.available_count < req.num_persons:
+                raise BadRequestException(
+                    f"Only {slot.available_count} slots available"
+                )
+
+            booking = PoojaBooking(
+                # booking_id intentionally omitted (nullable=True in model)
+                temple_id=temple_id,
+                pooja_service_id=service_id,
+                slot_id=req.slot_id,
+                num_persons=req.num_persons,
+                price=float(service.price or 0) * req.num_persons,
+                devotee_names=(
+                    [req.devotee_name] if req.devotee_name else []
+                ),
+                gothram=req.gothram,
+                nakshatra=req.nakshatra,
+                special_instructions=req.special_requests,
+            )
+            created = await self.repo.create_pooja_booking(booking)
+
+            # Atomic increment (BUG-5 FIX)
+            await self.repo.increment_pooja_slot_booking(req.slot_id, req.num_persons)
+
+        finally:
+            # Lock released by Redis TTL after 15 min
+            pass
+
+        logger.info(
+            "PoojaBooking created booking_id=%s temple=%s service=%s",
+            created.id, temple_id, service_id,
+        )
+        return PoojaBookingResponse.model_validate(created)
     # ── Prasadam Items ────────────────────────────────────────────────────────
     async def create_prasadam_item(self, temple_id: UUID, req: PrasadamItemCreate):
         item = PrasadamItem(
@@ -314,13 +364,11 @@ class DarshanService:
             description=req.description,
             price=req.price,
             is_available=req.is_available
-    )
+        )
 
         self.db.add(item)
         await self.db.commit()
         await self.db.refresh(item)
-
-    # ✅ FIX: convert to response schema
         return PrasadamItemResponse.model_validate(item)
     # async def create_prasadam_item(self, temple_id: UUID, req: PrasadamItemCreate):
     #     item = await self.repo.create_prasadam_item(temple_id, req)

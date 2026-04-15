@@ -56,7 +56,7 @@ from src.services.darshan_service import DarshanService
 from src.schemas.darshan import (
     DarshanCheckAvailabilityRequest,
     DarshanBookRequest,
-    PoojaBookRequest,PoojaSlotCreate,
+    PoojaBookRequest,
     PoojaSlotBulkGenerate,
     PrasadamOrderRequest,
     PrasadamItemCreate
@@ -171,7 +171,6 @@ async def check_availability(
     data = await svc.check_availability(temple_id, req)
     return APIResponse.success(message="Availability checked", data=data)
 
-
 @router.post(
     "/{temple_id}/darshan/book",
     status_code=status.HTTP_201_CREATED,
@@ -193,6 +192,8 @@ async def book_darshan(
         message="Darshan booked successfully. Please complete payment to confirm.",
         data=data,
     )
+
+
 
 
 @router.get(
@@ -225,8 +226,8 @@ async def get_pooja_services(
 ):
     data = await svc.get_pooja_services(temple_id)
     return APIResponse.success(message="Pooja services fetched", data=data)
-
-
+ 
+ 
 @router.get(
     "/{temple_id}/pooja-services/{service_id}",
     response_model=APIResponse,
@@ -239,8 +240,8 @@ async def get_pooja_service_detail(
 ):
     data = await svc.get_pooja_service_detail(temple_id, service_id)
     return APIResponse.success(message="Pooja service fetched", data=data)
-
-
+ 
+ 
 @router.get(
     "/{temple_id}/pooja-services/{service_id}/slots",
     response_model=APIResponse,
@@ -254,26 +255,6 @@ async def get_pooja_slots(
     data = await svc.get_pooja_slots(temple_id, service_id)
     return APIResponse.success(message="Pooja slots fetched", data=data)
 
-
-@router.post(
-    "/{temple_id}/pooja-services/{service_id}/slots",
-    status_code=status.HTTP_201_CREATED,
-    response_model=APIResponse,
-    summary="[Admin] Create a single pooja slot",
-)
-async def create_pooja_slot(
-    temple_id:    UUID,
-    service_id:   UUID,
-    req:          PoojaSlotCreate,
-    current_user: User = Depends(get_current_user),
-    svc:          DarshanService = Depends(get_service),
-):
-    data = await svc.create_pooja_slot(temple_id, service_id, req)
-    return APIResponse.success(
-        message="Pooja slot created successfully",
-        # data=data  # ← make sure data is being passed
-        data=data.model_dump() if data else None  # ← change this line
-    )
 @router.post(
     "/{temple_id}/pooja-services/{service_id}/slots/bulk-generate",
     status_code=status.HTTP_201_CREATED,
@@ -293,7 +274,7 @@ async def bulk_generate_pooja_slots(
         data=data
     )
 
-
+ 
 @router.post(
     "/{temple_id}/pooja/book",
     status_code=status.HTTP_201_CREATED,
@@ -316,6 +297,8 @@ async def book_pooja(
         message="Pooja booked successfully. Please complete payment to confirm.",
         data=data,
     )
+ 
+
 
 
 
@@ -369,7 +352,6 @@ async def get_prasadam_item(
     data = await svc.get_prasadam_item(temple_id, item_id)
     return APIResponse.success(message="Prasadam item fetched", data=data)
 
-
 # 15 — POST order
 
 @router.post(
@@ -392,6 +374,8 @@ async def order_prasadam(
     return APIResponse.success(message="Prasadam order placed successfully", data=data)
 
 
+
+
 # 16 — POST create item (Admin)
 @router.post(
     "/{temple_id}/prasadam",
@@ -406,3 +390,4 @@ async def create_prasadam_item(
 ):
     data = await svc.create_prasadam_item(temple_id, req)
     return APIResponse.success(message="Prasadam item created", data=data)
+
