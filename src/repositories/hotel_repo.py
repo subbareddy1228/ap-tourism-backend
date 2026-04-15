@@ -30,10 +30,14 @@ async def get_hotel_by_id(db: AsyncSession, hotel_id: str) -> Hotel:
         raise HTTPException(status_code=404, detail="Hotel not found")
     return hotel
 
-
 async def get_hotel_by_id_and_partner(db: AsyncSession, hotel_id: str, partner_id: str) -> Hotel:
+    from sqlalchemy.orm import selectinload
     result = await db.execute(
-        select(Hotel).where(
+        select(Hotel).options(
+            selectinload(Hotel.rooms),
+            selectinload(Hotel.images),
+            selectinload(Hotel.amenities),
+        ).where(
             and_(Hotel.id == hotel_id, Hotel.partner_id == partner_id)
         )
     )

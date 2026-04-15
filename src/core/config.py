@@ -84,7 +84,8 @@ class Settings(BaseSettings):
     # ── Load Environment Variables from .env ──────────────────
     model_config = SettingsConfigDict(
         env_file=".env",
-        case_sensitive=True
+        case_sensitive=True,
+        extra="ignore"
     )
 
 
