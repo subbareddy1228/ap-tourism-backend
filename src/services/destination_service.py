@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 
 from src.models.destination import Destination, DestinationType
-from src.schemas.destination import DestinationCreate, DestinationUpdate, DestinationListResponse
+from src.schemas.destination import DestinationCreate, DestinationUpdate, DestinationListResponse, DestinationResponse
 from src.repositories import destination_repo as repo
 
 from src.core.exceptions import (
@@ -161,7 +161,10 @@ async def get_destination(db: AsyncSession, value: str):
     if not destination:
         raise NotFoundException(f"Destination '{value}' not found")
 
-    return await success_response(destination, "Destination detail")
+    return await success_response(
+        DestinationResponse.model_validate(destination),
+        "Destination detail"
+        )
 
 # ---------------------------------------
 # UPDATE DESTINATION (Admin)
@@ -190,7 +193,7 @@ async def update_destination(
     await clear_cache("destinations:popular")
 
     return await success_response(
-        DestinationListResponse.model_validate(result),
+        DestinationResponse.model_validate(result),
         "Destination updated successfully"
     )
 

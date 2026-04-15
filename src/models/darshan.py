@@ -176,7 +176,7 @@ class DarshanBooking(Base):
     booking = relationship("Booking",     back_populates="darshan_booking")
     temple  = relationship("Temple",      back_populates="darshan_bookings")
     slot    = relationship("DarshanSlot", back_populates="bookings")
-
+    # prasadam_orders = relationship("PrasadamOrder", back_populates="booking")
     def __repr__(self) -> str:
         return f"<DarshanBooking date={self.darshan_date} persons={self.num_persons}>"
 
@@ -359,9 +359,7 @@ class PrasadamOrder(Base):
     quantity            = Column(Integer,            nullable=True, default=1)
     unit_price          = Column(Numeric(10, 2),     nullable=True)
     total_price         = Column(Numeric(10, 2),     nullable=True)
-    delivery_address_id = Column(UUID(as_uuid=True), nullable=True)
-    delivery_status     = Column(String(20),         nullable=True, default="pending")
-    tracking_number     = Column(String(100),        nullable=True)
+    
 
     order_reference = Column(
         String(20),

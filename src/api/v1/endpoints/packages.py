@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.database import get_db
 from src.models.package import PackageType
-from src.schemas.package import PackageCreate, PackageUpdate, ItineraryDayCreate
+from src.schemas.package import PackageCreate, PackageUpdate, ItineraryDayCreate, CalculatePriceRequest, CustomPackageRequest
 from src.services import package_service
 from src.services.package_service import (
     get_all_packages,
@@ -171,7 +171,7 @@ async def update_package(
 
 @router.post("/calculate-price", response_model=APIResponse, summary="Calculate package price dynamically")
 async def calculate_price(
-    data: dict,
+    data: CalculatePriceRequest,
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -184,7 +184,7 @@ async def calculate_price(
  
 @router.post("/customize", response_model=APIResponse, status_code=201, summary="Build a custom package")
 async def customize_package(
-    data: dict,
+    data:  CustomPackageRequest,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
@@ -203,7 +203,7 @@ async def get_itinerary(
 ):
     """Returns day-wise itinerary breakdown for the package."""
     result = await package_service.get_itinerary(package_id, db)
-    return APIResponse.success(message="Itinerary fetched", data=result)
+    return {"success": True, "message": "Itinerary fetched", "data": result}
  
  
 @router.delete("/{package_id}", response_model=APIResponse, summary="[Admin] Delete package")
@@ -229,4 +229,4 @@ async def add_itinerary_day(
 ):
     """Add a day-wise itinerary entry to a package."""
     result = await package_service.add_itinerary_day(package_id, data, db)
-    return APIResponse.success(message="Itinerary day added", data=result)
+    return {"success": True, "message": "Itinerary day added", "data": result}

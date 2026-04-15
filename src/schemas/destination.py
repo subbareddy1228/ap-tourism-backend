@@ -1,6 +1,7 @@
 from typing import List, Optional
 from datetime import datetime
 from pydantic import BaseModel, Field
+from uuid import UUID
 
 from src.models.destination import DestinationType
 
@@ -84,7 +85,7 @@ class DestinationUpdate(BaseModel):
 # ---------- Response Schema ----------
 
 class DestinationResponse(DestinationBase):
-    id: str
+    id: UUID
     rating: float
     reviews_count: int
     is_featured: bool
@@ -97,7 +98,7 @@ class DestinationResponse(DestinationBase):
         from_attributes = True
 
 class DestinationListResponse(BaseModel):
-    id: str
+    id: UUID
     name: str
     slug: str
     district: str

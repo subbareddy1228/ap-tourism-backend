@@ -28,8 +28,8 @@ class User(Base):
     password_hash = Column(Text, nullable=True)   # nullable for OTP-only users
  
     # ── Role & Status ─────────────────────────────────────────
-    role   = Column(SAEnum(UserRole),   default=UserRole.TRAVELER,  nullable=False)
-    status = Column(SAEnum(UserStatus), default=UserStatus.ACTIVE,  nullable=False)
+    role   = Column(SAEnum(UserRole,   values_callable=lambda x: [e.value for e in x]), default=UserRole.TRAVELER,  nullable=False)
+    status = Column(SAEnum(UserStatus, values_callable=lambda x: [e.value for e in x]), default=UserStatus.ACTIVE,  nullable=False)
  
     # ── Verification Flags ────────────────────────────────────
     is_phone_verified = Column(Boolean, default=False)

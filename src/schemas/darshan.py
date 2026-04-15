@@ -230,6 +230,24 @@ class PoojaServiceResponse(BaseModel):
 
 
 # ── Pooja Slot ────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────
+# POOJA SLOT
+# ─────────────────────────────────────────────────────────────
+
+class PoojaSlotCreate(BaseModel):
+    slot_date:   date
+    start_time:  time
+    end_time:    time
+    total_quota: int = 50
+    is_active:   bool = True
+
+class PoojaSlotBulkGenerate(BaseModel):
+    from_date:   date
+    to_date:     date
+    start_time:  time
+    end_time:    time
+    total_quota: int = 50
+
 
 class PoojaSlotResponse(BaseModel):
     id:               UUID
@@ -282,51 +300,162 @@ class PoojaBookingResponse(BaseModel):
 
 
 # ── Prasadam ──────────────────────────────────────────────────────────────────
+# ── Prasadam Order ────────────────────────────────────────────────────────────
+
+# class PrasadamOrderItemCreate(BaseModel):
+#     item_id:  UUID
+#     quantity: int = 1
+
+# class PrasadamOrderCreate(BaseModel):
+#     items:              List[PrasadamOrderItemCreate]
+#     booking_id:         Optional[UUID]  = None
+#     delivery_address_id: Optional[UUID] = None
+#     pickup_date:        Optional[date]  = None
+
+# class PrasadamOrderItemResponse(BaseModel):
+#     id:         UUID
+#     item_id:    UUID
+#     quantity:   int
+#     unit_price: Optional[float]
+#     subtotal:   Optional[float]
+
+#     model_config = ConfigDict(from_attributes=True)
+
+# class PrasadamOrderResponse(BaseModel):
+#     id:                  UUID
+#     order_reference:     Optional[str]
+#     temple_id:           UUID
+#     user_id:             Optional[UUID]
+#     booking_id:          Optional[UUID]
+#     status:              str
+#     total_amount:        Optional[float]
+#     delivery_status:     Optional[str]
+#     pickup_date:         Optional[date]
+#     delivery_address_id: Optional[UUID]
+#     items:               List[PrasadamOrderItemResponse] = []
+#     created_at:          datetime
+
+#     model_config = ConfigDict(from_attributes=True)
+# class PrasadamItemResponse(BaseModel):
+#     id:           UUID
+#     temple_id:    Optional[UUID]  = None
+#     name:         Optional[str]   = None
+#     description:  Optional[str]   = None
+#     price:        Optional[float] = None
+#     weight_grams: Optional[int]   = None
+#     image_url:    Optional[str]   = None
+#     is_available: bool
+
+#     model_config = {"from_attributes": True}
+
+# class PrasadamItemCreate(BaseModel):
+#     name:         str
+#     description:  Optional[str] = None
+#     price:        float
+#     is_available: bool = True
+# class PrasadamOrderItemRequest(BaseModel):
+#     item_id:  UUID
+#     quantity: int = Field(default=1, ge=1)
+
+
+# class PrasadamOrderRequest(BaseModel):
+#     # BUG-3 FIX: min_length=1 prevents empty-items order reaching the service
+#     items:       List[PrasadamOrderItemRequest] = Field(..., min_length=1)
+#     pickup_date: Optional[date]                 = None
+
+
+# class PrasadamOrderItemResponse(BaseModel):
+#     id:         UUID
+#     item_id:    Optional[UUID]   = None
+#     quantity:   int
+#     unit_price: Optional[float]  = None   # BUG-7 FIX: was float (non-optional) but model is nullable
+#     subtotal:   Optional[float]  = None   # BUG-7 FIX: same
+
+#     model_config = {"from_attributes": True}
+
+
+# class PrasadamOrderResponse(BaseModel):
+#     id:              UUID
+#     temple_id:       Optional[UUID]                   = None
+#     order_reference: Optional[str]                    = None
+#     total_amount:    Optional[float]                  = None
+#     pickup_date:     Optional[date]                   = None
+#     status:          Optional[str]                    = None
+#     delivery_status: Optional[str]                    = None
+#     tracking_number: Optional[str]                    = None
+#     items:           List[PrasadamOrderItemResponse]  = []
+#     created_at:      Optional[datetime]               = None
+
+#     model_config = {"from_attributes": True}
+from pydantic import BaseModel, Field, ConfigDict
+from typing import List, Optional
+from uuid import UUID
+from datetime import date, datetime
+
+
+# ─────────────────────────────────────────────────────────────
+# PRASADAM ITEM (Admin creates items)
+# ─────────────────────────────────────────────────────────────
+
+class PrasadamItemCreate(BaseModel):
+    name: str
+    description: Optional[str] = None
+    price: float
+    is_available: bool = True
+
 
 class PrasadamItemResponse(BaseModel):
-    id:           UUID
-    temple_id:    Optional[UUID]  = None
-    name:         Optional[str]   = None
-    description:  Optional[str]   = None
-    price:        Optional[float] = None
-    weight_grams: Optional[int]   = None
-    image_url:    Optional[str]   = None
+    id: UUID
+    temple_id: Optional[UUID] = None
+    name: str
+    description: Optional[str] = None
+    price: float
+    weight_grams: Optional[int] = None
+    image_url: Optional[str] = None
     is_available: bool
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
+
+# ─────────────────────────────────────────────────────────────
+# PRASADAM ORDER (User places order)
+# ─────────────────────────────────────────────────────────────
 
 class PrasadamOrderItemRequest(BaseModel):
-    item_id:  UUID
+    item_id: UUID
     quantity: int = Field(default=1, ge=1)
 
 
 class PrasadamOrderRequest(BaseModel):
-    # BUG-3 FIX: min_length=1 prevents empty-items order reaching the service
-    items:       List[PrasadamOrderItemRequest] = Field(..., min_length=1)
-    pickup_date: Optional[date]                 = None
+    items: List[PrasadamOrderItemRequest] = Field(..., min_length=1)
+    pickup_date: Optional[date] = None
+    booking_id: Optional[UUID] = None
 
+
+
+# ─────────────────────────────────────────────────────────────
+# RESPONSE MODELS
+# ─────────────────────────────────────────────────────────────
 
 class PrasadamOrderItemResponse(BaseModel):
-    id:         UUID
-    item_id:    Optional[UUID]   = None
-    quantity:   int
-    unit_price: Optional[float]  = None   # BUG-7 FIX: was float (non-optional) but model is nullable
-    subtotal:   Optional[float]  = None   # BUG-7 FIX: same
+    id: UUID
+    item_id: UUID
+    quantity: int
+    unit_price: Optional[float] = None
+    subtotal: Optional[float] = None
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 class PrasadamOrderResponse(BaseModel):
-    id:              UUID
-    temple_id:       Optional[UUID]                   = None
-    order_reference: Optional[str]                    = None
-    total_amount:    Optional[float]                  = None
-    pickup_date:     Optional[date]                   = None
-    status:          Optional[str]                    = None
-    delivery_status: Optional[str]                    = None
-    tracking_number: Optional[str]                    = None
-    items:           List[PrasadamOrderItemResponse]  = []
-    created_at:      Optional[datetime]               = None
+    id: UUID
+    temple_id: Optional[UUID] = None
+    user_id: Optional[UUID] = None
+    order_reference: Optional[str] = None
+    total_amount: Optional[float] = None
+    pickup_date: Optional[date] = None
+    status: Optional[str] = None
+    items: List[PrasadamOrderItemResponse] = []
+    created_at: Optional[datetime] = None
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
