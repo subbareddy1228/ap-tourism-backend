@@ -7,7 +7,7 @@ Changes:
   - Added HotelAdminResponse  — typed response for admin hotel detail / review result
 """
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, field_validator, ConfigDict
 from typing import Optional, List
 from datetime import datetime
 from uuid import UUID
@@ -112,12 +112,69 @@ class DestinationUpdateSchema(BaseModel):
 
 
 # ── PACKAGE ───────────────────────────────────────────
+from pydantic import BaseModel, field_validator, ConfigDict
+
 class PackageCreateSchema(BaseModel):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "name": "Tirupati Spiritual Tour",
+                "slug": "tirupati-spiritual-tour",
+                "destination_id": "879094fc-603c-474b-ae57-3a9df73a2756",
+                "type": "PILGRIMAGE",
+                "duration_days": 3,
+                "duration_nights": 2,
+                "price": 8999.0,
+                "group_size": 10,
+                "is_featured": True,
+                "is_active": True,
+                "itinerary": [
+                    {
+                        "day": 1,
+                        "title": "Arrival & Temple Visit",
+                        "description": "Arrive at Tirupati and visit Tirumala",
+                        "meals": "Dinner",
+                        "accommodation": "Hotel Bliss"
+                    }
+                ],
+                "inclusions": ["Accommodation", "Breakfast", "AC Transport"],
+                "exclusions": ["Flight tickets", "Personal expenses"],
+                "pricing_rules": [
+                    {
+                        "label": "Small Group",
+                        "min_people": 1,
+                        "max_people": 10,
+                        "price_per_person": 8999.0
+                    }
+                ],
+                "departure_dates": ["2025-11-01", "2025-12-01"],
+                "images": [
+                    {
+                        "url": "https://example.com/tirupati.jpg",
+                        "caption": "Tirumala Temple",
+                        "is_hero": True
+                    }
+                ]
+            }
+        }
+    )
+
     name: str
-    duration_days: int
+    slug: str
+    destination_id: str
     type: str
+    duration_days: int
+    duration_nights: int = 0
     price: float
+    group_size: Optional[int] = None
     is_featured: Optional[bool] = False
+    is_active: Optional[bool] = True
+    itinerary: Optional[List[dict]] = []
+    inclusions: Optional[List[str]] = []
+    exclusions: Optional[List[str]] = []
+    pricing_rules: Optional[List[dict]] = None
+    departure_dates: Optional[List[str]] = []
+    images: Optional[List[dict]] = []
 
 
 class PackageUpdateSchema(BaseModel):

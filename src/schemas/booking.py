@@ -726,4 +726,58 @@ class AssignGuideRequest(BaseModel):
     guide_id: str
 
 class AssignVehicleRequest(BaseModel):
-    vehicle_id: str
+    vehicle_id: str 
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CORPORATE BOOKING SCHEMAS
+# ─────────────────────────────────────────────────────────────────────────────
+
+class CorporateContactSchema(BaseModel):
+    name:         str            = Field(..., min_length=2, max_length=100)
+    phone:        str            = Field(..., pattern=r"^\+?[0-9]{10,13}$")
+    email:        Optional[EmailStr] = None
+    company_name: str            = Field(..., min_length=2, max_length=200)
+    gst_number:   Optional[str]  = Field(None, pattern=r"^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$")
+
+
+class BookCorporateRequest(BaseModel):
+    """POST /bookings/corporate"""
+    package_id:      UUID
+    start_date:      date
+    end_date:        date
+    num_adults:      int              = Field(..., ge=10, description="Minimum 10 for corporate pricing")
+    num_children:    int              = Field(0,  ge=0)
+    coupon_code:     Optional[str]    = None
+    special_requests: Optional[str]  = None
+    contact_details: CorporateContactSchema
+    traveler_details: Optional[List[TravelerSchema]] = None
+    addons:          Optional[List[AddonSchema]]      = None
+
+
+class CorporateInvoiceResponse(BaseModel):
+    """Response for GET /bookings/corporate/{id}/invoice"""
+    invoice_number:   str
+    booking_number:   str
+    invoice_date:     Optional[date]
+    company_name:     str
+    gst_number:       Optional[str]
+    contact_name:     str
+    contact_phone:    str
+    contact_email:    Optional[str]
+    package_id:       UUID
+    start_date:       Optional[date]
+    end_date:         Optional[date]
+    num_adults:       int
+    num_children:     int
+    group_size:       int
+    per_head_price:   Decimal
+    subtotal:         Decimal
+    discount:         Decimal
+    bulk_discount:    Decimal          # extra slab discount
+    cgst:             Decimal
+    sgst:             Decimal
+    total_tax:        Decimal
+    convenience_fee:  Decimal
+    total_amount:     Decimal
+    travelers:        List[dict]       # name, age, id_proof
+    pdf_url:          Optional[str]    = None

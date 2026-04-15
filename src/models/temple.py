@@ -27,6 +27,7 @@ class Temple(Base):
     __tablename__ = "temples"
 
     id             = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    destination_id = Column(UUID(as_uuid=True), ForeignKey("destinations.id", ondelete="SET NULL"), nullable=True, index=True)
     name           = Column(String(255), nullable=False, index=True)
     description    = Column(Text, nullable=True)
     deity          = Column(String(100), nullable=False, index=True)
@@ -54,6 +55,7 @@ class Temple(Base):
     pooja_bookings   = relationship("PoojaBooking",     back_populates="temple", cascade="all, delete-orphan")
     prasadam_items   = relationship("PrasadamItem",     back_populates="temple", cascade="all, delete-orphan")
     prasadam_orders  = relationship("PrasadamOrder",    back_populates="temple", cascade="all, delete-orphan")
+    destination      = relationship("Destination", foreign_keys=[destination_id])
 
 
 # ─────────────────────────────────────────────
