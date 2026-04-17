@@ -30,8 +30,10 @@ from uuid import UUID
 
 from fastapi import UploadFile
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.models.temple import Temple
 from src.repositories.temple_repo import TempleRepository
 from src.schemas.temple import (
     TempleCreate,
@@ -204,6 +206,15 @@ class TempleService:
     async def create_temple(self, data: TempleCreate) -> TempleDetail:
         temple = await self.repo.create(data)
         await self._delete_cache("temples:featured", "temples:popular:10")
+        result = await self.db.execute(
+            select(Temple)
+            .options(
+                selectinload(Temple.events),
+                selectinload(Temple.reviews),
+            )
+            .where(Temple.id == temple.id)
+       )
+        temple = result.scalar_one()
         return TempleDetail.model_validate(temple)
 
     async def update_temple(self, temple_id: UUID, data: TempleUpdate) -> TempleDetail:
@@ -212,7 +223,16 @@ class TempleService:
             raise NotFoundException(f"Temple {temple_id} not found")
         await self._delete_cache(
             f"temple:{temple_id}:detail", "temples:featured", "temples:popular:10"
-        )
+       )
+        result = await self.db.execute(
+            select(Temple)
+            .options(
+                selectinload(Temple.events),
+                selectinload(Temple.reviews),
+           )
+           .where(Temple.id == temple_id)
+       )
+        temple = result.scalar_one()
         return TempleDetail.model_validate(temple)
 
     async def delete_temple(self, temple_id: str) -> dict:

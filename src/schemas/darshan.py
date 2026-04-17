@@ -157,7 +157,7 @@ class DarshanCheckAvailabilityResponse(BaseModel):
 # ── Pilgrim Detail ────────────────────────────────────────────────────────────
 
 class PilgrimDetail(BaseModel):
-    name:            str
+    full_name:       str
     age:             int           = Field(..., ge=1, le=120)
     id_proof_type:   Optional[str] = None
     id_proof_number: Optional[str] = None
