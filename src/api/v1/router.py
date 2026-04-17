@@ -29,6 +29,6 @@ router.include_router(search.router)
 router.include_router(notifications.router)
 router.include_router(support.router)
 router.include_router(tracking.router)
-router.include_router(maps.router)   # [MAPS] new
+router.include_router(maps.router)  
 router.include_router(admin.router)
 router.include_router(misc.router)
