@@ -200,11 +200,15 @@ class TempleService:
         return [TempleReviewResponse.model_validate(r) for r in reviews]
 
     # ── Admin — Temple CRUD ───────────────────────────────────────────────────
-
     async def create_temple(self, data: TempleCreate) -> TempleDetail:
         temple = await self.repo.create(data)
         await self._delete_cache("temples:featured", "temples:popular:10")
+        temple = await self.repo.get_by_id(temple.id)
         return TempleDetail.model_validate(temple)
+    # async def create_temple(self, data: TempleCreate) -> TempleDetail:
+    #     temple = await self.repo.create(data)
+    #     await self._delete_cache("temples:featured", "temples:popular:10")
+    #     return TempleDetail.model_validate(temple)
 
     async def update_temple(self, temple_id: UUID, data: TempleUpdate) -> TempleDetail:
         temple = await self.repo.update(temple_id, data)
