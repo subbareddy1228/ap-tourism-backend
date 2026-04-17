@@ -15,16 +15,17 @@ class ItineraryDay(BaseModel):
     day: int
     title: str
     description: Optional[str] = None
-    meals: Optional[str] = None
-    accommodation: Optional[str] = None
+    meals: Optional[str] = None           # e.g. "Breakfast, Dinner"
+    accommodation: Optional[str] = None   # e.g. "Hotel Araku"
 
 
+# This schema fixes your import error
 class ItineraryDayCreate(ItineraryDay):
     pass
 
 
 class PricingRule(BaseModel):
-    label: str
+    label: str                            # e.g. "Group of 5-10"
     min_people: int
     max_people: int
     price_per_person: float
@@ -53,6 +54,7 @@ class PackageBase(BaseModel):
 
     group_size: Optional[int] = None
 
+    # safer defaults
     itinerary: List[ItineraryDay] = Field(default_factory=list)
     inclusions: List[str] = Field(default_factory=list)
     exclusions: List[str] = Field(default_factory=list)
@@ -115,27 +117,21 @@ class PackageResponse(PackageBase):
 
     class Config:
         from_attributes = True
-
-
+        
 # ─────────────────────────────────────────
-# CALCULATE PRICE REQUEST
+# REQUEST SCHEMAS
 # ─────────────────────────────────────────
 
 class CalculatePriceRequest(BaseModel):
-    package_id: UUID = Field(..., example="00000000-0000-0000-0000-000000000001")
-    group_size: int = Field(default=1, ge=1, example=4)
-    travel_date: Optional[str] = Field(None, example="2025-12-25")
-
-
-# ─────────────────────────────────────────
-# CUSTOM PACKAGE REQUEST
-# ─────────────────────────────────────────
+    package_id: UUID
+    num_people: int = Field(..., ge=1, example=4)
+    departure_date: Optional[str] = None
 
 class CustomPackageRequest(BaseModel):
-    destination_ids: List[UUID] = Field(default_factory=list, example=["00000000-0000-0000-0000-000000000001"])
-    hotel_id: Optional[UUID] = Field(None, example="00000000-0000-0000-0000-000000000002")
-    vehicle_id: Optional[UUID] = Field(None, example="00000000-0000-0000-0000-000000000003")
-    guide_id: Optional[UUID] = Field(None, example="00000000-0000-0000-0000-000000000004")
-    num_days: int = Field(default=1, ge=1, example=3)
-    group_size: int = Field(default=1, ge=1, example=4)
-    travel_date: Optional[str] = Field(None, example="2025-12-25")
+    destination_id: UUID
+    duration_days: int = Field(..., ge=1, example=3)
+    num_people: int = Field(..., ge=1, example=2)
+    preferences: Optional[List[str]] = Field(default_factory=list)
+    budget_per_person: Optional[float] = None
+    departure_date: Optional[str] = None
+    special_requests: Optional[str] = None        
