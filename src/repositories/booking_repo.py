@@ -545,7 +545,7 @@ async def update_booking_status(
     Also sets confirmed_at / cancelled_at / completed_at timestamp automatically.
     Source: Booking flow — Update booking (status: CONFIRMED) after payment.
     """
-    now = datetime.now(timezone.utc)
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
     values: dict = {"status": status, "updated_at": now}
 
     if status == BookingStatus.CONFIRMED:
@@ -594,7 +594,7 @@ async def cancel_booking(
     Refund calculation done in service layer based on SOW policy:
     >48hrs = 100%, 24-48hrs = 50%, <24hrs = 0%.
     """
-    now = datetime.now(timezone.utc)
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
     await db.execute(
         update(Booking)
         .where(Booking.id == booking_id)
@@ -705,15 +705,14 @@ async def get_booking_with_transaction(
                 b.paid_amount,
                 b.payment_status,
                 t.id AS transaction_id,
-                t.gateway_order_id AS razorpay_order_id,
-                t.gateway_payment_id AS razorpay_payment_id,
+                t.razorpay_order_id,
+                t.razorpay_payment_id,
                 t.payment_method,
                 t.completed_at AS paid_at
             FROM bookings b
             LEFT JOIN transactions t
                 ON t.booking_id = b.id
                 AND t.status = 'success'
-                AND t.type = 'payment'
             WHERE b.id = :booking_id
             ORDER BY t.created_at DESC
             LIMIT 1
@@ -764,7 +763,7 @@ async def create_modify_request(
         text("""
             INSERT INTO audit_logs (id, user_id, action, entity_type, entity_id, new_data, created_at)
             VALUES (gen_random_uuid(), :user_id, 'modification_requested',
-                    'booking', :booking_id, :new_data::jsonb, NOW())
+                    'booking', :booking_id, CAST(:new_data AS jsonb), NOW())
         """),
         # [FIX-7] ERD audit_logs columns: user_id, action, entity_type, entity_id, new_data
         # was: performed_by (no such column), details (no such column)
