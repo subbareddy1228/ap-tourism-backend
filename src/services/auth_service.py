@@ -58,6 +58,10 @@ logger = logging.getLogger(__name__)
 
 async def _send_phone_otp(phone: str, otp: str) -> None:
     """Send OTP via SMS (Twilio / MSG91)."""
+
+    # ✅ ADD THIS LINE
+    logger.info(f"DEV OTP (PHONE): {otp} for phone={phone}")
+
     await send_sms(phone, otp)
     
 
@@ -316,6 +320,7 @@ async def resend_otp(phone: str, purpose: str) -> dict:
 
     await increment_resend_count(phone)
     otp = generate_otp()
+    logger.info(f"DEV OTP (RESEND): {otp} for phone={phone}")
     await store_otp(phone, otp, purpose=purpose)
     await _send_phone_otp(phone, otp)
 
