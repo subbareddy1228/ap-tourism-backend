@@ -105,6 +105,13 @@ def _calculate_refund(booking) -> tuple[Decimal, int]:
     pct   = 100 if hours > 48 else (50 if hours >= 24 else 0)
     return (booking.total_amount * Decimal(pct) / 100).quantize(Decimal("0.01")), pct
 
+def _to_naive_utc(dt: Optional[datetime]) -> Optional[datetime]:
+    """Strip timezone info for TIMESTAMP WITHOUT TIME ZONE columns."""
+    if dt is None:
+        return None
+    if dt.tzinfo is not None:
+        dt = dt.astimezone(timezone.utc).replace(tzinfo=None)
+    return dt
 
 async def _apply_coupon(coupon_code: Optional[str], subtotal: Decimal) -> Decimal:
     """Stub — returns 0 discount until M16 (Coupon APIs) is integrated."""
@@ -225,9 +232,9 @@ async def update_cart_item(redis, user_id: UUID, item_id: str, req: CartItemUpda
 
     for item in cart_data["items"]:
         if item["item_id"] == item_id:
-            if req.date:    item["date"]    = req.date.isoformat()
-            if req.guests:  item["guests"]  = req.guests
-            if req.options: item["options"] = req.options
+            if req.travel_date: item["date"]    = req.travel_date.isoformat()
+            if req.guests:      item["guests"]  = req.guests
+            if req.options:     item["options"] = req.options
             break
     else:
         raise NotFoundException("Cart item not found")
@@ -349,7 +356,7 @@ async def book_vehicle(db: AsyncSession, redis, user_id: UUID, req: BookVehicleR
             "vehicle_id": req.vehicle_id, "trip_type": req.trip_type,
             "pickup_address": req.pickup_address, "pickup_lat": req.pickup_lat, "pickup_lng": req.pickup_lng,
             "drop_address": req.drop_address, "drop_lat": req.drop_lat, "drop_lng": req.drop_lng,
-            "pickup_datetime": req.pickup_datetime, "return_datetime": req.return_datetime,
+            "pickup_datetime": _to_naive_utc(req.pickup_datetime), "return_datetime": _to_naive_utc(req.return_datetime),
             "estimated_km": _STUB["vehicle_est_km"], "rate_per_km": _STUB["vehicle_rate_km"],
             "total_charge": subtotal,
         })
@@ -562,7 +569,7 @@ async def book_combo(db: AsyncSession, redis, user_id: UUID, req: BookComboReque
                 "pickup_address": req.vehicle.pickup_address, "pickup_lat": req.vehicle.pickup_lat,
                 "pickup_lng": req.vehicle.pickup_lng, "drop_address": req.vehicle.drop_address,
                 "drop_lat": req.vehicle.drop_lat, "drop_lng": req.vehicle.drop_lng,
-                "pickup_datetime": req.vehicle.pickup_datetime, "return_datetime": req.vehicle.return_datetime,
+                "pickup_datetime": _to_naive_utc(req.vehicle.pickup_datetime), "return_datetime": _to_naive_utc(req.vehicle.return_datetime),
                 "rate_per_km": _STUB["vehicle_rate_km"], "total_charge": _STUB["combo_vehicle"],
             })
         if req.package:
