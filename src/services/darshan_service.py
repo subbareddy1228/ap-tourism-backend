@@ -43,7 +43,9 @@ need to change.
 
 from datetime import date
 from uuid import UUID
-
+from src.schemas.darshan import (PoojaSlotBulkGenerate, PrasadamItemCreate)
+from src.models.darshan import (DarshanBooking, PoojaBooking, PoojaSlot, PrasadamOrder, PrasadamOrderItem,PrasadamItem) 
+ 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.models.darshan import (
@@ -415,3 +417,54 @@ class DarshanService:
     async def get_my_prasadam_orders(self, temple_id: UUID, user_id: UUID):
         orders = await self.repo.get_prasadam_orders_by_user(temple_id, user_id)
         return [PrasadamOrderResponse.model_validate(o) for o in orders]
+
+
+        #pooja services#
+    async def bulk_generate_pooja_slots(
+        self, temple_id: UUID, service_id: UUID, req: PoojaSlotBulkGenerate
+        ):
+            from datetime import timedelta
+
+            service = await self.repo.get_pooja_service_by_id(temple_id, service_id)
+            if not service:
+                raise NotFoundException("Pooja service not found")
+
+            slots = []
+            current_date = req.from_date
+            while current_date <= req.to_date:
+                slot = PoojaSlot(
+                    temple_id        = temple_id,
+                    pooja_service_id = service_id,
+                    slot_date        = current_date,
+                    start_time       = req.start_time,
+                    end_time         = req.end_time,
+                    total_quota      = req.total_quota,
+                    booked_count     = 0,
+                    is_active        = True,
+                )
+                self.db.add(slot)
+                slots.append(slot)
+                current_date += timedelta(days=1)
+
+            await self.db.commit()   # ← OUTSIDE loop
+            return {                 # ← OUTSIDE loop
+            "generated_count": len(slots),
+            "message": f"{len(slots)} pooja slots generated successfully"
+            }
+
+
+
+    #prasadam#
+    async def create_prasadam_item(self, temple_id: UUID, req: PrasadamItemCreate):
+            item = PrasadamItem(
+                temple_id=temple_id,
+                name=req.name,
+                description=req.description,
+                price=req.price,
+                is_available=req.is_available
+            )
+
+            self.db.add(item)
+            await self.db.commit()
+            await self.db.refresh(item)
+            return PrasadamItemResponse.model_validate(item)

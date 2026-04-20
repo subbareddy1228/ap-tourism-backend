@@ -60,6 +60,7 @@ from src.schemas.darshan import (
     PrasadamOrderRequest,
 )
 from src.common.responses import APIResponse
+from src.schemas.darshan import (PoojaSlotBulkGenerate,PrasadamItemCreate)
 
 import logging
 
@@ -206,6 +207,37 @@ async def get_darshan_booking(
 ):
     data = await svc.get_darshan_booking(temple_id, booking_id)
     return APIResponse.success(message="Booking fetched", data=data)
+
+
+async def bulk_generate_pooja_slots(
+    temple_id:    UUID,
+    service_id:   UUID,
+    req:          PoojaSlotBulkGenerate,
+    current_user: User = Depends(get_current_user),
+    svc:          DarshanService = Depends(get_service),
+):
+    data = await svc.bulk_generate_pooja_slots(temple_id, service_id, req)
+    return APIResponse.success(
+        message="Pooja slots generated successfully",
+        data=data
+    )
+
+
+#prasadam#
+@router.post(
+    "/{temple_id}/prasadam",
+    status_code=status.HTTP_201_CREATED,
+    response_model=APIResponse,
+    summary="[Admin] Add a prasadam item to a temple",
+)
+async def create_prasadam_item(
+    temple_id: UUID,
+    req:       PrasadamItemCreate,
+    svc:       DarshanService = Depends(get_service),
+):
+    data = await svc.create_prasadam_item(temple_id, req)
+    return APIResponse.success(message="Prasadam item created", data=data)
+
 
 
 # ══════════════════════════════════════════════════════════════════════════════

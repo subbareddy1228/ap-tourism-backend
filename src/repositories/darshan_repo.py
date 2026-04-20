@@ -38,12 +38,12 @@ change.
 
 from datetime import date, timedelta
 from typing import List, Optional
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
 from sqlalchemy.orm import selectinload
-
+from src.schemas.darshan import PrasadamItemCreate 
 from src.models.darshan import (
     DarshanType, DarshanSlot, DarshanBooking,
     PoojaService, PoojaSlot, PoojaBooking,
@@ -201,6 +201,27 @@ class DarshanRepository:
             .values(booked_count=PoojaSlot.booked_count + num_persons)
         )
         await self.db.commit()
+
+    async def bulk_create_pooja_slots(self, slots: list[PoojaSlot]) -> list[PoojaSlot]:
+        for slot in slots:
+            self.db.add(slot)
+        await self.db.commit()
+        return slots
+
+
+    async def create_prasadam_item(self, temple_id: UUID, req: PrasadamItemCreate):
+        item = PrasadamItem(
+            id=uuid4(),
+            temple_id=temple_id,
+            name=req.name,
+            description=req.description,
+            price=req.price,
+            is_available=req.is_available,
+    )
+        self.db.add(item)
+        await self.db.commit()
+        await self.db.refresh(item)
+        return item
 
     async def create_pooja_booking(self, booking: PoojaBooking) -> PoojaBooking:
         self.db.add(booking)

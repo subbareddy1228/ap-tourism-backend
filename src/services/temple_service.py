@@ -206,15 +206,16 @@ class TempleService:
     async def create_temple(self, data: TempleCreate) -> TempleDetail:
         temple = await self.repo.create(data)
         await self._delete_cache("temples:featured", "temples:popular:10")
-        result = await self.db.execute(
-            select(Temple)
-            .options(
-                selectinload(Temple.events),
-                selectinload(Temple.reviews),
-            )
-            .where(Temple.id == temple.id)
-       )
-        temple = result.scalar_one()
+        temple = await self.repo.get_by_id(temple.id)
+    #     result = await self.db.execute(
+    #         select(Temple)
+    #         .options(
+    #             selectinload(Temple.events),
+    #             selectinload(Temple.reviews),
+    #         )
+    #         .where(Temple.id == temple.id)
+    #    )
+    #     temple = result.scalar_one()
         return TempleDetail.model_validate(temple)
 
     async def update_temple(self, temple_id: UUID, data: TempleUpdate) -> TempleDetail:
