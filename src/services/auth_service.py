@@ -383,7 +383,7 @@ async def verify_otp_and_login(data: VerifyOTPRequest, db: AsyncSession, device_
         await db.commit()
 
     # Delete temp Redis data
-        await delete_register_data(data.phone)
+    await delete_register_data(data.phone)
 
 
     result = await db.execute(select(User).where(User.phone == data.phone))
