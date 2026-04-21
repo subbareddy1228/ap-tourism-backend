@@ -66,6 +66,9 @@ from src.schemas.temple import (
     DarshanTypeUpdate,
     DarshanSlotBulkGenerate,
     DarshanSlotUpdate,
+    PoojaSlotCreate,
+    PoojaSlotBulkGenerate,
+    PoojaSlotUpdate,
 )
 from src.common.responses import APIResponse
 
@@ -612,6 +615,71 @@ async def update_pooja_service(
     try:
         result = await svc.update_pooja_service(str(temple_id), str(service_id), data)
         return APIResponse.success(message="Pooja service updated", data=result)
+    except Exception as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ADMIN — POOJA SLOTS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+@router.post(
+    "/{temple_id}/pooja-services/{service_id}/slots",
+    response_model=APIResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="[Admin] Add a single pooja slot for a service",
+)
+async def create_pooja_slot(
+    temple_id:    UUID,
+    service_id:   UUID,
+    data:         PoojaSlotCreate,
+    current_user: User         = Depends(get_admin_user),
+    svc:          TempleService = Depends(get_service),
+):
+    try:
+        result = await svc.create_pooja_slot(str(temple_id), str(service_id), data)
+        return APIResponse.success(message="Pooja slot created", data=result)
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+
+@router.post(
+    "/{temple_id}/pooja-services/{service_id}/slots/bulk-generate",
+    response_model=APIResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="[Admin] Bulk-generate pooja slots for a date range",
+)
+async def bulk_generate_pooja_slots(
+    temple_id:    UUID,
+    service_id:   UUID,
+    data:         PoojaSlotBulkGenerate,
+    current_user: User         = Depends(get_admin_user),
+    svc:          TempleService = Depends(get_service),
+):
+    try:
+        result = await svc.bulk_generate_pooja_slots(str(temple_id), str(service_id), data)
+        return APIResponse.success(message="Pooja slots generated", data=result)
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+
+@router.put(
+    "/{temple_id}/pooja-services/{service_id}/slots/{slot_id}",
+    response_model=APIResponse,
+    summary="[Admin] Update a pooja slot",
+)
+async def update_pooja_slot(
+    temple_id:    UUID,
+    service_id:   UUID,
+    slot_id:      UUID,
+    data:         PoojaSlotUpdate,
+    current_user: User         = Depends(get_admin_user),
+    svc:          TempleService = Depends(get_service),
+):
+    try:
+        result = await svc.update_pooja_slot(
+            str(temple_id), str(service_id), str(slot_id), data
+        )
+        return APIResponse.success(message="Pooja slot updated", data=result)
     except Exception as exc:
         raise HTTPException(status_code=404, detail=str(exc))
 

@@ -54,6 +54,10 @@ from src.schemas.temple import (
     DarshanSlotBulkGenerate,
     DarshanSlotUpdate,
     DarshanSlotResponse,
+    PoojaSlotCreate,
+    PoojaSlotBulkGenerate,
+    PoojaSlotUpdate,
+    PoojaSlotResponse,
 )
 from src.core.exceptions import NotFoundException
 
@@ -512,6 +516,115 @@ class TempleService:
         await self.db.commit()
         await self.db.refresh(slot)
         return DarshanSlotResponse.model_validate(slot)
+
+    # ── Admin — Pooja Slots ───────────────────────────────────────────────────
+
+    async def create_pooja_slot(
+        self, temple_id: str, service_id: str, data: PoojaSlotCreate
+    ) -> PoojaSlotResponse:
+        """Insert a single PoojaSlot for a given pooja service."""
+        from src.models.darshan import PoojaSlot, PoojaService
+
+        result = await self.db.execute(
+            select(PoojaService).where(
+                PoojaService.id        == service_id,
+                PoojaService.temple_id == temple_id,
+            )
+        )
+        if not result.scalar_one_or_none():
+            raise NotFoundException("Pooja service not found")
+
+        slot = PoojaSlot(
+            temple_id        = temple_id,
+            pooja_service_id = service_id,
+            slot_date        = data.slot_date,
+            start_time       = data.start_time,
+            end_time         = data.end_time,
+            total_quota      = data.total_quota,
+            booked_count     = 0,
+            is_active        = data.is_active,
+        )
+        self.db.add(slot)
+        await self.db.commit()
+        await self.db.refresh(slot)
+        return PoojaSlotResponse.model_validate(slot)
+
+    async def bulk_generate_pooja_slots(
+        self, temple_id: str, service_id: str, data: PoojaSlotBulkGenerate
+    ) -> dict:
+        """
+        Generate PoojaSlot rows for a date range.
+        Skips dates that already have a slot for the same service (idempotent).
+        Mirrors bulk_generate_darshan_slots() exactly.
+        """
+        from src.models.darshan import PoojaSlot, PoojaService
+
+        result = await self.db.execute(
+            select(PoojaService).where(
+                PoojaService.id        == service_id,
+                PoojaService.temple_id == temple_id,
+            )
+        )
+        if not result.scalar_one_or_none():
+            raise NotFoundException("Pooja service not found")
+
+        created, skipped = 0, 0
+        current = data.from_date
+        while current <= data.to_date:
+            existing = await self.db.execute(
+                select(PoojaSlot).where(
+                    PoojaSlot.temple_id        == temple_id,
+                    PoojaSlot.pooja_service_id == service_id,
+                    PoojaSlot.slot_date        == current,
+                )
+            )
+            if existing.scalar_one_or_none():
+                skipped += 1
+            else:
+                self.db.add(PoojaSlot(
+                    temple_id        = temple_id,
+                    pooja_service_id = service_id,
+                    slot_date        = current,
+                    start_time       = data.start_time,
+                    end_time         = data.end_time,
+                    total_quota      = data.total_quota,
+                    booked_count     = 0,
+                    is_active        = True,
+                ))
+                created += 1
+            current += timedelta(days=1)
+
+        await self.db.commit()
+        return {
+            "created":   created,
+            "skipped":   skipped,
+            "from_date": str(data.from_date),
+            "to_date":   str(data.to_date),
+        }
+
+    async def update_pooja_slot(
+        self, temple_id: str, service_id: str, slot_id: str, data: PoojaSlotUpdate
+    ) -> PoojaSlotResponse:
+        """Partial update of a PoojaSlot (quota, times, active flag)."""
+        from src.models.darshan import PoojaSlot
+
+        result = await self.db.execute(
+            select(PoojaSlot).where(
+                PoojaSlot.id               == slot_id,
+                PoojaSlot.temple_id        == temple_id,
+                PoojaSlot.pooja_service_id == service_id,
+            )
+        )
+        slot = result.scalar_one_or_none()
+        if not slot:
+            raise NotFoundException("Pooja slot not found")
+
+        for field, value in data.model_dump(exclude_none=True).items():
+            setattr(slot, field, value)
+        await self.db.commit()
+        await self.db.refresh(slot)
+        return PoojaSlotResponse.model_validate(slot)
+
 
     # ── Admin — Events ────────────────────────────────────────────────────────
 
