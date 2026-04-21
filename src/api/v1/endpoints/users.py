@@ -435,3 +435,72 @@ async def update_fcm_token(
     """
     result = await user_service.update_fcm_token(data.fcm_token, current_user, db)
     return APIResponse.success(message=result["message"])
+
+# ══════════════════ PHONE VERIFICATION ══════════════════
+
+@router.post(
+    "/me/verify-phone/send",
+    response_model=APIResponse,
+    summary="Send phone verification OTP"
+)
+async def send_phone_verification(
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Send OTP to verify phone number.
+    Call this first, then submit OTP to /me/verify-phone/confirm
+    """
+    result = await user_service.send_phone_verification_otp(current_user)
+    return APIResponse.success(message=result["message"], data=result)
+
+
+@router.post(
+    "/me/verify-phone/confirm",
+    response_model=APIResponse,
+    summary="Confirm phone verification OTP"
+)
+async def confirm_phone_verification(
+    data: VerifyPhoneRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Submit OTP to verify phone number.
+    """
+    result = await user_service.verify_phone_otp(data, current_user, db)
+    return APIResponse.success(message=result["message"])
+
+
+# ══════════════════ EMAIL VERIFICATION ══════════════════
+
+@router.post(
+    "/me/verify-email/send",
+    response_model=APIResponse,
+    summary="Send email verification OTP"
+)
+async def send_email_verification(
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Send OTP to verify email address.
+    Call this first, then submit OTP to /me/verify-email/confirm
+    """
+    result = await user_service.send_email_verification(current_user, None)
+    return APIResponse.success(message=result["message"], data=result)
+
+
+@router.post(
+    "/me/verify-email/confirm",
+    response_model=APIResponse,
+    summary="Confirm email verification OTP"
+)
+async def confirm_email_verification(
+    data: VerifyPhoneRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Submit OTP to verify email address.
+    """
+    result = await user_service.verify_phone_otp(data, current_user, db)
+    return APIResponse.success(message=result["message"])
