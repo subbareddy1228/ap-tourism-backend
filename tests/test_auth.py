@@ -52,7 +52,7 @@ class TestRegister:
                 )
 
         assert response.status_code == 201
-        assert response.json()["status"] == "success"
+        assert response.json()["success"] == True
 
     async def test_register_invalid_phone(self):
         async with AsyncClient(transport=transport, base_url="http://test") as client:
@@ -206,7 +206,7 @@ class TestLogin:
                 )
 
         assert response.status_code == 200
-        assert response.json()["status"] == "success"
+        assert response.json()["success"] == True
 
     async def test_login_wrong_password(self, mock_redis):
         async with AsyncClient(transport=transport, base_url="http://test") as client:

@@ -105,7 +105,7 @@ class TestGetProfile:
                     headers={"Authorization": USER_TOKEN},
                 )
         if response.status_code == 200:
-            assert response.json()["status"] == "success"
+            assert response.json()["success"] == True
 
 
 class TestUpdateProfile:
