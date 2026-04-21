@@ -43,7 +43,7 @@ from src.core.redis import (
     increment_email_resend_count, get_email_resend_count,
 )
 from src.common.utils import generate_otp
-from src.common.enums import LanguageEnum, UserStatus
+from src.common.enums import LanguageEnum, UserStatus, UserRole
 from src.core.config import settings
 from src.integrations.msg91 import send_sms
 from src.integrations.email import send_email_otp
@@ -365,7 +365,7 @@ async def verify_otp_and_login(data: VerifyOTPRequest, db: AsyncSession, device_
             password_hash=reg_data["password_hash"],
             is_phone_verified=True,
             is_email_verified=False,
-            role="TRAVELER",
+            role=UserRole.TRAVELER,
             status=UserStatus.ACTIVE,
         )
 
