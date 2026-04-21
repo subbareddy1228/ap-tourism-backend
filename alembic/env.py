@@ -35,7 +35,7 @@ from src.models.review import Review
 from src.models.notification import Notification
 from src.models.support import SupportTicket, TicketMessage
 from src.models.tracking import TrackingEvent
-
+from src.models.audit import AuditLog   
 # ── Alembic Config ────────────────────────────────────────────
 config = context.config
 

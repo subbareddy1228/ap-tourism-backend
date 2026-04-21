@@ -22,7 +22,7 @@ from sqlalchemy import select, or_
 from src.common.email_templates import otp_email_template
 from src.models import user
 from src.models.user import User
-from src.models.user_profile import UserProfile
+from src.models.user_profile import UserProfile, UserSession
 from src.schemas.auth import (
     RegisterRequest, VerifyOTPRequest, LoginRequest,
     OTPLoginRequest, ResetPasswordRequest, ChangePasswordRequest,
@@ -43,7 +43,7 @@ from src.core.redis import (
     increment_email_resend_count, get_email_resend_count,
 )
 from src.common.utils import generate_otp
-from src.common.enums import LanguageEnum, UserStatus
+from src.common.enums import LanguageEnum, UserStatus, UserRole
 from src.core.config import settings
 from src.integrations.msg91 import send_sms
 from src.integrations.email import send_email_otp
@@ -100,7 +100,18 @@ async def _send_email_otp_helper(email: str, otp: str, purpose: str = "verify_em
     except Exception as e:
         logger.error("Email OTP send failed email=%s error=%s", email, str(e))
 
-
+async def _create_session(user: User, db: AsyncSession, device_id: str = "default") -> None:
+    """Create a UserSession record on every login."""
+    session = UserSession(
+        user_id=user.id,
+        jti=device_id,
+        device_info=device_id,
+        is_active=True,
+        last_active=datetime.utcnow(),
+    )
+    db.add(session)
+    await db.commit()
+    
 def _user_dict(user: User) -> dict:
     return {
         "id":                str(user.id),
@@ -365,7 +376,7 @@ async def verify_otp_and_login(data: VerifyOTPRequest, db: AsyncSession, device_
             password_hash=reg_data["password_hash"],
             is_phone_verified=True,
             is_email_verified=False,
-            role="TRAVELER",
+            role=UserRole.TRAVELER,
             status=UserStatus.ACTIVE,
         )
 
@@ -383,7 +394,7 @@ async def verify_otp_and_login(data: VerifyOTPRequest, db: AsyncSession, device_
         await db.commit()
 
     # Delete temp Redis data
-        await delete_register_data(data.phone)
+    await delete_register_data(data.phone)
 
 
     result = await db.execute(select(User).where(User.phone == data.phone))
@@ -400,7 +411,9 @@ async def verify_otp_and_login(data: VerifyOTPRequest, db: AsyncSession, device_
 
     access_token  = create_access_token(str(user.id), user.role.value)
     refresh_token = create_refresh_token(str(user.id), user.role.value)
-    await store_refresh_jti(str(user.id), device_id, decode_token(refresh_token)["jti"])
+    jti = decode_token(refresh_token)["jti"]
+    await store_refresh_jti(str(user.id), device_id, jti)
+    await _create_session(user, db, device_id=jti)
 
     return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer", "user": _user_dict(user)}
 
@@ -425,7 +438,9 @@ async def login_with_password(data: LoginRequest, db: AsyncSession) -> dict:
 
     access_token  = create_access_token(str(user.id), user.role.value)
     refresh_token = create_refresh_token(str(user.id), user.role.value)
-    await store_refresh_jti(str(user.id), data.device_id or "default", decode_token(refresh_token)["jti"])
+    jti = decode_token(refresh_token)["jti"]
+    await store_refresh_jti(str(user.id), data.device_id or "default", jti)
+    await _create_session(user, db, device_id=jti)
 
     logger.info("Login success user_id=%s", user.id)
     return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer", "user": _user_dict(user)}
@@ -462,10 +477,11 @@ async def login_with_otp(data: OTPLoginRequest, db: AsyncSession) -> dict:
 
     access_token  = create_access_token(str(user.id), user.role.value)
     refresh_token = create_refresh_token(str(user.id), user.role.value)
-    await store_refresh_jti(str(user.id), data.device_id or "default", decode_token(refresh_token)["jti"])
+    jti = decode_token(refresh_token)["jti"]
+    await store_refresh_jti(str(user.id), data.device_id or "default", jti)
+    await _create_session(user, db, device_id=jti)
 
     return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer", "user": _user_dict(user)}
-
 
 # ═══════════════════════════════════════════════════════════════
 # 9. FORGOT / RESET PASSWORD

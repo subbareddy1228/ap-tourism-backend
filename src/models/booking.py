@@ -48,9 +48,9 @@ class Booking(Base):
         index=True,
     )
 
-    booking_type   = Column(Enum(BookingType),   nullable=False)
-    status         = Column(Enum(BookingStatus),  default=BookingStatus.PENDING,  nullable=False)
-    payment_status = Column(Enum(PaymentStatus),  default=PaymentStatus.PENDING,  nullable=False)
+    booking_type   = Column(Enum(BookingType, values_callable=lambda x: [e.value for e in x]),   nullable=False)
+    status         = Column(Enum(BookingStatus, values_callable=lambda x: [e.value for e in x]),  default=BookingStatus.PENDING,  nullable=False)
+    payment_status = Column(Enum(PaymentStatus, values_callable=lambda x: [e.value for e in x]),  default=PaymentStatus.PENDING,  nullable=False)
     total_amount   = Column(Numeric(10, 2),       nullable=False)
 
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)

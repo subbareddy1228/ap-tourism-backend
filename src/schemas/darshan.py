@@ -157,7 +157,7 @@ class DarshanCheckAvailabilityResponse(BaseModel):
 # ── Pilgrim Detail ────────────────────────────────────────────────────────────
 
 class PilgrimDetail(BaseModel):
-    name:            str
+    full_name:       str
     age:             int           = Field(..., ge=1, le=120)
     id_proof_type:   Optional[str] = None
     id_proof_number: Optional[str] = None
@@ -230,6 +230,33 @@ class PoojaServiceResponse(BaseModel):
 
 
 # ── Pooja Slot ────────────────────────────────────────────────────────────────
+
+
+class PoojaSlotCreate(BaseModel):
+    temple_id:        UUID
+    pooja_service_id: UUID
+    slot_date:        date
+    start_time:       time
+    end_time:         time
+    total_quota:      int  = Field(..., ge=1)
+    is_active:        bool = True
+
+
+class PoojaSlotBulkGenerate(BaseModel):
+    pooja_service_id: UUID
+    from_date:        date
+    to_date:          date
+    start_time:       time
+    end_time:         time
+    total_quota:      int  = Field(..., ge=1)
+
+
+class PoojaSlotUpdate(BaseModel):
+    slot_date:    Optional[date] = None
+    start_time:   Optional[time] = None
+    end_time:     Optional[time] = None
+    total_quota:  Optional[int]  = None
+    is_active:    Optional[bool] = None
 
 class PoojaSlotResponse(BaseModel):
     id:               UUID
@@ -330,3 +357,20 @@ class PrasadamOrderResponse(BaseModel):
     created_at:      Optional[datetime]               = None
 
     model_config = {"from_attributes": True}
+
+class PrasadamItemCreate(BaseModel):
+    name:         str
+    description:  Optional[str]  = None
+    price:        float          = Field(..., ge=0)
+    weight_grams: Optional[int]  = None
+    image_url:    Optional[str]  = None
+    is_available: bool           = True
+
+
+class PrasadamItemUpdate(BaseModel):
+    name:         Optional[str]   = None
+    description:  Optional[str]   = None
+    price:        Optional[float] = Field(default=None, ge=0)
+    weight_grams: Optional[int]   = None
+    image_url:    Optional[str]   = None
+    is_available: Optional[bool]  = None

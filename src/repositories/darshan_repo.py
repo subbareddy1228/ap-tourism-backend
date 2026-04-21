@@ -1,49 +1,11 @@
-"""
-repositories/darshan_repo.py  —  Darshan / Pooja / Prasadam data access layer
-
-Bugs fixed vs project file:
-──────────────────────────────────────────────────────────────────────────────
-  BUG-1  get_prasadam_orders_by_user() filtered on PrasadamOrder.user_id but
-         PrasadamOrder had no user_id column in the original model — this
-         caused AttributeError at runtime on every "my orders" request.
-         Now safe because models/darshan.py (fixed) adds the column.
-
-  BUG-2  create_prasadam_order() issued db.commit() then re-fetched the order
-         with selectinload — but it never called db.refresh(order) before the
-         re-fetch, meaning stale ORM state could be returned if the session
-         cache was warm.  Replaced with a clean re-fetch after commit (same
-         pattern, just ensured the path is correct).
-
-  BUG-3  increment_slot_booking() and increment_pooja_slot_booking() fetched
-         the slot, mutated booked_count, then called db.commit() — but if the
-         slot was already loaded in the same session (e.g. from get_slot_by_id
-         in book_darshan), the in-session object was mutated twice.  Made the
-         increment atomic using a SQLAlchemy update() statement to avoid race
-         conditions.
-
-  BUG-4  get_darshan_booking() looked up by (temple_id, booking_id) but the
-         parameter is darshan_booking.id, not bookings.id.  This was already
-         correct in the original code but would silently return None if
-         booking_id was passed as the master booking FK.  Added a comment to
-         clarify intent.
-
-  BUG-5  All repo methods fetched a fresh get_redis() on every call even
-         though the repo is constructed fresh per-request.  No change needed
-         here — Redis is passed into DarshanService and the repo doesn't use
-         it directly.  Noted for clarity.
-
-All function signatures are identical to the original — no callers need to
-change.
-"""
-
 from datetime import date, timedelta
 from typing import List, Optional
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
 from sqlalchemy.orm import selectinload
-
+from src.schemas.darshan import PrasadamItemCreate 
 from src.models.darshan import (
     DarshanType, DarshanSlot, DarshanBooking,
     PoojaService, PoojaSlot, PoojaBooking,
@@ -201,6 +163,27 @@ class DarshanRepository:
             .values(booked_count=PoojaSlot.booked_count + num_persons)
         )
         await self.db.commit()
+
+    async def bulk_create_pooja_slots(self, slots: list[PoojaSlot]) -> list[PoojaSlot]:
+        for slot in slots:
+            self.db.add(slot)
+        await self.db.commit()
+        return slots
+
+
+    async def create_prasadam_item(self, temple_id: UUID, req: PrasadamItemCreate):
+        item = PrasadamItem(
+            id=uuid4(),
+            temple_id=temple_id,
+            name=req.name,
+            description=req.description,
+            price=req.price,
+            is_available=req.is_available,
+    )
+        self.db.add(item)
+        await self.db.commit()
+        await self.db.refresh(item)
+        return item
 
     async def create_pooja_booking(self, booking: PoojaBooking) -> PoojaBooking:
         self.db.add(booking)

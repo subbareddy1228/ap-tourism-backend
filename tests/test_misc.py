@@ -46,7 +46,7 @@ class TestVersion:
     def test_version_success_status(self):
         response = client.get("/api/v1/version")
         if response.status_code == 200:
-            assert response.json()["status"] == "success"
+            assert response.json()["success"] == True
 
 
 # ─── Config ───────────────────────────────────────────────────────────────────
@@ -106,7 +106,7 @@ class TestBanners:
     def test_banners_success_status(self):
         response = client.get("/api/v1/banners")
         if response.status_code == 200:
-            assert response.json()["status"] == "success"
+            assert response.json()["success"] == True
 
 
 # ─── Homepage ─────────────────────────────────────────────────────────────────

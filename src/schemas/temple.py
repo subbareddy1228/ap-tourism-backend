@@ -307,3 +307,48 @@ class PoojaServiceResponse(BaseModel):
     is_active:        bool
 
     model_config = {"from_attributes": True}
+
+
+# ── Pooja Slot ────────────────────────────────────────────────────────────────
+
+class PoojaSlotCreate(BaseModel):
+    """POST /temples/{id}/pooja-services/{service_id}/slots — Admin: add a single slot."""
+    slot_date:   date
+    start_time:  time
+    end_time:    time
+    total_quota: int  = Field(..., ge=1)
+    is_active:   bool = True
+
+
+class PoojaSlotBulkGenerate(BaseModel):
+    """POST /temples/{id}/pooja-services/{service_id}/slots/bulk-generate — Admin."""
+    from_date:   date
+    to_date:     date
+    start_time:  time
+    end_time:    time
+    total_quota: int  = Field(..., ge=1)
+
+
+class PoojaSlotUpdate(BaseModel):
+    """PUT /temples/{id}/pooja-services/{service_id}/slots/{slot_id} — Admin: partial update."""
+    slot_date:   Optional[date] = None
+    start_time:  Optional[time] = None
+    end_time:    Optional[time] = None
+    total_quota: Optional[int]  = None
+    is_active:   Optional[bool] = None
+
+
+class PoojaSlotResponse(BaseModel):
+    id:               UUID
+    temple_id:        Optional[UUID] = None
+    pooja_service_id: UUID
+    slot_date:        date
+    start_time:       time
+    end_time:         time
+    total_quota:      int
+    booked_count:     int
+    available_count:  int
+    is_full:          bool
+    is_active:        bool
+
+    model_config = {"from_attributes": True}

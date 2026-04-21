@@ -68,10 +68,10 @@ def register_exception_handlers(app: FastAPI) -> None:
 
     # ── 422 Pydantic Validation Error ────────────────────────
     @app.exception_handler(RequestValidationError)
-    async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    async def validation_exception_handler(request: Request, exc: RequestValidationError): 
         errors = []
         for error in exc.errors():
-            field = " → ".join(str(loc) for loc in error["loc"])
+            field = " -> ".join(str(loc) for loc in error["loc"])
             errors.append({"field": field, "message": error["msg"]})
         logger.warning(
             "Validation error url=%s errors=%s",
