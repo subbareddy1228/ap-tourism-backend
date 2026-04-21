@@ -33,6 +33,7 @@ class UserProfile(Base):
     gender         = Column(String(20), nullable=True)   # male | female | other
     language       = Column(String(10), default="en", nullable=False)
     avatar_url     = Column(Text, nullable=True)         # S3 URL
+    fcm_token      = Column(Text, nullable=True)         # Firebase push token
 
     # ── KYC ───────────────────────────────────────
     kyc_status     = Column(String(20), default="pending", nullable=False)  # pending | verified | rejected

@@ -490,19 +490,16 @@ async def send_email_verification(current_user: User, db: AsyncSession) -> dict:
         return {"message": "Verification email sent", "expires_in": settings.OTP_EXPIRE_SECONDS}
 
 
-async def update_fcm_token(db, user_id: str, fcm_token: str):
+async def update_fcm_token(fcm_token: str, current_user: User, db: AsyncSession) -> dict:
     """
     Update user's FCM device token.
+    Stored in user_profiles table.
     """
-
-    # Example logic
-    profile = await db.get_user_profile(user_id)
-
-    if not profile:
-        raise ValueError("User profile not found")
+    profile = await get_or_create_profile(str(current_user.id), db)
 
     profile.fcm_token = fcm_token
+    profile.updated_at = datetime.utcnow()
 
-    await db.save(profile)
+    await db.commit()
 
-    return {"message": "FCM token updated"}
+    return {"message": "FCM token updated successfully"}
