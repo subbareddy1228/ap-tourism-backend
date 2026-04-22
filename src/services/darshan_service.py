@@ -419,38 +419,38 @@ class DarshanService:
         return [PrasadamOrderResponse.model_validate(o) for o in orders]
 
 
-        #pooja services#
-    async def bulk_generate_pooja_slots(
-        self, temple_id: UUID, service_id: UUID, req: PoojaSlotBulkGenerate
-        ):
-            from datetime import timedelta
+    #     #pooja services#
+    # async def bulk_generate_pooja_slots(
+    #     self, temple_id: UUID, service_id: UUID, req: PoojaSlotBulkGenerate
+    #     ):
+    #         from datetime import timedelta
 
-            service = await self.repo.get_pooja_service_by_id(temple_id, service_id)
-            if not service:
-                raise NotFoundException("Pooja service not found")
+    #         service = await self.repo.get_pooja_service_by_id(temple_id, service_id)
+    #         if not service:
+    #             raise NotFoundException("Pooja service not found")
 
-            slots = []
-            current_date = req.from_date
-            while current_date <= req.to_date:
-                slot = PoojaSlot(
-                    temple_id        = temple_id,
-                    pooja_service_id = service_id,
-                    slot_date        = current_date,
-                    start_time       = req.start_time,
-                    end_time         = req.end_time,
-                    total_quota      = req.total_quota,
-                    booked_count     = 0,
-                    is_active        = True,
-                )
-                self.db.add(slot)
-                slots.append(slot)
-                current_date += timedelta(days=1)
+    #         slots = []
+    #         current_date = req.from_date
+    #         while current_date <= req.to_date:
+    #             slot = PoojaSlot(
+    #                 temple_id        = temple_id,
+    #                 pooja_service_id = service_id,
+    #                 slot_date        = current_date,
+    #                 start_time       = req.start_time,
+    #                 end_time         = req.end_time,
+    #                 total_quota      = req.total_quota,
+    #                 booked_count     = 0,
+    #                 is_active        = True,
+    #             )
+    #             self.db.add(slot)
+    #             slots.append(slot)
+    #             current_date += timedelta(days=1)
 
-            await self.db.commit()   # ← OUTSIDE loop
-            return {                 # ← OUTSIDE loop
-            "generated_count": len(slots),
-            "message": f"{len(slots)} pooja slots generated successfully"
-            }
+    #         await self.db.commit()   # ← OUTSIDE loop
+    #         return {                 # ← OUTSIDE loop
+    #         "generated_count": len(slots),
+    #         "message": f"{len(slots)} pooja slots generated successfully"
+    #         }
 
 
 

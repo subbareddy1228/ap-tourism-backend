@@ -209,18 +209,18 @@ async def get_darshan_booking(
     return APIResponse.success(message="Booking fetched", data=data)
 
 
-async def bulk_generate_pooja_slots(
-    temple_id:    UUID,
-    service_id:   UUID,
-    req:          PoojaSlotBulkGenerate,
-    current_user: User = Depends(get_current_user),
-    svc:          DarshanService = Depends(get_service),
-):
-    data = await svc.bulk_generate_pooja_slots(temple_id, service_id, req)
-    return APIResponse.success(
-        message="Pooja slots generated successfully",
-        data=data
-    )
+# async def bulk_generate_pooja_slots(
+#     temple_id:    UUID,
+#     service_id:   UUID,
+#     req:          PoojaSlotBulkGenerate,
+#     current_user: User = Depends(get_current_user),
+#     svc:          DarshanService = Depends(get_service),
+# ):
+#     data = await svc.bulk_generate_pooja_slots(temple_id, service_id, req)
+#     return APIResponse.success(
+#         message="Pooja slots generated successfully",
+#         data=data
+#     )
 
 
 #prasadam#

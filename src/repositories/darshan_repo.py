@@ -164,11 +164,11 @@ class DarshanRepository:
         )
         await self.db.commit()
 
-    async def bulk_create_pooja_slots(self, slots: list[PoojaSlot]) -> list[PoojaSlot]:
-        for slot in slots:
-            self.db.add(slot)
-        await self.db.commit()
-        return slots
+    # async def bulk_create_pooja_slots(self, slots: list[PoojaSlot]) -> list[PoojaSlot]:
+    #     for slot in slots:
+    #         self.db.add(slot)
+    #     await self.db.commit()
+    #     return slots
 
 
     async def create_prasadam_item(self, temple_id: UUID, req: PrasadamItemCreate):
