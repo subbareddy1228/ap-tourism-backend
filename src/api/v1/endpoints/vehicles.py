@@ -45,7 +45,7 @@ from src.schemas.vehicle import (
     VehicleAssignDriver, DriverCreate, DriverUpdate, DriverStatusUpdate,
     FareCalculationRequest, AvailabilityRequest,
     VehicleResponse, VehicleDetailResponse,
-    DriverResponse,
+    DriverResponse, VehicleDocumentResponse,
     FareCalculationResponse, VehicleTypeInfo,
 )
 from src.common.responses import APIResponse
@@ -344,4 +344,5 @@ async def upload_vehicle_document(
         partner_id=current_user.id, vehicle_id=vehicle_id,
         file=file, document_type=document_type, expiry_date=expiry_date,
     )
-    return APIResponse.success(message="Document uploaded successfully", data=doc)
+    doc_data = VehicleDocumentResponse.model_validate(doc).model_dump()
+    return APIResponse.success(message="Document uploaded successfully", data=doc_data)
