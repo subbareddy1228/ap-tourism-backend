@@ -1,44 +1,5 @@
 """
-services/darshan_service.py  —  Darshan / Pooja / Prasadam business logic
-
-Bugs fixed vs project file:
-──────────────────────────────────────────────────────────────────────────────
-  BUG-1  get_redis() in endpoint used the synchronous `redis` library
-         (import redis as redis_lib; redis_lib.from_url(...))  instead of the
-         project-wide async redis client from core/redis.py.  Calling sync
-         .ping() inside an async function blocks the event loop.  The service
-         is now constructed via the proper async helper in the endpoint.
-         (Fixed in endpoints/darshan.py; no change needed here — service
-         receives whatever client is passed in.)
-
-  BUG-2  book_darshan(): After Redis lock + DB re-read, the service called
-         slot.booked_count += num_persons then await self.db.commit() — a
-         plain in-Python mutation of a loaded ORM object.  If the same slot
-         object was already in the session from the lock-path get_slot_by_id()
-         call, this double-mutated the count.  Delegated to the atomic
-         repo.increment_slot_booking() (UPDATE statement) instead.
-
-  BUG-3  order_prasadam(): The service set order.items = order_items before
-         calling repo.create_prasadam_order(order).  PrasadamOrderItem objects
-         in order_items were never db.add()'d to the session, so the cascade
-         never fired and items were silently dropped from the insert.
-         Fixed: add each PrasadamOrderItem explicitly to the session before
-         commit, and link them via order_id after the order is created.
-
-  BUG-4  book_darshan(): The service set booking_id=None (commented out
-         because the temple-side path has no master Booking).  This is now
-         documented clearly and the model's nullable=True handles it.
-
-  BUG-5  book_pooja(): Same double-commit issue — service mutated
-         slot.booked_count in Python, but this was also done by
-         repo.increment_pooja_slot_booking(). Removed the in-Python mutation;
-         repo now owns the increment atomically.
-
-  BUG-6  get_my_prasadam_orders() passed user_id correctly to repo — was
-         already correct in original; no change.
-
-All method signatures are identical to the original — no endpoint callers
-need to change.
+services/darshan_service.py  
 """
 
 from datetime import date
@@ -163,20 +124,6 @@ class DarshanService:
     async def book_darshan(
         self, temple_id: UUID, user_id: UUID, req: DarshanBookRequest
     ):
-        """
-        Temple-side darshan booking flow.
-
-        STEP 1  — Acquire Redis distributed lock BEFORE any DB read so two
-                  concurrent users cannot both see "available" and both book.
-        STEP 2  — Fresh DB read AFTER acquiring the lock.
-        STEP 3  — Create PENDING DarshanBooking (booking_id=None because this
-                  path has no master Booking; see model nullable=True fix).
-        STEP 4  — Atomically increment slot.booked_count via UPDATE statement.
-        STEP 5  — Bust slot cache; leave lock alive for 15 min.
-
-        The booking_service.book_darshan() path (full flow with Razorpay) is
-        separate and creates a master Booking first, then sets booking_id.
-        """
         lock_key = f"slot_lock:{req.slot_id}"
 
         # STEP 1 — acquire lock
@@ -417,40 +364,6 @@ class DarshanService:
     async def get_my_prasadam_orders(self, temple_id: UUID, user_id: UUID):
         orders = await self.repo.get_prasadam_orders_by_user(temple_id, user_id)
         return [PrasadamOrderResponse.model_validate(o) for o in orders]
-
-
-    #     #pooja services#
-    # async def bulk_generate_pooja_slots(
-    #     self, temple_id: UUID, service_id: UUID, req: PoojaSlotBulkGenerate
-    #     ):
-    #         from datetime import timedelta
-
-    #         service = await self.repo.get_pooja_service_by_id(temple_id, service_id)
-    #         if not service:
-    #             raise NotFoundException("Pooja service not found")
-
-    #         slots = []
-    #         current_date = req.from_date
-    #         while current_date <= req.to_date:
-    #             slot = PoojaSlot(
-    #                 temple_id        = temple_id,
-    #                 pooja_service_id = service_id,
-    #                 slot_date        = current_date,
-    #                 start_time       = req.start_time,
-    #                 end_time         = req.end_time,
-    #                 total_quota      = req.total_quota,
-    #                 booked_count     = 0,
-    #                 is_active        = True,
-    #             )
-    #             self.db.add(slot)
-    #             slots.append(slot)
-    #             current_date += timedelta(days=1)
-
-    #         await self.db.commit()   # ← OUTSIDE loop
-    #         return {                 # ← OUTSIDE loop
-    #         "generated_count": len(slots),
-    #         "message": f"{len(slots)} pooja slots generated successfully"
-    #         }
 
 
 

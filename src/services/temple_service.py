@@ -1,26 +1,5 @@
 """
-services/temple_service.py  —  Temple Module Business Logic
-
-Changes vs original:
-  - create_darshan_type(): DarshanType was used but never imported inside the
-    method — crashed with NameError on every call. Fixed with local import.
-  - create_darshan_type(): now accepts typed DarshanTypeCreate schema instead
-    of raw dict, matching the updated endpoint signature.
-  - update_darshan_type(): now accepts typed DarshanTypeUpdate schema instead
-    of raw dict so only valid fields can be updated and OpenAPI docs are correct.
-  - update_darshan_slot(): now accepts typed DarshanSlotUpdate schema instead
-    of raw dict.
-  - update_event(): signature changed to TempleEventUpdate (partial update
-    schema) instead of TempleEventCreate (which requires all fields).
-  - bulk_generate_darshan_slots(): now accepts typed DarshanSlotBulkGenerate
-    schema instead of raw dict — all fields validated, dates parsed correctly.
-  - sync_ttd(): broken mock/patch code removed; now calls the real
-    TempleService.sync_ttd() method directly via the endpoint.
-  - delete_temple(): is now a proper method — previously the module-level
-    wrapper called it correctly but the method itself had no issues; kept clean.
-  - All cache helpers preserved exactly.
-  - Module-level thin wrappers preserved for endpoints that inject get_db()
-    directly instead of using get_service().
+services/temple_service.py 
 """
 
 import json
@@ -377,11 +356,7 @@ class TempleService:
     async def create_darshan_type(
         self, temple_id: UUID, data: DarshanTypeCreate
     ) -> DarshanTypeResponse:
-        """
-        INSERT into darshan_types.
-        Fixed: DarshanType was referenced without being imported — caused
-        NameError on every call in the original code.
-        """
+
         from src.models.darshan import DarshanType   # local import avoids circular deps
 
         temple = await self.repo.get_by_id(temple_id)
@@ -450,12 +425,7 @@ class TempleService:
     async def bulk_generate_darshan_slots(
         self, temple_id: str, data: DarshanSlotBulkGenerate
     ) -> dict:
-        """
-        Generate DarshanSlot rows for a date range.
-        Skips dates that already have a slot for the same type.
-        Fixed: now accepts typed DarshanSlotBulkGenerate instead of raw dict —
-        dates are proper Python date objects, no manual fromisoformat() needed.
-        """
+
         from src.models.darshan import DarshanSlot
 
         temple = await self.repo.get_by_id(temple_id)
@@ -655,12 +625,7 @@ class TempleService:
     async def update_event(
         self, temple_id: str, event_id: str, data: TempleEventUpdate
     ) -> TempleEventResponse:
-        """
-        Update a temple event.
-        Fixed: now accepts TempleEventUpdate (all fields Optional) instead of
-        TempleEventCreate (which requires name and event_date), so partial
-        updates work correctly.
-        """
+
         from src.models.temple import TempleEvent
 
         result = await self.db.execute(
