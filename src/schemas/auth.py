@@ -33,12 +33,14 @@ def validate_password(password: str) -> str:
 # REQUEST SCHEMAS
 # ═══════════════════════════════════════════════════════════════
 
+# AFTER
 class RegisterRequest(BaseModel):
     """POST /auth/register"""
     phone: str
     email: Optional[EmailStr] = None
     password: str
     full_name: Optional[str] = None
+    role: str = "TRAVELER"                          # ← ADD THIS LINE
 
     @field_validator("phone")
     @classmethod
@@ -47,6 +49,15 @@ class RegisterRequest(BaseModel):
     @field_validator("password")
     @classmethod
     def password_valid(cls, v): return validate_password(v)
+
+    @field_validator("role")                        # ← ADD THIS BLOCK
+    @classmethod
+    def role_valid(cls, v):
+        allowed = {"TRAVELER", "PARTNER"}
+        v = v.upper()
+        if v not in allowed:
+            raise ValueError(f"role must be one of {allowed}")
+        return v
 
 
 class SendOTPRequest(BaseModel):

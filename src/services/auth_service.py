@@ -194,7 +194,8 @@ async def register_user(data: RegisterRequest, db: AsyncSession) -> dict:
         "phone": data.phone,
         "email": data.email,
         "full_name": data.full_name,
-        "password_hash": hash_password(data.password)
+        "password_hash": hash_password(data.password),
+        "role": data.role                              
 })
 
     # Send phone OTP
@@ -369,6 +370,9 @@ async def verify_otp_and_login(data: VerifyOTPRequest, db: AsyncSession, device_
         if not reg_data:
             raise HTTPException(status_code=400, detail="Registration data expired. Please register again.")
 
+        _role_str = reg_data.get("role", "TRAVELER").upper()
+        _role = UserRole[_role_str] if _role_str in UserRole.__members__ else UserRole.TRAVELER
+
         user = User(
             phone=reg_data["phone"],
             email=reg_data.get("email"),
@@ -376,10 +380,10 @@ async def verify_otp_and_login(data: VerifyOTPRequest, db: AsyncSession, device_
             password_hash=reg_data["password_hash"],
             is_phone_verified=True,
             is_email_verified=False,
-            role=UserRole.TRAVELER,
+            role=_role,                                   
             status=UserStatus.ACTIVE,
         )
-
+        
         db.add(user)
         await db.commit()
         await db.refresh(user)
