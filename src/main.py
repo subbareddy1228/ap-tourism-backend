@@ -144,7 +144,8 @@ def custom_openapi():
     for path, path_item in openapi_schema["paths"].items():
         for method in path_item.values():
             if isinstance(method, dict):
-                if path in PUBLIC_ROUTES:
+                if path in PUBLIC_ROUTES:\
+                
                     method["security"] = []                    # no lock icon
                 else:
                     method["security"] = [{"BearerAuth": []}] # 🔒 lock icon
